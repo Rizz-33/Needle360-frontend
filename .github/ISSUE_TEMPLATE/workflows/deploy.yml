@@ -10,7 +10,7 @@ env:
   AWS_TF_STATE_BUCKET_NAME: ${{ secrets.AWS_TF_STATE_BUCKET_NAME }}
   AWS_SSH_KEY_PRIVATE: ${{ secrets.AWS_SSH_KEY_PRIVATE }}
   AWS_SSH_KEY_PUBLIC: ${{ secrets.AWS_SSH_KEY_PUBLIC }}
-  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_REGION: us-east-1
 
 jobs:
   deploy-infra:
@@ -26,16 +26,16 @@ jobs:
 
       - name: Terraform init
         id: init
-        run: terraform init -backend-config="bucket=${{ secrets.AWS_TF_STATE_BUCKET_NAME }}" -backend-config="region=${{ secrets.AWS_REGION }}"
+        run: terraform init -backend-config="bucket=${AWS_TF_STATE_BUCKET_NAME}" -backend-config="region=${AWS_REGION}"
         working-directory: ./terraform
 
       - name: Terraform plan
         id: plan
         run: |-
           terraform plan \
-          -var="aws_region=${{ secrets.AWS_REGION }}" \
-          -var="aws_ssh_key_private=${{ secrets.AWS_SSH_KEY_PRIVATE }}" \
-          -var="aws_ssh_key_public=${{ secrets.AWS_SSH_KEY_PUBLIC }}" \
+          -var="aws_region=${AWS_REGION}" \
+          -var="aws_ssh_key_private=${AWS_SSH_KEY_PRIVATE}" \
+          -var="aws_ssh_key_public=${AWS_SSH_KEY_PUBLIC}" \
           -var="key_name=deploy-key" \
           -out=PLAN
         working-directory: ./terraform
