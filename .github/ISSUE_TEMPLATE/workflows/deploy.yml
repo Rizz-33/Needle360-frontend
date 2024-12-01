@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # Corrected variable name
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_TF_STATE_BUCKET_NAME: ${{ secrets.AWS_TF_STATE_BUCKET_NAME }}
   AWS_SSH_KEY_PRIVATE: ${{ secrets.AWS_SSH_KEY_PRIVATE }}
   AWS_SSH_KEY_PUBLIC: ${{ secrets.AWS_SSH_KEY_PUBLIC }}
@@ -16,9 +16,6 @@ env:
 jobs:
   deploy-infra:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
     steps:
       - name: Checkout
         uses: actions/checkout@v2
