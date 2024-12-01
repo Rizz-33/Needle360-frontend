@@ -2,20 +2,19 @@ terraform{
     required_providers {
         aws = {
         source = "hashicorp/aws"
-        version = "~> 3.0"
+        version = "~> 4.0"
         }
     }
     backend "s3" {
         key = "aws/ec2-deploy/terraform.tfstate"
     }
-    
 }
 
 provider "aws" {
     region = var.region
 }
 
-resource "aws_instance" "name" {
+resource "aws_instance" "server" {
     ami = "ami-057b0e5f4e7564dab"
     instance_type = "t2.micro"
     key_name = aws_key_pair.deploy.key_name
