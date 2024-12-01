@@ -14,30 +14,33 @@ env:
 
 jobs:
   deploy-infra:
-   runs-on: ubuntu-latest
-   steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v1
-      with:
-        terraform_wrapper: false
-    - name: Terraform init
-      id: init
-      run: terraform init -backend-config="bucket=${AWS_TF_STATE_BUCKET_NAME}" -backend-config="region=${us-east-1}"
-      working-directory: ./terraform
-    - name: Terraform plan
-      id: plan
-      run: |-
-        terraform plan \
-        -var="aws_region=${us-east-1}" \
-        -var="aws_ssh_key_private=${AWS_SSH_KEY_PRIVATE}" \
-        -var="aws_ssh_key_public=${AWS_SSH_KEY_PUBLIC} \
-        -var="key_name=deploy-key -out=PLAN" \
-        -out=PLAN
-      working-directory: ./terraform
-    - name: Terraform apply
-      id: apply
-      run: terraform apply PLAN
-      working-directory: ./terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform init
+        id: init
+        run: terraform init -backend-config="bucket=${AWS_TF_STATE_BUCKET_NAME}" -backend-config="region=${AWS_REGION}"
+        working-directory: ./terraform
+
+      - name: Terraform plan
+        id: plan
+        run: |-
+          terraform plan \
+          -var="aws_region=${AWS_REGION}" \
+          -var="aws_ssh_key_private=${AWS_SSH_KEY_PRIVATE}" \
+          -var="aws_ssh_key_public=${AWS_SSH_KEY_PUBLIC}" \
+          -var="key_name=deploy-key" \
+          -out=PLAN
+        working-directory: ./terraform
+
+      - name: Terraform apply
+        id: apply
+        run: terraform apply PLAN
+        working-directory: ./terraform
