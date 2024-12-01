@@ -1,4 +1,4 @@
-name: CI/CD with terraform
+name: CI/CD with Terraform
 on:
   push:
     branches:
@@ -6,7 +6,7 @@ on:
 
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY_ID: ${{ secrets.AWS_SECRET_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # Corrected variable name
   AWS_TF_STATE_BUCKET_NAME: ${{ secrets.AWS_TF_STATE_BUCKET_NAME }}
   AWS_SSH_KEY_PRIVATE: ${{ secrets.AWS_SSH_KEY_PRIVATE }}
   AWS_SSH_KEY_PUBLIC: ${{ secrets.AWS_SSH_KEY_PUBLIC }}
@@ -33,7 +33,7 @@ jobs:
         id: plan
         run: |-
           terraform plan \
-          -var="aws_region=us-east-1  \
+          -var="aws_region=us-east-1" \  # Corrected the missing quote
           -var="aws_ssh_key_public=${AWS_SSH_KEY_PUBLIC}" \
           -var="aws_ssh_key_private=${AWS_SSH_KEY_PRIVATE}" \
           -var="key_name=deploy-key" \
