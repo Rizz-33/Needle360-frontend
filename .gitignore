@@ -30,7 +30,7 @@ jspm_packages/
 .DS_Store
 
 # Package lock files
-**/package-lock.json
+package-lock.json
 yarn.lock
 
 # IDE specific files
