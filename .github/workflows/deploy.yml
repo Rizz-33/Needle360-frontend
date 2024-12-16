@@ -21,7 +21,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t rizz336/needle360-frontend-${{ matrix.app }} -f ./${{ matrix.app }}/Dockerfile .
+          docker build -t rizz336/needle360-frontend -f ./${{ matrix.app }}/Dockerfile .
 
       - name: Push Docker Image
         run: |
