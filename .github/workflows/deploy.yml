@@ -47,7 +47,12 @@ jobs:
 
       - name: Run Docker Container
         run: |
-          PORT=$((4000 + ${{ matrix.app == 'admin' && 0 || matrix.app == 'tailorshop-owners' && 1 || 2 }}))
+          PORT=$(case ${{ matrix.app }} in
+            admin) echo 4000 ;;
+            tailorshop-owners) echo 4001 ;;
+            users) echo 4002 ;;
+            *) echo 4000 ;;
+            esac)
           docker run -d \
             -p $PORT:4000 \
             --name needle360-frontend-${{ matrix.app }}-container \
