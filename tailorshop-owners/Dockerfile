@@ -1,30 +1,23 @@
-# Use Node.js image to build the app
+# Use Node image as base image
 FROM node:alpine3.18 as build
 
-# Set the working directory inside the container
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json and install dependencies
+# Copy package.json files
 COPY package*.json ./
-RUN npm install
 
-# Copy the rest of the application source code
-COPY . .
+# Set npm config to increase fetch-timeout and install dependencies
+RUN npm config set fetch-timeout 60000 && npm install --legacy-peer-deps
 
-# Build the app (e.g., for React or similar)
-RUN npm run build
-
-# Use Nginx to serve the app
+# Stage 2: Copy the app into the nginx image
 FROM nginx:1.23-alpine
 
-# Remove the default Nginx content
+# Clean default nginx HTML
 RUN rm -rf /usr/share/nginx/html/*
 
-# Copy the built files from the 'build' stage
-COPY --from=build /app/build /usr/share/nginx/html
+# Copy the built app from the build stage
+COPY --from=build /app /usr/share/nginx/html
 
-# Expose port 80 to allow access
+# Expose the port that nginx will run on
 EXPOSE 80
-
-# Set Nginx to run in the foreground
-ENTRYPOINT ["nginx", "-g", "daemon off;"]
