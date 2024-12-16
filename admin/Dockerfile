@@ -5,7 +5,7 @@ FROM node:alpine3.18 as build
 WORKDIR /app
 
 # Copy package.json and package-lock.json and install dependencies
-COPY package.json package-lock.json ./
+COPY package*.json ./
 RUN npm install
 
 # Copy the rest of the application source code
@@ -17,14 +17,11 @@ RUN npm run build
 # Use Nginx to serve the app
 FROM nginx:1.23-alpine
 
-# Set the working directory for Nginx
-WORKDIR /usr/share/nginx/html
-
 # Remove the default Nginx content
-RUN rm -rf ./*
+RUN rm -rf /usr/share/nginx/html/*
 
 # Copy the built files from the 'build' stage
-COPY --from=build /app/build .
+COPY --from=build /app/build /usr/share/nginx/html
 
 # Expose port 80 to allow access
 EXPOSE 80
