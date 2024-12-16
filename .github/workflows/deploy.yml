@@ -47,3 +47,36 @@ jobs:
           docker build -t needle360-frontend:latest -f ./users/Dockerfile .
           docker tag needle360-frontend:latest needle360-frontend:users
           docker push needle360-frontend:users
+
+  deploy:
+    needs: build
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        app: [admin, tailorshop-owners, users]
+    steps:
+      - name: Pull Docker Image
+        run: |
+          docker pull rizz336/needle360-frontend:${{ matrix.app }}
+
+      - name: Stop and Remove Old Container
+        run: |
+          if [ "$(docker ps -aq -f name=needle360-frontend-${{ matrix.app }}-container)" ]; then
+            docker stop needle360-frontend-${{ matrix.app }}-container
+            docker rm needle360-frontend-${{ matrix.app }}-container
+          fi
+
+      - name: Run Docker Container
+        run: |
+          PORT=$(case ${{ matrix.app }} in
+            admin) echo 4000 ;;
+            tailorshop-owners) echo 4001 ;;
+            users) echo 4002 ;;
+            *) echo 4000 ;;
+            esac)
+          docker run -d \
+            -p $PORT:4000 \
+            --name needle360-frontend-${{ matrix.app }}-container \
+            -e MONGODB_PASSWORD="${{ secrets.MONGODB_PASSWORD }}" \
+            -e APP_ENV="${{ matrix.app }}" \
+            rizz336/needle360-frontend:${{ matrix.app }}
