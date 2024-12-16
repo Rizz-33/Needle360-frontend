@@ -16,13 +16,16 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Login to Docker Hub
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build Docker Image
-        run: docker build -t rizz336/needle360-frontend-${{ matrix.app }} -f Dockerfile.${{ matrix.app }} .
+        run: |
+          docker build -t rizz336/needle360-frontend-${{ matrix.app }} -f Dockerfile.${{ matrix.app }} .
 
       - name: Push Docker Image
-        run: docker push rizz336/needle360-frontend-${{ matrix.app }}:latest
+        run: |
+          docker push rizz336/needle360-frontend-${{ matrix.app }}:latest
 
   deploy:
     needs: build
@@ -32,14 +35,18 @@ jobs:
         app: [admin, tailorshop-owners, users]
     steps:
       - name: Pull Docker Image
-        run: docker pull rizz336/needle360-frontend-${{ matrix.app }}:latest
+        run: |
+          docker pull rizz336/needle360-frontend-${{ matrix.app }}:latest
 
-      - name: Run Docker Container
+      - name: Stop and Remove Old Container
         run: |
           docker stop needle360-frontend-${{ matrix.app }}-container || true
           docker rm needle360-frontend-${{ matrix.app }}-container || true
+
+      - name: Run Docker Container
+        run: |
           docker run -d \
-            -p $((4000 + ${{ matrix.app }})):4000 \
+            -p 4000:4000 \ # Change ports if required for different apps
             --name needle360-frontend-${{ matrix.app }}-container \
             -e MONGODB_PASSWORD="${{ secrets.MONGODB_PASSWORD }}" \
             rizz336/needle360-frontend-${{ matrix.app }}:latest
