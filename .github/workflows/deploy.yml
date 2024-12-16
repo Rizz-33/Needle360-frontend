@@ -21,11 +21,11 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t rizz336/needle360-frontend-${{ matrix.app }} -f Dockerfile .
+          docker build -t rizz336/needle360-frontend:${{ matrix.app }} -f ./${{ matrix.app }}/Dockerfile .
 
       - name: Push Docker Image
         run: |
-          docker push rizz336/needle360-frontend-${{ matrix.app }}:latest
+          docker push rizz336/needle360-frontend:${{ matrix.app }}
 
   deploy:
     needs: build
@@ -36,17 +36,21 @@ jobs:
     steps:
       - name: Pull Docker Image
         run: |
-          docker pull rizz336/needle360-frontend-${{ matrix.app }}:latest
+          docker pull rizz336/needle360-frontend:${{ matrix.app }}
 
       - name: Stop and Remove Old Container
         run: |
-          docker stop needle360-frontend-${{ matrix.app }}-container || true
-          docker rm needle360-frontend-${{ matrix.app }}-container || true
+          if [ "$(docker ps -aq -f name=needle360-frontend-${{ matrix.app }}-container)" ]; then
+            docker stop needle360-frontend-${{ matrix.app }}-container
+            docker rm needle360-frontend-${{ matrix.app }}-container
+          fi
 
       - name: Run Docker Container
         run: |
+          PORT=$((4000 + ${{ matrix.app == 'admin' && 0 || matrix.app == 'tailorshop-owners' && 1 || 2 }}))
           docker run -d \
-            -p 4000:4000 \ # Change ports if required for different apps
+            -p $PORT:4000 \
             --name needle360-frontend-${{ matrix.app }}-container \
             -e MONGODB_PASSWORD="${{ secrets.MONGODB_PASSWORD }}" \
-            rizz336/needle360-frontend-${{ matrix.app }}:latest
+            -e APP_ENV="${{ matrix.app }}" \
+            rizz336/needle360-frontend:${{ matrix.app }}
