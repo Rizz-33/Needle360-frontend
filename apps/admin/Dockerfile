@@ -1,6 +1,3 @@
-# Dockerfile for admin app
-
-# Use Node.js image for the build stage
 FROM node:18-alpine AS build-stage
 
 # Set the working directory in the container
@@ -13,8 +10,8 @@ COPY package.json package-lock.json ./
 RUN npm install
 
 # Copy the public and src directories into the container
-COPY public  ./
-COPY src src ./
+COPY public/ ./public/
+COPY src/ ./src/
 
 # Run the build process (e.g., for production)
 RUN npm run build
@@ -27,3 +24,6 @@ COPY --from=build-stage /app/build /usr/share/nginx/html
 
 # Expose the port Nginx will run on
 EXPOSE 80
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]
