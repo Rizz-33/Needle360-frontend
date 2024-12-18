@@ -13,12 +13,12 @@ services:
 
   user:
     build:
-      context: ./apps/user
+      context: ./apps/users
       dockerfile: Dockerfile
     ports:
       - "3002:80" # Maps user app to localhost:3002
     volumes:
-      - ./apps/user:/app
+      - ./apps/users:/app
     environment:
       - NODE_ENV=production
 
