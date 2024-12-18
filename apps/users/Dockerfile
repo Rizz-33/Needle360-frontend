@@ -1,19 +1,29 @@
-FROM node:18-alpine AS build
+# Dockerfile for admin app
 
+# Use Node.js image for the build stage
+FROM node:18-alpine AS build-stage
+
+# Set the working directory in the container
 WORKDIR /app
 
-COPY package.json ./
-COPY package-lock.json ./
+# Copy the package.json and package-lock.json files
+COPY package.json package-lock.json ./
+
+# Install the dependencies
 RUN npm install
 
-COPY src ./src
+# Copy the public and src directories into the container
 COPY public ./public
+COPY src ./src
 
+# Run the build process (e.g., for production)
 RUN npm run build
 
-FROM nginx:stable-alpine
+# Use Nginx for serving the built app in the final image
+FROM nginx:stable-alpine AS production-stage
 
-COPY --from=build /app/build /usr/share/nginx/html
+# Copy the build artifacts from the build stage
+COPY --from=build-stage /app/build /usr/share/nginx/html
 
+# Expose the port Nginx will run on
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
