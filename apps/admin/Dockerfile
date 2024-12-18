@@ -1,24 +1,33 @@
+# Use Node.js for building the app
 FROM node:16-alpine AS build
 
 WORKDIR /app
 
-COPY package.json .
+# Copy only the necessary package.json files for dependencies installation
+COPY apps/admin/package.json apps/admin/package-lock.json ./
 
+# Install dependencies
 RUN npm install
 
-COPY . .
+# Copy the entire admin app source code into the container
+COPY apps/admin /app
 
+# Run the build command
 RUN npm run build
 
+# Use Nginx to serve the app
 FROM nginx:1.23-alpine
 
 WORKDIR /usr/share/nginx/html
 
+# Clean the existing files in Nginx default directory
 RUN rm -rf *
 
-# Correct path for the build output (change `build` to the actual output directory, e.g., `dist` or `build` if necessary)
+# Copy the build output from the build container
 COPY --from=build /app/build .
 
+# Expose port 80 for the Nginx server
 EXPOSE 80
 
+# Run Nginx in the foreground
 ENTRYPOINT ["nginx", "-g", "daemon off;"]

@@ -6,29 +6,23 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3001:80"
-    volumes:
-      - ./apps/admin:/app
     environment:
       - NODE_ENV=production
 
   user:
     build:
-      context: ./apps/users
+      context: ./apps/user
       dockerfile: Dockerfile
     ports:
       - "3002:80"
-    volumes:
-      - ./apps/users:/app
     environment:
       - NODE_ENV=production
 
   tailor-shop:
     build:
-      context: ./apps/tailorshop-owners
+      context: ./apps/tailor-shop
       dockerfile: Dockerfile
     ports:
       - "3003:80"
-    volumes:
-      - ./apps/tailorshop-owners:/app
     environment:
       - NODE_ENV=production
