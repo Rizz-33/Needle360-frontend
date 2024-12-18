@@ -16,7 +16,8 @@ WORKDIR /usr/share/nginx/html
 
 RUN rm -rf *
 
-COPY --from=build /apps/admin .
+# Correct path for the build output (change `build` to the actual output directory, e.g., `dist` or `build` if necessary)
+COPY --from=build /app/build .
 
 EXPOSE 80
 
