@@ -1,3 +1,7 @@
+# Ignore the node_modules directory as it contains all the dependencies
+# installed via npm and is not needed in the repository.
 node_modules
 
+# Ignore the package-lock.json file as it is generated automatically
+# and contains the exact versions of dependencies installed.
 package-lock.json
