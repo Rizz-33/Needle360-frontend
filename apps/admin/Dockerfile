@@ -12,9 +12,6 @@ RUN npm install
 # Copy the rest of the application code
 COPY . .
 
-# Run the build process (e.g., for production)
-RUN npm run build
-
 # Use Nginx for serving the built app in the final image
 FROM nginx:stable-alpine AS production-stage
 
