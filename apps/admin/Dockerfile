@@ -10,8 +10,8 @@ COPY package.json package-lock.json ./
 RUN npm install
 
 # Copy the public and src directories into the container
-COPY public/ ./public/
-COPY src/ ./src/
+COPY ./public /app/public
+COPY ./src /app/src
 
 # Run the build process (e.g., for production)
 RUN npm run build
