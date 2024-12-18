@@ -1,30 +1,22 @@
-# Use Node.js image to build the app
-FROM node:alpine3.18 as build
+# Base image
+FROM node:18-alpine AS build
 
-# Set the working directory inside the container
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json and install dependencies
-COPY package*.json ./
+# Copy package files and install dependencies
+COPY package.json package-lock.json ./
 RUN npm install
 
-# Copy the rest of the application source code
+# Copy app source code
 COPY . .
 
-# Build the app (e.g., for React or similar)
+# Build the app
 RUN npm run build
 
-# Use Nginx to serve the app
-FROM nginx:1.23-alpine
-
-# Remove the default Nginx content
-RUN rm -rf /usr/share/nginx/html/*
-
-# Copy the built files from the 'build' stage
+# Production server (NGINX for React apps)
+FROM nginx:stable-alpine
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Expose port 80 to allow access
 EXPOSE 80
-
-# Set Nginx to run in the foreground
-ENTRYPOINT ["nginx", "-g", "daemon off;"]
+CMD ["nginx", "-g", "daemon off;"]
