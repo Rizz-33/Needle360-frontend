@@ -1,22 +1,23 @@
-# Use Node.js as the base image for building the app
+# Stage 1: Build the React app for admin
 FROM node:18-alpine AS build
 
 WORKDIR /app
 
 # Copy package files and install dependencies
-COPY package.json ./
+COPY apps/admin/package.json apps/admin/package-lock.json ./
 RUN npm install
 
-# Copy app source code
-COPY . .
+# Copy the admin app source code
+COPY apps/admin/src ./src
+COPY apps/admin/public ./public
 
 # Build the app
 RUN npm run build
 
-# Use Nginx as the production server
+# Stage 2: Set up production environment with NGINX
 FROM nginx:stable-alpine
 
-# Copy the build output to Nginx's html directory
+# Copy the built app to NGINX's web directory
 COPY --from=build /app/build /usr/share/nginx/html
 
 EXPOSE 80
