@@ -1,0 +1,34 @@
+version: "3.8"
+services:
+  admin:
+    build:
+      context: ./apps/admin
+      dockerfile: Dockerfile
+    ports:
+      - "3001:80" # Maps admin app to localhost:3001
+    volumes:
+      - ./apps/admin:/app # Hot reloading during development
+    environment:
+      - NODE_ENV=production
+
+  user:
+    build:
+      context: ./apps/user
+      dockerfile: Dockerfile
+    ports:
+      - "3002:80" # Maps user app to localhost:3002
+    volumes:
+      - ./apps/user:/app
+    environment:
+      - NODE_ENV=production
+
+  tailor-shop:
+    build:
+      context: ./apps/tailor-shop
+      dockerfile: Dockerfile
+    ports:
+      - "3003:80" # Maps tailor-shop app to localhost:3003
+    volumes:
+      - ./apps/tailor-shop:/app
+    environment:
+      - NODE_ENV=production
