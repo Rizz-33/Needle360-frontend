@@ -4,13 +4,13 @@ FROM node:16-alpine AS build
 WORKDIR /app
 
 # Copy only the necessary package.json files for dependencies installation
-COPY apps/admin/package.json apps/admin/package-lock.json ./
+COPY package.json ./
 
 # Install dependencies
 RUN npm install
 
 # Copy the entire admin app source code into the container
-COPY apps/admin /app
+COPY . .
 
 # Run the build command
 RUN npm run build
