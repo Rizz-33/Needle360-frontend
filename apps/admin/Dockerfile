@@ -2,12 +2,13 @@ FROM node:alpine3.18 AS build
 
 WORKDIR /app
 
-COPY package.json .
+COPY package.json package-lock.json ./
 
 RUN npm install
-RUN npm run build
 
 COPY . .
+
+RUN npm run build
 
 FROM nginx:1.23-alpine
 
