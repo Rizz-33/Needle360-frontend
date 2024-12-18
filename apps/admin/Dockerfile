@@ -16,7 +16,7 @@ COPY . .
 FROM nginx:stable-alpine AS production-stage
 
 # Copy the build artifacts from the build stage
-COPY --from=build-stage /app/build /usr/share/nginx/html
+WORKDIR /usr/share/nginx/html
 
 # Expose the port Nginx will run on
 EXPOSE 80
