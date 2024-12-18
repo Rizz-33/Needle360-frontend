@@ -32,19 +32,19 @@ jobs:
 
       - name: Build Docker image for admin app
         run: |
-          docker build -t needle360-frontend:latest -f ./apps/admin/Dockerfile .
+          docker build -t needle360-frontend:latest -f ./apps/admin/Dockerfile . || (docker logs $(docker ps -lq) && exit 1)
           docker tag needle360-frontend:latest needle360-frontend:admin
           docker push needle360-frontend:admin
 
       - name: Build Docker image for tailorshop-owners app
         run: |
-          docker build -t needle360-frontend:latest -f ./apps/tailorshop-owners/Dockerfile .
+          docker build -t needle360-frontend:latest -f ./apps/tailorshop-owners/Dockerfile . || (docker logs $(docker ps -lq) && exit 1)
           docker tag needle360-frontend:latest needle360-frontend:tailorshop-owners
           docker push needle360-frontend:tailorshop-owners
 
       - name: Build Docker image for users app
         run: |
-          docker build -t needle360-frontend:latest -f ./apps/users/Dockerfile .
+          docker build -t needle360-frontend:latest -f ./apps/users/Dockerfile . || (docker logs $(docker ps -lq) && exit 1)
           docker tag needle360-frontend:latest needle360-frontend:users
           docker push needle360-frontend:users
 
