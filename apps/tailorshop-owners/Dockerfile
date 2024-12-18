@@ -1,15 +1,16 @@
-# Stage 1: Build the React app for admin
+# Stage 1: Build the React app for tailorshop-owners
 FROM node:18-alpine AS build
 
 WORKDIR /app
 
 # Copy package files and install dependencies
-COPY apps/admin/package.json apps/admin/package-lock.json ./
+COPY apps/tailorshop-owners/package.json ./
+COPY apps/tailorshop-owners/package-lock.json ./
 RUN npm install
 
-# Copy the admin app source code
-COPY apps/admin/src ./src
-COPY apps/admin/public ./public
+# Copy the tailorshop-owners app source code
+COPY apps/tailorshop-owners/src ./src
+COPY apps/tailorshop-owners/public ./public
 
 # Build the app
 RUN npm run build

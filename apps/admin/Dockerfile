@@ -4,7 +4,8 @@ FROM node:18-alpine AS build
 WORKDIR /app
 
 # Copy package files and install dependencies
-COPY apps/admin/package.json apps/admin/package-lock.json ./
+COPY apps/admin/package.json ./
+COPY apps/admin/package-lock.json ./
 RUN npm install
 
 # Copy the admin app source code

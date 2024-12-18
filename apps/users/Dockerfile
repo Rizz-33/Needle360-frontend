@@ -1,15 +1,16 @@
-# Stage 1: Build the React app for admin
+# Stage 1: Build the React app for users
 FROM node:18-alpine AS build
 
 WORKDIR /app
 
 # Copy package files and install dependencies
-COPY apps/admin/package.json apps/admin/package-lock.json ./
+COPY apps/users/package.json ./
+COPY apps/users/package-lock.json ./
 RUN npm install
 
-# Copy the admin app source code
-COPY apps/admin/src ./src
-COPY apps/admin/public ./public
+# Copy the users app source code
+COPY apps/users/src ./src
+COPY apps/users/public ./public
 
 # Build the app
 RUN npm run build
