@@ -25,13 +25,13 @@ jobs:
           npm run build
 
       - name: Install dependencies and build user
-        working-directory: apps/user
+        working-directory: apps/users
         run: |
           npm install
           npm run build
 
       - name: Install dependencies and build tailor-shop
-        working-directory: apps/tailor-shop
+        working-directory: apps/tailorshop-owners
         run: |
           npm install
           npm run build

@@ -24,11 +24,11 @@ services:
 
   tailor-shop:
     build:
-      context: ./apps/tailor-shop
+      context: ./apps/tailorshop-owners
       dockerfile: Dockerfile
     ports:
       - "3003:80" # Maps tailor-shop app to localhost:3003
     volumes:
-      - ./apps/tailor-shop:/app
+      - ./apps/tailorshop-owners:/app
     environment:
       - NODE_ENV=production
