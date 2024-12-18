@@ -5,9 +5,9 @@ services:
       context: ./apps/admin
       dockerfile: Dockerfile
     ports:
-      - "3001:80" # Maps admin app to localhost:3001
+      - "3001:80"
     volumes:
-      - ./apps/admin:/app # Hot reloading during development
+      - ./apps/admin:/app
     environment:
       - NODE_ENV=production
 
@@ -16,7 +16,7 @@ services:
       context: ./apps/users
       dockerfile: Dockerfile
     ports:
-      - "3002:80" # Maps user app to localhost:3002
+      - "3002:80"
     volumes:
       - ./apps/users:/app
     environment:
@@ -27,7 +27,7 @@ services:
       context: ./apps/tailorshop-owners
       dockerfile: Dockerfile
     ports:
-      - "3003:80" # Maps tailor-shop app to localhost:3003
+      - "3003:80"
     volumes:
       - ./apps/tailorshop-owners:/app
     environment:
