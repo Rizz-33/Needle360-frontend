@@ -1,9 +1,9 @@
 FROM node:16-alpine AS build
 WORKDIR /app
-COPY package.json ./
+COPY package.json package-lock.json ./
 RUN npm install
 COPY . .
-RUN npm run build
+RUN test -f public/index.html && npm run build
 
 FROM nginx:1.23-alpine
 WORKDIR /usr/share/nginx/html
