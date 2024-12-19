@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install
 COPY . .
-RUN test -f public/index.html && npm run build
+RUN ls -la public && npm run build
 
 FROM nginx:1.23-alpine
 WORKDIR /usr/share/nginx/html
