@@ -3,7 +3,8 @@ FROM node:16-alpine AS build
 WORKDIR /app
 COPY package.json ./
 RUN npm install
-COPY . . 
+COPY public/index.html ./public/index.html
+COPY . .
 RUN npm run build
 
 # Step 2: Serve the built app with Nginx
