@@ -32,13 +32,13 @@ jobs:
 
       - name: Build Docker image for admin app
         run: |
-          docker build -t needle360-frontend:latest  . --build.arg NODE_ENV=production
+          docker build -t needle360-frontend:latest --build-arg NODE_ENV=production .
           docker tag needle360-frontend:latest needle360-frontend:admin
           docker push needle360-frontend:admin
 
       - name: Build Docker image for tailorshop-owners app
         run: |
-          docker build -t needle360-frontend:latest . --build.arg NODE_ENV=production
+          docker build -t needle360-frontend:latest --build-arg NODE_ENV=production .
           docker tag needle360-frontend:latest needle360-frontend:tailorshop-owners
           docker push needle360-frontend:tailorshop-owners
 
