@@ -70,7 +70,7 @@ jobs:
       - name: Run Docker Container for admin app
         run: |
           docker run -d \
-            -p 4000:4000 \
+            -p 8085:8085 \
             --name needle360-frontend-admin-container \
             -e MONGODB_PASSWORD="${{ secrets.MONGODB_PASSWORD }}" \
             -e APP_ENV="admin" \
@@ -90,7 +90,7 @@ jobs:
       - name: Run Docker Container for tailorshop-owners app
         run: |
           docker run -d \
-            -p 4001:4000 \
+            -p 8086:8085 \
             --name needle360-frontend-tailorshop-owners-container \
             -e MONGODB_PASSWORD="${{ secrets.MONGODB_PASSWORD }}" \
             -e APP_ENV="tailorshop-owners" \
@@ -110,7 +110,7 @@ jobs:
       - name: Run Docker Container for users app
         run: |
           docker run -d \
-            -p 4002:4000 \
+            -p 8087:8085 \
             --name needle360-frontend-users-container \
             -e MONGODB_PASSWORD="${{ secrets.MONGODB_PASSWORD }}" \
             -e APP_ENV="users" \
