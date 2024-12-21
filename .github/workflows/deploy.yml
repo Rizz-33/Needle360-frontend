@@ -33,21 +33,21 @@ jobs:
       - name: Build Docker image for admin app
         run: |
           set -e
-          docker build -t needle360-frontend:admin -f ./apps/admin/Dockerfile ./apps/admin
+          docker build -t needle360-frontend:admin -f ./frontend/admin/Dockerfile ./frontend/admin
           docker tag needle360-frontend:admin rizz336/needle360-frontend:admin
           docker push rizz336/needle360-frontend:admin
 
       - name: Build Docker image for tailorshop-owners app
         run: |
           set -e
-          docker build -t needle360-frontend:tailorshop-owners -f ./apps/tailorshop-owners/Dockerfile ./apps/tailorshop-owners
+          docker build -t needle360-frontend:tailorshop-owners -f ./frontend/tailorshop-owners/Dockerfile ./frontend/tailorshop-owners
           docker tag needle360-frontend:tailorshop-owners rizz336/needle360-frontend:tailorshop-owners
           docker push rizz336/needle360-frontend:tailorshop-owners
 
       - name: Build Docker image for users app
         run: |
           set -e
-          docker build -t needle360-frontend:users -f ./apps/users/Dockerfile ./apps/users
+          docker build -t needle360-frontend:users -f ./frontend/users/Dockerfile ./frontend/users
           docker tag needle360-frontend:users rizz336/needle360-frontend:users
           docker push rizz336/needle360-frontend:users
 

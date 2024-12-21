@@ -2,7 +2,7 @@ version: "3.8"
 services:
   admin:
     build:
-      context: ./apps/admin
+      context: ./frontend/admin
       dockerfile: Dockerfile
     ports:
       - "3001:80"
@@ -11,7 +11,7 @@ services:
 
   user:
     build:
-      context: ./apps/users
+      context: ./frontend/users
       dockerfile: Dockerfile
     ports:
       - "3002:80"
@@ -20,7 +20,7 @@ services:
 
   tailor-shop:
     build:
-      context: ./apps/tailorshop-owners
+      context: ./frontend/tailorshop-owners
       dockerfile: Dockerfile
     ports:
       - "3003:80"
