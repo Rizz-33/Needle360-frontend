@@ -1,4 +1,4 @@
-name: Deploy React Applications
+name: Deploy React Application
 
 on:
   push:
@@ -30,10 +30,9 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build Docker image
+      - name: Build and Push Frontend Image
         run: |
-          set -e
-          docker build -t needle360-frontend -f ./frontend/Dockerfile ./frontend
+          docker build -t needle360-frontend -f Dockerfile .
           docker tag needle360-frontend rizz336/needle360-frontend
           docker push rizz336/needle360-frontend
 
@@ -43,8 +42,7 @@ jobs:
 
     steps:
       - name: Pull Docker Image
-        run: |
-          docker pull rizz336/needle360-frontend
+        run: docker pull rizz336/needle360-frontend
 
       - name: Deploy Admin App
         run: |
@@ -52,23 +50,21 @@ jobs:
             docker stop needle360-frontend-admin-container
             docker rm needle360-frontend-admin-container
           fi
-
           docker run -d \
             -p 8085:80 \
             --name needle360-frontend-admin-container \
             -e APP_ENV="admin" \
             rizz336/needle360-frontend
 
-      - name: Deploy Tailorshop-Owners App
+      - name: Deploy Tailor Shop Owners App
         run: |
-          if [ "$(docker ps -aq -f name=needle360-frontend-tailorshop-owners-container)" ]; then
-            docker stop needle360-frontend-tailorshop-owners-container
-            docker rm needle360-frontend-tailorshop-owners-container
+          if [ "$(docker ps -aq -f name=needle360-frontend-tailorshop-container)" ]; then
+            docker stop needle360-frontend-tailorshop-container
+            docker rm needle360-frontend-tailorshop-container
           fi
-
           docker run -d \
             -p 8086:80 \
-            --name needle360-frontend-tailorshop-owners-container \
+            --name needle360-frontend-tailorshop-container \
             -e APP_ENV="tailorshop-owners" \
             rizz336/needle360-frontend
 
@@ -78,7 +74,6 @@ jobs:
             docker stop needle360-frontend-users-container
             docker rm needle360-frontend-users-container
           fi
-
           docker run -d \
             -p 8087:80 \
             --name needle360-frontend-users-container \
