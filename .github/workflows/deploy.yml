@@ -44,38 +44,13 @@ jobs:
       - name: Pull Docker Image
         run: docker pull rizz336/needle360-frontend
 
-      - name: Deploy Admin App
+      - name: Deploy Web Application
         run: |
-          if [ "$(docker ps -aq -f name=needle360-frontend-admin-container)" ]; then
-            docker stop needle360-frontend-admin-container
-            docker rm needle360-frontend-admin-container
+          if [ "$(docker ps -aq -f name=needle360-frontend-container)" ]; then
+            docker stop needle360-frontend-container
+            docker rm needle360-frontend-container
           fi
           docker run -d \
-            -p 8085:80 \
-            --name needle360-frontend-admin-container \
-            -e APP_ENV="admin" \
-            rizz336/needle360-frontend
-
-      - name: Deploy Tailor Shop Owners App
-        run: |
-          if [ "$(docker ps -aq -f name=needle360-frontend-tailorshop-container)" ]; then
-            docker stop needle360-frontend-tailorshop-container
-            docker rm needle360-frontend-tailorshop-container
-          fi
-          docker run -d \
-            -p 8086:80 \
-            --name needle360-frontend-tailorshop-container \
-            -e APP_ENV="tailorshop-owners" \
-            rizz336/needle360-frontend
-
-      - name: Deploy Users App
-        run: |
-          if [ "$(docker ps -aq -f name=needle360-frontend-users-container)" ]; then
-            docker stop needle360-frontend-users-container
-            docker rm needle360-frontend-users-container
-          fi
-          docker run -d \
-            -p 8087:80 \
-            --name needle360-frontend-users-container \
-            -e APP_ENV="users" \
+            -p 8080:80 \
+            --name needle360-frontend-container \
             rizz336/needle360-frontend
