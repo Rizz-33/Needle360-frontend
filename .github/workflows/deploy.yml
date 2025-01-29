@@ -30,88 +30,57 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build Docker image for admin app
+      - name: Build Docker image
         run: |
           set -e
-          docker build -t needle360-frontend:admin -f ./frontend/admin/Dockerfile ./frontend/admin
-          docker tag needle360-frontend:admin rizz336/needle360-frontend:admin
-          docker push rizz336/needle360-frontend:admin
-
-      - name: Build Docker image for tailorshop-owners app
-        run: |
-          set -e
-          docker build -t needle360-frontend:tailorshop-owners -f ./frontend/tailorshop-owners/Dockerfile ./frontend/tailorshop-owners
-          docker tag needle360-frontend:tailorshop-owners rizz336/needle360-frontend:tailorshop-owners
-          docker push rizz336/needle360-frontend:tailorshop-owners
-
-      - name: Build Docker image for users app
-        run: |
-          set -e
-          docker build -t needle360-frontend:users -f ./frontend/users/Dockerfile ./frontend/users
-          docker tag needle360-frontend:users rizz336/needle360-frontend:users
-          docker push rizz336/needle360-frontend:users
+          docker build -t needle360-frontend -f ./frontend/Dockerfile ./frontend
+          docker tag needle360-frontend rizz336/needle360-frontend
+          docker push rizz336/needle360-frontend
 
   deploy:
     needs: build
     runs-on: self-hosted
 
     steps:
-      - name: Pull Docker Image for admin app
+      - name: Pull Docker Image
         run: |
-          docker pull rizz336/needle360-frontend:admin
+          docker pull rizz336/needle360-frontend
 
-      - name: Stop and Remove Old Container for admin app
+      - name: Deploy Admin App
         run: |
           if [ "$(docker ps -aq -f name=needle360-frontend-admin-container)" ]; then
             docker stop needle360-frontend-admin-container
             docker rm needle360-frontend-admin-container
           fi
 
-      - name: Run Docker Container for admin app
-        run: |
           docker run -d \
-            -p 8085:8085 \
+            -p 8085:80 \
             --name needle360-frontend-admin-container \
-            -e MONGODB_PASSWORD="${{ secrets.MONGODB_PASSWORD }}" \
             -e APP_ENV="admin" \
-            rizz336/needle360-frontend:admin
+            rizz336/needle360-frontend
 
-      - name: Pull Docker Image for tailorshop-owners app
-        run: |
-          docker pull rizz336/needle360-frontend:tailorshop-owners
-
-      - name: Stop and Remove Old Container for tailorshop-owners app
+      - name: Deploy Tailorshop-Owners App
         run: |
           if [ "$(docker ps -aq -f name=needle360-frontend-tailorshop-owners-container)" ]; then
             docker stop needle360-frontend-tailorshop-owners-container
             docker rm needle360-frontend-tailorshop-owners-container
           fi
 
-      - name: Run Docker Container for tailorshop-owners app
-        run: |
           docker run -d \
-            -p 8086:8085 \
+            -p 8086:80 \
             --name needle360-frontend-tailorshop-owners-container \
-            -e MONGODB_PASSWORD="${{ secrets.MONGODB_PASSWORD }}" \
             -e APP_ENV="tailorshop-owners" \
-            rizz336/needle360-frontend:tailorshop-owners
+            rizz336/needle360-frontend
 
-      - name: Pull Docker Image for users app
-        run: |
-          docker pull rizz336/needle360-frontend:users
-
-      - name: Stop and Remove Old Container for users app
+      - name: Deploy Users App
         run: |
           if [ "$(docker ps -aq -f name=needle360-frontend-users-container)" ]; then
             docker stop needle360-frontend-users-container
             docker rm needle360-frontend-users-container
           fi
 
-      - name: Run Docker Container for users app
-        run: |
           docker run -d \
-            -p 8087:8085 \
+            -p 8087:80 \
             --name needle360-frontend-users-container \
-            -e MONGODB_PASSWORD="${{ secrets.MONGODB_PASSWORD }}" \
             -e APP_ENV="users" \
-            rizz336/needle360-frontend:users
+            rizz336/needle360-frontend
