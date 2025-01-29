@@ -1,19 +1,29 @@
-# Step 1: Build the application
+# Use official Node.js image
 FROM node:16-alpine AS build
+
+# Set the working directory
 WORKDIR /app
-COPY package.json package-lock.json ./
+
+# Copy only package.json (no package-lock.json)
+COPY package.json ./
+
+# Install dependencies (this will not use package-lock.json)
 RUN npm install
+
+# Copy the rest of the application files
 COPY . .
+
+# Build the app (you can replace this with your build commands if any)
 RUN npm run build
 
-# Step 2: Serve the built app with Nginx
+# Use NGINX to serve the app (optional, you can modify this based on your setup)
 FROM nginx:1.23-alpine
-WORKDIR /usr/share/nginx/html
-RUN rm -rf ./*
 
-# Copy build output based on environment variable
-ARG APP_ENV
-COPY --from=build /app/${APP_ENV}/build .
+# Copy built files from the build stage
+COPY --from=build /app/build /usr/share/nginx/html
 
+# Expose port
 EXPOSE 80
+
+# Start NGINX server
 CMD ["nginx", "-g", "daemon off;"]
