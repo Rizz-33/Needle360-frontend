@@ -7,13 +7,13 @@ WORKDIR /app
 # Copy only package.json (no package-lock.json)
 COPY package.json ./
 
-# Install dependencies (this will not use package-lock.json)
+# Install dependencies (this will install all dependencies from package.json including web-vitals)
 RUN npm install
 
 # Copy the rest of the application files
 COPY . .
 
-# Build the app (you can replace this with your build commands if any)
+# Build the app (this will now work if all dependencies are installed)
 RUN npm run build
 
 # Use NGINX to serve the app (optional, you can modify this based on your setup)
