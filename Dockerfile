@@ -1,4 +1,4 @@
-# Stage 1: Build React App
+# Stage 1: Build Vite App
 FROM node:alpine3.18 AS build
 WORKDIR /app
 
@@ -11,11 +11,11 @@ RUN npm install
 # Copy the entire project
 COPY . .
 
-# Build the React app (output is in /app/build)
-RUN npm run build
+# Build the Vite app
+RUN npm run build || (echo "Build failed!" && exit 1)
 
-# Debugging: Check if build directory exists
-RUN ls -la /app/build
+# Debugging: Check if dist directory exists
+RUN ls -la /app/dist
 
 # Stage 2: Serve with Nginx
 FROM nginx:1.23-alpine
@@ -24,8 +24,8 @@ WORKDIR /usr/share/nginx/html
 # Remove default NGINX static files
 RUN rm -rf ./*
 
-# Copy built files from the build stage
-COPY --from=build /app/build .
+# Copy built files from the build stage (dist instead of build)
+COPY --from=build /app/dist .
 
 # Expose port
 EXPOSE 80
