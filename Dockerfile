@@ -14,7 +14,7 @@ RUN npm install
 COPY . .
 
 # Build the app (this will now work if all dependencies are installed)
-RUN npm run build
+RUN npm run build --output-path=build
 
 # Use NGINX to serve the app (optional, you can modify this based on your setup)
 FROM nginx:1.23-alpine
