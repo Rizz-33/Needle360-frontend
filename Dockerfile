@@ -1,25 +1,24 @@
-# Use official Node.js image
+# Stage 1: Build React App
 FROM node:alpine3.18 AS build
-
-# Set the working directory
 WORKDIR /app
 
-# Copy only package.json (no package-lock.json)
-COPY package.json ./
+# Copy package.json and package-lock.json
+COPY package.json package-lock.json ./
 
-# Install dependencies (this will install all dependencies from package.json including web-vitals)
+# Install dependencies
 RUN npm install
 
-# Copy the rest of the application files
+# Copy the entire project
 COPY . .
 
-# Build the app (this will now work if all dependencies are installed)
-RUN npm run build --output-path=build
+# Build the React app (output is in /app/build)
+RUN npm run build
 
-# Use NGINX to serve the app (optional, you can modify this based on your setup)
+# Debugging: Check if build directory exists
+RUN ls -la /app/build
+
+# Stage 2: Serve with Nginx
 FROM nginx:1.23-alpine
-
-# Copy built files from the build stage
 WORKDIR /usr/share/nginx/html
 
 # Remove default NGINX static files
