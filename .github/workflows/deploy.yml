@@ -25,16 +25,12 @@ jobs:
             ${{ runner.os }}-node-
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and Push Frontend Image
         run: |
-          docker build -t needle360-frontend -f Dockerfile .
-          docker tag needle360-frontend rizz336/needle360-frontend
-          docker push rizz336/needle360-frontend
+          docker build -t rizz336/needle360-frontend -f Dockerfile .
+          docker push rizz336/needle360-frontend:latest
 
   deploy:
     needs: build
@@ -42,15 +38,13 @@ jobs:
 
     steps:
       - name: Pull Docker Image
-        run: docker pull rizz336/needle360-frontend
+        run: docker pull rizz336/needle360-frontend:latest
 
-      - name: Deploy Web Application
-        run: |
-          if [ "$(docker ps -aq -f name=needle360-frontend-container)" ]; then
-            docker stop needle360-frontend-container
-            docker rm needle360-frontend-container
-          fi
-          docker run -d \
-            -p 8080:80 \
-            --name needle360-frontend-container \
-            rizz336/needle360-frontend
+      - name: Stop Existing Container
+        run: docker stop needle360-frontend-container || true
+
+      - name: Remove Existing Container
+        run: docker rm needle360-frontend-container || true
+
+      - name: Run Docker Container
+        run: docker run -d -p 8080:80 --name needle360-frontend-container rizz336/needle360-frontend:latest

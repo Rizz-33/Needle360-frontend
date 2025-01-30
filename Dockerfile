@@ -1,5 +1,5 @@
 # Use official Node.js image
-FROM node:16-alpine AS build
+FROM node:alpine3.18 AS build
 
 # Set the working directory
 WORKDIR /app
@@ -20,10 +20,16 @@ RUN npm run build
 FROM nginx:1.23-alpine
 
 # Copy built files from the build stage
-COPY --from=build /app/build /usr/share/nginx/html
+WORKDIR /usr/share/nginx/html
+
+# Remove default NGINX static files
+RUN rm -rf ./*
+
+# Copy built files from the build stage
+COPY --from=build /app/build .
 
 # Expose port
 EXPOSE 80
 
 # Start NGINX server
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["nginx", "-g", "daemon off;"]
