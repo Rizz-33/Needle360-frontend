@@ -1,7 +1,18 @@
 import React from "react";
+import Button from "../components/ui/Button";
 
 const Home = () => {
-  return <div>Home</div>;
+  const handleClick = () => {
+    alert("Button clicked!");
+  };
+
+  return (
+    <div>
+      <Button onClick={handleClick} className="custom-class">
+        Click Me
+      </Button>
+    </div>
+  );
 };
 
 export default Home;

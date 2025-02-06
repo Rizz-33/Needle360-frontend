@@ -9,6 +9,9 @@ export default {
         background: "#F7B195", // Peach
         secondary: "#1D1842", // Blackcurrant
       },
+      fontFamily: {
+        nunito: ["Nunito", "sans-serif"],
+      },
     },
   },
   plugins: [],
