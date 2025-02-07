@@ -4,10 +4,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#8E0D3C", // Deep Red
-        accent: "#EF3B33", // Vibrant Orange
-        background: "#F7B195", // Peach
-        secondary: "#1D1842", // Blackcurrant
+        primary: "#2825DA",
+        accent: "#181683",
+        background: "#FFFFFF",
+        secondary: "#D4D3F8",
       },
       fontFamily: {
         nunito: ["Nunito", "sans-serif"],
