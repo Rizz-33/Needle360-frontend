@@ -18,13 +18,10 @@ const InputField = ({
       value={value}
       onChange={onChange}
       className={`w-full p-2 pl-4 pr-4 border rounded-full text-xs 
-                                ${
-                                  disabled
-                                    ? "bg-gray-100 cursor-not-allowed"
-                                    : ""
-                                }
-                                ${error ? "border-red-500" : "border-gray-300"}
-                                `}
+                ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
+                ${error ? "border-red-500" : "border-gray-300"}
+                focus:!border-secondary focus:!ring-1 focus:!ring-primary outline-none
+              `}
       required={required}
       disabled={disabled}
     />
@@ -41,19 +38,14 @@ const SelectField = ({
   disabled,
   error,
 }) => (
-  <div className="w-full">
+  <div className="relative w-full">
     <select
       name={name}
       value={value}
       onChange={onChange}
-      className={`w-full p-2 pl-4 pr-4 border rounded-full text-xs
-                                ${
-                                  disabled
-                                    ? "bg-gray-100 cursor-not-allowed"
-                                    : ""
-                                }
-                                ${error ? "border-red-500" : "border-gray-300"}
-                                `}
+      className={`w-full p-2 pl-4 pr-10 border rounded-full text-xs appearance-none text-gray-400
+                ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
+                ${error ? "border-red-500" : "border-gray-300"}`}
       required={required}
       disabled={disabled}
     >
@@ -64,7 +56,22 @@ const SelectField = ({
         </option>
       ))}
     </select>
-    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+
+    {/* Custom dropdown icon */}
+    <span className="absolute right-0 pr-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+      <svg
+        className="w-4 h-4 text-gray-400"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fillRule="evenodd"
+          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+          clipRule="evenodd"
+        />
+      </svg>
+    </span>
   </div>
 );
 
