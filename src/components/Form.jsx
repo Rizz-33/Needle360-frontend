@@ -283,16 +283,18 @@ const Form = ({
   return (
     <div className={className}>
       {" "}
+      {heading1 && (
+        <h2 className="text-sm font-bold text-left text-primary">
+          {" "}
+          {heading1}
+        </h2>
+      )}
+      {heading2 && (
+        <h2 className="text-xs font-extralight text-left mb-2">{heading2}</h2>
+      )}
       <form onSubmit={handleSubmit} className="space-y-3">
-        {heading1 && (
-          <h2 className="text-sm font-bold text-left text-primary">
-            {" "}
-            {heading1}
-          </h2>
-        )}
-        {heading2 && (
-          <h2 className="text-xs font-extralight text-left mb-9">{heading2}</h2>
-        )}
+        <div className="p-2" />
+
         {fields.map(renderFieldGroup)}
 
         <div className="p-2" />
