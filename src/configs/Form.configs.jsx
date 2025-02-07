@@ -24,7 +24,7 @@ export const footerConfigs = {
     loginSignupRedirect: {
       text: "Don't have an account?",
       link: "/signup",
-      linkText: "Sign Up",
+      linkText: "Signup",
     },
     terms: {
       text: "By signing up, you agree to our",
@@ -34,6 +34,11 @@ export const footerConfigs = {
     privacy: {
       link: "/privacy",
       linkText: "Privacy Policy",
+    },
+    alternateSignup: {
+      text: "Tailor shop?",
+      link: "/tailor-signup",
+      linkText: "Request to sign up as a Tailor Shop",
     },
   },
 };
@@ -46,7 +51,8 @@ export const headingConfigs = {
       "Sign up to browse profiles of expert tailors, design, view reviews, and order your custom tailoring items.",
   },
   customerLogin: {
-    heading1: "Welcome back!",
-    heading2: "Login to your account to continue browsing.",
+    heading1: "Welcome Back to our platform!",
+    heading2:
+      "Log in to your account to connect with tailors or manage your services.",
   },
 };
