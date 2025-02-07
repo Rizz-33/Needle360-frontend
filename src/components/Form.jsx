@@ -18,9 +18,13 @@ const InputField = ({
       value={value}
       onChange={onChange}
       className={`w-full p-2 pl-4 pr-4 border rounded-full text-xs 
-                ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
-                ${error ? "border-red-500" : "border-gray-300"}
-            `}
+                                ${
+                                  disabled
+                                    ? "bg-gray-100 cursor-not-allowed"
+                                    : ""
+                                }
+                                ${error ? "border-red-500" : "border-gray-300"}
+                                `}
       required={required}
       disabled={disabled}
     />
@@ -43,9 +47,13 @@ const SelectField = ({
       value={value}
       onChange={onChange}
       className={`w-full p-2 pl-4 pr-4 border rounded-full text-xs
-                ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
-                ${error ? "border-red-500" : "border-gray-300"}
-            `}
+                                ${
+                                  disabled
+                                    ? "bg-gray-100 cursor-not-allowed"
+                                    : ""
+                                }
+                                ${error ? "border-red-500" : "border-gray-300"}
+                                `}
       required={required}
       disabled={disabled}
     >
@@ -88,6 +96,7 @@ const Form = ({
       required: true,
     },
     {
+      name: "password-group",
       gridCols: 2,
       fields: [
         {
@@ -111,6 +120,7 @@ const Form = ({
       required: true,
     },
     {
+      name: "location-group",
       gridCols: 2,
       fields: [
         {
@@ -128,12 +138,13 @@ const Form = ({
       ],
     },
     {
+      name: "address-group",
       gridCols: 2,
       fields: [
         {
           name: "city",
-          type: "text",
-          placeholder: "Enter your city",
+          type: "select",
+          options: ["City1", "City2"],
           required: true,
         },
         {
@@ -151,10 +162,28 @@ const Form = ({
       required: true,
     },
     {
-      name: "bankDetails",
-      type: "text",
-      placeholder: "Enter your bank details",
-      required: true,
+      name: "bankDetails-group",
+      gridCols: 3,
+      fields: [
+        {
+          name: "accountNumber",
+          type: "text",
+          placeholder: "Enter your account number",
+          required: true,
+        },
+        {
+          name: "accountName",
+          type: "text",
+          placeholder: "Enter account name",
+          required: true,
+        },
+        {
+          name: "bankName",
+          type: "text",
+          placeholder: "Enter bank name",
+          required: true,
+        },
+      ],
     },
   ];
 
@@ -167,7 +196,6 @@ const Form = ({
   };
 
   const renderField = (field) => {
-    // Skip rendering if field is disabled and in the disabled object
     if (disabled[field.name] === true) {
       return null;
     }
@@ -194,21 +222,45 @@ const Form = ({
     );
   };
 
-  const renderFieldGroup = (field) => {
-    // For grouped fields, check if all fields in the group are disabled
-    if (field.fields) {
-      const visibleFields = field.fields.filter(
+  const renderFieldGroup = (fieldGroup) => {
+    if (fieldGroup.fields) {
+      const visibleFields = fieldGroup.fields.filter(
         (subField) => !disabled[subField.name]
       );
+
+      // If no visible fields in group, return null
       if (visibleFields.length === 0) return null;
 
+      // For password, location, and bank details groups, show in a row if all fields are visible
+      const isPasswordGroup = fieldGroup.name === "password-group";
+      const isLocationGroup = fieldGroup.name === "location-group";
+      const isAddressGroup = fieldGroup.name === "address-group";
+      const isBankDetailsGroup = fieldGroup.name === "bankDetails-group";
+
+      if (
+        (isPasswordGroup ||
+          isLocationGroup ||
+          isBankDetailsGroup ||
+          isAddressGroup) &&
+        visibleFields.length === fieldGroup.gridCols
+      ) {
+        return (
+          <div
+            key={fieldGroup.name}
+            className={`grid ${
+              isBankDetailsGroup ? "grid-cols-3" : "grid-cols-2"
+            } gap-2`}
+          >
+            {visibleFields.map((subField) => (
+              <div key={subField.name}>{renderField(subField)}</div>
+            ))}
+          </div>
+        );
+      }
+
+      // For other field groups or when only one field is visible
       return (
-        <div
-          key={field.fields.map((f) => f.name).join("-")}
-          className={
-            field.gridCols ? `grid grid-cols-${field.gridCols} gap-2` : ""
-          }
-        >
+        <div key={fieldGroup.name} className="space-y-3">
           {visibleFields.map((subField) => (
             <div key={subField.name}>{renderField(subField)}</div>
           ))}
@@ -216,14 +268,16 @@ const Form = ({
       );
     }
 
-    return <div key={field.name}>{renderField(field)}</div>;
+    return <div key={fieldGroup.name}>{renderField(fieldGroup)}</div>;
   };
 
   return (
     <div className={className}>
+      {" "}
       <form onSubmit={handleSubmit} className="space-y-3">
         {heading1 && (
           <h2 className="text-sm font-bold text-left text-primary">
+            {" "}
             {heading1}
           </h2>
         )}
@@ -241,7 +295,6 @@ const Form = ({
           {button}
         </button>
       </form>
-
       {footerConfig?.loginSignupRedirect && !disabled.loginSignupRedirect && (
         <div className="text-center mt-2">
           <p className="text-xs">
@@ -255,9 +308,7 @@ const Form = ({
           </p>
         </div>
       )}
-
       <div className="m-5 border-b border-gray-200" />
-
       {footerConfig?.terms && !disabled.terms && (
         <div className="text-center mt-2">
           <p className="text-xs">
@@ -279,7 +330,6 @@ const Form = ({
           </p>
         </div>
       )}
-
       {footerConfig?.alternateSignup && !disabled.alternateSignup && (
         <div className="text-center mt-2">
           <p className="text-xs">
