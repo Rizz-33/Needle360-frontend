@@ -79,6 +79,7 @@ const SelectField = ({
 
 const Form = ({
   customFields,
+  formType,
   values,
   onChange,
   onSubmit,
@@ -91,113 +92,129 @@ const Form = ({
   footerConfig,
 }) => {
   // Default fields configuration
-  const defaultFields = [
-    {
-      name: "name",
-      type: "text",
-      placeholder: "Enter your name",
-      required: true,
-    },
-    {
-      name: "email",
-      type: "email",
-      placeholder: "Enter your email address",
-      required: true,
-    },
-    {
-      name: "password-group",
-      gridCols: 2,
-      fields: [
-        {
-          name: "password",
-          type: "password",
-          placeholder: "Set a password",
-          required: true,
-        },
-        {
-          name: "confirmPassword",
-          type: "password",
-          placeholder: "Confirm the password",
-          required: true,
-        },
-      ],
-    },
-    {
-      name: "contactNumber",
-      type: "tel",
-      placeholder: "Enter your contact number",
-      required: true,
-    },
-    {
-      name: "location-group",
-      gridCols: 2,
-      fields: [
-        {
-          name: "country",
-          type: "select",
-          options: ["Country1", "Country2"],
-          required: true,
-        },
-        {
-          name: "province",
-          type: "select",
-          options: ["Province1", "Province2"],
-          required: true,
-        },
-      ],
-    },
-    {
-      name: "address-group",
-      gridCols: 2,
-      fields: [
-        {
-          name: "city",
-          type: "select",
-          options: ["City1", "City2"],
-          required: true,
-        },
-        {
-          name: "postalCode",
-          type: "text",
-          placeholder: "Enter your postal code",
-          required: true,
-        },
-      ],
-    },
-    {
-      name: "streetAddress",
-      type: "text",
-      placeholder: "Enter your street address",
-      required: true,
-    },
-    {
-      name: "bankDetails-group",
-      gridCols: 3,
-      fields: [
-        {
-          name: "accountNumber",
-          type: "text",
-          placeholder: "Enter your account number",
-          required: true,
-        },
-        {
-          name: "accountName",
-          type: "text",
-          placeholder: "Enter account name",
-          required: true,
-        },
-        {
-          name: "bankName",
-          type: "text",
-          placeholder: "Enter bank name",
-          required: true,
-        },
-      ],
-    },
-  ];
+  const defaultFields = {
+    customerSignup: [
+      {
+        name: "name",
+        type: "text",
+        placeholder: "Enter your name",
+        required: true,
+      },
+      {
+        name: "email",
+        type: "email",
+        placeholder: "Enter your email address",
+        required: true,
+      },
+      {
+        name: "password-group",
+        gridCols: 2,
+        fields: [
+          {
+            name: "password",
+            type: "password",
+            placeholder: "Set a password",
+            required: true,
+          },
+          {
+            name: "confirmPassword",
+            type: "password",
+            placeholder: "Confirm the password",
+            required: true,
+          },
+        ],
+      },
+      {
+        name: "contactNumber",
+        type: "tel",
+        placeholder: "Enter your contact number",
+        required: true,
+      },
+      {
+        name: "location-group",
+        gridCols: 2,
+        fields: [
+          {
+            name: "country",
+            type: "select",
+            options: ["Country1", "Country2"],
+            required: true,
+          },
+          {
+            name: "province",
+            type: "select",
+            options: ["Province1", "Province2"],
+            required: true,
+          },
+        ],
+      },
+      {
+        name: "address-group",
+        gridCols: 2,
+        fields: [
+          {
+            name: "city",
+            type: "select",
+            options: ["City1", "City2"],
+            required: true,
+          },
+          {
+            name: "postalCode",
+            type: "text",
+            placeholder: "Enter your postal code",
+            required: true,
+          },
+        ],
+      },
+      {
+        name: "streetAddress",
+        type: "text",
+        placeholder: "Enter your street address",
+        required: true,
+      },
+      {
+        name: "bankDetails-group",
+        gridCols: 3,
+        fields: [
+          {
+            name: "accountNumber",
+            type: "text",
+            placeholder: "Enter your account number",
+            required: true,
+          },
+          {
+            name: "accountName",
+            type: "text",
+            placeholder: "Enter account name",
+            required: true,
+          },
+          {
+            name: "bankName",
+            type: "text",
+            placeholder: "Enter bank name",
+            required: true,
+          },
+        ],
+      },
+    ],
+    customerLogin: [
+      {
+        name: "email",
+        type: "email",
+        placeholder: "Enter your email address",
+        required: true,
+      },
+      {
+        name: "password",
+        type: "password",
+        placeholder: "Enter your password",
+        required: true,
+      },
+    ],
+  };
 
   // Use custom fields if provided, otherwise use default fields
-  const fields = customFields || defaultFields;
+  const fields = customFields || defaultFields[formType];
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -290,7 +307,7 @@ const Form = ({
         </h2>
       )}
       {heading2 && (
-        <h2 className="text-xs font-extralight text-left mb-2">{heading2}</h2>
+        <h2 className="text-xs font-light text-left mb-2">{heading2}</h2>
       )}
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="p-2" />
