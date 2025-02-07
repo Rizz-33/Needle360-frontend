@@ -32,7 +32,7 @@ const Signup = () => {
   };
 
   return (
-    <div className="flex w-full h-screen overflow-auto bg-gradient-to-tr from-white to-blue-50">
+    <div className="flex w-full h-screen overflow-auto bg-gradient-to-tr from-white to-blue-50 justify-center items-center">
       <div className="w-1/2 hidden md:block">
         <img
           src="/api/placeholder/800/600"
@@ -40,8 +40,9 @@ const Signup = () => {
           className="w-full h-full object-cover"
         />
       </div>
-      <div className="w-full md:w-1/2 p-4 mt-9 pr-24">
+      <div className="w-full md:w-1/2 p-4 pr-24">
         <Form
+          formType={"customerSignup"}
           values={values}
           onChange={handleChange}
           onSubmit={handleSubmit}
