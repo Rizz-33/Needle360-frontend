@@ -45,7 +45,9 @@ const SelectField = ({
       onChange={onChange}
       className={`w-full p-2 pl-4 pr-10 border rounded-full text-xs appearance-none text-gray-400
                 ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
-                ${error ? "border-red-500" : "border-gray-300"}`}
+                ${error ? "border-red-500" : "border-gray-300"}
+                focus:!border-secondary focus:!ring-1 focus:!ring-primary outline-none
+              `}
       required={required}
       disabled={disabled}
     >
