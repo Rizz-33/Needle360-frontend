@@ -24,7 +24,11 @@ const Signup = () => {
   });
 
   const handleChange = (e) => {
-    setValues({ ...values, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      [name]: value,
+    }));
   };
 
   const handleSubmit = (formValues) => {
@@ -42,7 +46,7 @@ const Signup = () => {
       </div>
       <div className="w-full md:w-1/2 p-4 pr-24">
         <Form
-          formType={"customerSignup"}
+          formType={"signup"}
           values={values}
           onChange={handleChange}
           onSubmit={handleSubmit}
