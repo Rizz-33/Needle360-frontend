@@ -10,6 +10,7 @@ const Login = () => {
 
   const [errors, setErrors] = useState({});
   const [disabled, setDisabled] = useState({});
+  const [roleType, setRoleType] = useState(1);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -17,6 +18,11 @@ const Login = () => {
       ...prevValues,
       [name]: value,
     }));
+  };
+
+  const handleRoleTypeChange = (newRoleType) => {
+    setRoleType(newRoleType);
+    // You can perform additional actions based on roleType change here
   };
 
   const handleSubmit = (formValues) => {
@@ -41,9 +47,22 @@ const Login = () => {
           errors={errors}
           disabled={disabled}
           button="Get Started"
-          heading1={headingConfigs.customerLogin.heading1}
-          heading2={headingConfigs.customerLogin.heading2}
-          footerConfig={footerConfigs.customerLogin}
+          heading1={
+            roleType === 1
+              ? headingConfigs.customerLogin.heading1
+              : headingConfigs.tailorLogin.heading1
+          }
+          heading2={
+            roleType === 1
+              ? headingConfigs.customerLogin.heading2
+              : headingConfigs.tailorLogin.heading2
+          }
+          footerConfig={
+            roleType === 1
+              ? footerConfigs.customerLogin
+              : footerConfigs.tailorLogin
+          }
+          onRoleTypeChange={handleRoleTypeChange}
         />
       </div>
     </div>

@@ -22,6 +22,7 @@ const Signup = () => {
     // Example: Set fields you want to disable/hide
     // bankDetails: true,
   });
+  const [roleType, setRoleType] = useState(1);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -29,6 +30,11 @@ const Signup = () => {
       ...prevValues,
       [name]: value,
     }));
+  };
+
+  const handleRoleTypeChange = (newRoleType) => {
+    setRoleType(newRoleType);
+    // You can perform additional actions based on roleType change here
   };
 
   const handleSubmit = (formValues) => {
@@ -53,9 +59,22 @@ const Signup = () => {
           errors={errors}
           disabled={disabled}
           button="Get Started"
-          heading1={headingConfigs.customerSignup.heading1}
-          heading2={headingConfigs.customerSignup.heading2}
-          footerConfig={footerConfigs.customerSignup}
+          heading1={
+            roleType === 1
+              ? headingConfigs.customerSignup.heading1
+              : headingConfigs.tailorSignup.heading1
+          }
+          heading2={
+            roleType === 1
+              ? headingConfigs.customerSignup.heading2
+              : headingConfigs.tailorSignup.heading2
+          }
+          footerConfig={
+            roleType === 1
+              ? footerConfigs.customerSignup
+              : footerConfigs.tailorSignup
+          }
+          onRoleTypeChange={handleRoleTypeChange}
         />
       </div>
     </div>
