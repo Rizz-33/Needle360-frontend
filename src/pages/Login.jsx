@@ -1,27 +1,15 @@
 import React, { useState } from "react";
-import Form from "../../components/Form";
-import { footerConfigs, headingConfigs } from "../../configs/Form.configs";
+import Form from "../components/Form";
+import { footerConfigs, headingConfigs } from "../configs/Form.configs";
 
-const Signup = () => {
+const Login = () => {
   const [values, setValues] = useState({
-    name: "",
     email: "",
     password: "",
-    confirmPassword: "",
-    contactNumber: "",
-    country: "",
-    province: "",
-    city: "",
-    postalCode: "",
-    streetAddress: "",
-    bankDetails: "",
   });
 
   const [errors, setErrors] = useState({});
-  const [disabled, setDisabled] = useState({
-    // Example: Set fields you want to disable/hide
-    // bankDetails: true,
-  });
+  const [disabled, setDisabled] = useState({});
 
   const handleChange = (e) => {
     setValues({ ...values, [e.target.name]: e.target.value });
@@ -36,26 +24,26 @@ const Signup = () => {
       <div className="w-1/2 hidden md:block">
         <img
           src="/api/placeholder/800/600"
-          alt="Signup"
+          alt="Login"
           className="w-full h-full object-cover"
         />
       </div>
-      <div className="w-full md:w-1/2 p-4 pr-24">
+      <div className="w-full md:w-1/2 p-4 mt-9 pr-24">
         <Form
-          formType={"customerSignup"}
+          formType={"customerLogin"}
           values={values}
           onChange={handleChange}
           onSubmit={handleSubmit}
           errors={errors}
           disabled={disabled}
           button="Get Started"
-          heading1={headingConfigs.customerSignup.heading1}
-          heading2={headingConfigs.customerSignup.heading2}
-          footerConfig={footerConfigs.customerSignup}
+          heading1={headingConfigs.customerLogin.heading1}
+          heading2={headingConfigs.customerLogin.heading2}
+          footerConfig={footerConfigs.customerLogin}
         />
       </div>
     </div>
   );
 };
 
-export default Signup;
+export default Login;
