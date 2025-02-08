@@ -22,8 +22,8 @@ const Signup = () => {
   const { signup, error, isLoading } = useAuthStore();
   const navigate = useNavigate();
 
-  const [errors, setErrors] = useState({});
-  const [disabled, setDisabled] = useState({
+  const [errors] = useState({});
+  const [disabled] = useState({
     // Example: Set fields you want to disable/hide
     // bankDetails: true,
   });
@@ -42,9 +42,7 @@ const Signup = () => {
     // You can perform additional actions based on roleType change here
   };
 
-  const handleSubmit = async (formValues) => {
-    e.preventDefault();
-
+  const handleSubmit = async (e, formValues) => {
     try {
       await signup(formValues);
       navigate("/verify-email");
