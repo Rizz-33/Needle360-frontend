@@ -26,6 +26,7 @@ const InputField = ({
               `}
       required={required}
       disabled={disabled}
+      data-role-type={roleType}
     />
     {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
   </div>
@@ -54,6 +55,7 @@ const SelectField = ({
               `}
       required={required}
       disabled={disabled}
+      data-role-type={roleType}
     >
       <option value="">{`Select ${name}`}</option>
       {options.map((option) => (
@@ -93,11 +95,17 @@ const Form = ({
   heading1,
   heading2,
   footerConfig,
+  onRoleTypeChange,
 }) => {
   const [roleType, setRoleType] = useState(1);
 
   const toggleRoleType = () => {
-    setRoleType((prevRoleType) => (prevRoleType === 1 ? 4 : 1));
+    const newRoleType = roleType === 1 ? 4 : 1;
+    setRoleType(newRoleType);
+    // Notify parent component of roleType change
+    if (onRoleTypeChange) {
+      onRoleTypeChange(newRoleType);
+    }
   };
 
   // Default fields configuration
@@ -349,7 +357,7 @@ const Form = ({
 
         {fields.map((fieldGroup, index) => (
           <React.Fragment key={index}>
-            {renderFieldGroup(fieldGroup)}
+            {renderFieldGroup({ ...fieldGroup, roleType })}
           </React.Fragment>
         ))}
 
