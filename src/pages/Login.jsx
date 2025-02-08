@@ -12,7 +12,11 @@ const Login = () => {
   const [disabled, setDisabled] = useState({});
 
   const handleChange = (e) => {
-    setValues({ ...values, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      [name]: value,
+    }));
   };
 
   const handleSubmit = (formValues) => {
@@ -30,7 +34,7 @@ const Login = () => {
       </div>
       <div className="w-full md:w-1/2 p-4 mt-9 pr-24">
         <Form
-          formType={"customerLogin"}
+          formType={"login"}
           values={values}
           onChange={handleChange}
           onSubmit={handleSubmit}
