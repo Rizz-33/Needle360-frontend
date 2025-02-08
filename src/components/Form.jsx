@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useAuthStore } from "../store/Auth.store";
 
 const InputField = ({
   type,
@@ -98,6 +99,8 @@ const Form = ({
   onRoleTypeChange,
 }) => {
   const [roleType, setRoleType] = useState(1);
+
+  const { isLoading } = useAuthStore();
 
   const toggleRoleType = () => {
     const newRoleType = roleType === 1 ? 4 : 1;
@@ -368,6 +371,7 @@ const Form = ({
           className={
             "w-full p-2 rounded-full hover:opacity-90 transition duration-300 text-xs text-white bg-primary hover:bg-secondary"
           }
+          disabled={isLoading}
         >
           {button}
         </button>
