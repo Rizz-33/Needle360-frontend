@@ -1,5 +1,11 @@
 export const roleTypes = {
-  customer: "customer" = 1,
-  tailor: "tailor" = 4,
-  admin: "admin" = 9,
+  customer: "user",
+  tailor: "tailor-shop-owner",
+  admin: "admin",
+};
+
+export const roleTypeNumbers = {
+  customer: 1,
+  tailor: 2,
+  admin: 3,
 };
