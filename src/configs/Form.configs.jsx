@@ -16,7 +16,7 @@ export const footerConfigs = {
     },
     alternateSignup: {
       text: "Tailor shop?",
-      link: "/tailor-signup",
+      link: "/signup",
       linkText: "Request to sign up as a Tailor Shop",
     },
   },
@@ -37,8 +37,50 @@ export const footerConfigs = {
     },
     alternateSignup: {
       text: "Tailor shop?",
-      link: "/tailor-signup",
+      link: "/signup",
       linkText: "Request to sign up as a Tailor Shop",
+    },
+  },
+  tailorSignup: {
+    loginSignupRedirect: {
+      text: "Already have an account?",
+      link: "/login",
+      linkText: "Login",
+    },
+    terms: {
+      text: "By signing up, you agree to our",
+      link: "/terms",
+      linkText: "Terms of Service",
+    },
+    privacy: {
+      link: "/privacy",
+      linkText: "Privacy Policy",
+    },
+    alternateSignup: {
+      text: "Customer?",
+      link: "/signup",
+      linkText: "Sign up as a Customer",
+    },
+  },
+  tailorLogin: {
+    loginSignupRedirect: {
+      text: "Don't have an account?",
+      link: "/signup",
+      linkText: "Signup",
+    },
+    terms: {
+      text: "By signing up, you agree to our",
+      link: "/terms",
+      linkText: "Terms of Service",
+    },
+    privacy: {
+      link: "/privacy",
+      linkText: "Privacy Policy",
+    },
+    alternateSignup: {
+      text: "Customer?",
+      link: "/signup",
+      linkText: "Sign up as a Customer",
     },
   },
 };
@@ -54,5 +96,15 @@ export const headingConfigs = {
     heading1: "Welcome Back to our platform!",
     heading2:
       "Log in to your account to connect with tailors or manage your services.",
+  },
+  tailorSignup: {
+    heading1: "Ready to grow your business?",
+    heading2:
+      "Sign up to create your tailor shop profile, list your services, and connect with customers.",
+  },
+  tailorLogin: {
+    heading1: "Welcome Back to our platform!",
+    heading2:
+      "Log in to your account to manage your tailor shop or connect with customers.",
   },
 };
