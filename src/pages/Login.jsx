@@ -14,7 +14,7 @@ const Login = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormValues((prevValues) => ({
+    setValues((prevValues) => ({
       ...prevValues,
       [name]: value,
     }));

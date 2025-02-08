@@ -20,7 +20,6 @@ const Signup = () => {
   });
 
   const { signup, error, isLoading } = useAuthStore();
-  const [formValues, setFormValues] = useState({});
   const navigate = useNavigate();
 
   const [errors, setErrors] = useState({});
@@ -32,7 +31,7 @@ const Signup = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormValues((prevValues) => ({
+    setValues((prevValues) => ({
       ...prevValues,
       [name]: value,
     }));
