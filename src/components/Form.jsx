@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 const InputField = ({
   type,
@@ -91,6 +91,12 @@ const Form = ({
   heading2,
   footerConfig,
 }) => {
+  const [roleType, setRoleType] = useState(1);
+
+  const toggleRoleType = () => {
+    setRoleType((prevRoleType) => (prevRoleType === 1 ? 4 : 1));
+  };
+
   // Default fields configuration
   const defaultFields = {
     customerSignup: [
@@ -365,6 +371,7 @@ const Form = ({
             <a
               href={footerConfig.alternateSignup.link}
               className="text-primary hover:underline"
+              onClick={toggleRoleType}
             >
               {footerConfig.alternateSignup.linkText}
             </a>
