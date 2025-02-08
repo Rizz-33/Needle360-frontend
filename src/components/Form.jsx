@@ -9,6 +9,7 @@ const InputField = ({
   required,
   disabled,
   error,
+  roleType,
 }) => (
   <div className="w-full">
     <input
@@ -20,7 +21,8 @@ const InputField = ({
       className={`w-full p-2 pl-4 pr-4 border rounded-full text-xs 
                 ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
                 ${error ? "border-red-500" : "border-gray-300"}
-                focus:!border-secondary focus:!ring-1 focus:!ring-primary outline-none
+                border-gray-300 focus:!ring-primary
+                focus:!border-secondary focus:!ring-1 outline-none
               `}
       required={required}
       disabled={disabled}
@@ -37,6 +39,7 @@ const SelectField = ({
   required,
   disabled,
   error,
+  roleType,
 }) => (
   <div className="relative w-full">
     <select
@@ -46,7 +49,8 @@ const SelectField = ({
       className={`w-full p-2 pl-4 pr-10 border rounded-full text-xs appearance-none text-gray-400
                 ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
                 ${error ? "border-red-500" : "border-gray-300"}
-                focus:!border-secondary focus:!ring-1 focus:!ring-primary outline-none
+                border-gray-300 focus:!ring-primary
+                focus:!border-secondary focus:!ring-1 outline-none
               `}
       required={required}
       disabled={disabled}
@@ -59,10 +63,9 @@ const SelectField = ({
       ))}
     </select>
 
-    {/* Custom dropdown icon */}
     <span className="absolute right-0 pr-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
       <svg
-        className="w-4 h-4 text-gray-400"
+        className={"text-gray-400"}
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 20 20"
         fill="currentColor"
@@ -99,11 +102,12 @@ const Form = ({
 
   // Default fields configuration
   const defaultFields = {
-    customerSignup: [
+    signup: [
       {
-        name: "name",
+        name: roleType === 1 ? "name" : "businessName",
         type: "text",
-        placeholder: "Enter your name",
+        placeholder:
+          roleType === 1 ? "Enter your name" : "Enter your business name",
         required: true,
       },
       {
@@ -202,8 +206,31 @@ const Form = ({
           },
         ],
       },
-    ],
-    customerLogin: [
+    ].concat(
+      roleType === 4
+        ? [
+            {
+              name: "businessDetails-group",
+              gridCols: 2,
+              fields: [
+                {
+                  name: "registrationNumber",
+                  type: "text",
+                  placeholder: "Enter your registration number",
+                  required: true,
+                },
+                {
+                  name: "taxId",
+                  type: "text",
+                  placeholder: "Enter your tax ID",
+                  required: true,
+                },
+              ],
+            },
+          ]
+        : []
+    ),
+    login: [
       {
         name: "email",
         type: "email",
@@ -219,12 +246,11 @@ const Form = ({
     ],
   };
 
-  // Use custom fields if provided, otherwise use default fields
-  const fields = customFields || defaultFields[formType];
+  const fields = customFields || defaultFields[formType] || [];
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(values);
+    onSubmit({ ...values, roleType });
   };
 
   const renderField = (field) => {
@@ -239,6 +265,7 @@ const Form = ({
       required: field.required,
       disabled: disabled[field.name] || false,
       error: errors[field.name],
+      roleType,
     };
 
     if (field.type === "select") {
@@ -255,44 +282,42 @@ const Form = ({
   };
 
   const renderFieldGroup = (fieldGroup) => {
-    if (fieldGroup.fields) {
-      const visibleFields = fieldGroup.fields.filter(
-        (subField) => !disabled[subField.name]
-      );
+    // Skip rendering if it's businessDetails-group and roleType is 1
+    if (roleType === 1 && fieldGroup.name === "businessDetails-group") {
+      return null;
+    }
 
-      // If no visible fields in group, return null
-      if (visibleFields.length === 0) return null;
+    if (!fieldGroup.fields) {
+      return <div key={fieldGroup.name}>{renderField(fieldGroup)}</div>;
+    }
 
-      // For password, location, and bank details groups, show in a row if all fields are visible
-      const isPasswordGroup = fieldGroup.name === "password-group";
-      const isLocationGroup = fieldGroup.name === "location-group";
-      const isAddressGroup = fieldGroup.name === "address-group";
-      const isBankDetailsGroup = fieldGroup.name === "bankDetails-group";
+    const visibleFields = fieldGroup.fields.filter(
+      (subField) => !disabled[subField.name]
+    );
 
-      if (
-        (isPasswordGroup ||
-          isLocationGroup ||
-          isBankDetailsGroup ||
-          isAddressGroup) &&
-        visibleFields.length === fieldGroup.gridCols
-      ) {
-        return (
-          <div
-            key={fieldGroup.name}
-            className={`grid ${
-              isBankDetailsGroup ? "grid-cols-3" : "grid-cols-2"
-            } gap-2`}
-          >
-            {visibleFields.map((subField) => (
-              <div key={subField.name}>{renderField(subField)}</div>
-            ))}
-          </div>
-        );
-      }
+    if (visibleFields.length === 0) return null;
 
-      // For other field groups or when only one field is visible
+    const isPasswordGroup = fieldGroup.name === "password-group";
+    const isLocationGroup = fieldGroup.name === "location-group";
+    const isAddressGroup = fieldGroup.name === "address-group";
+    const isBankDetailsGroup = fieldGroup.name === "bankDetails-group";
+    const isBusinessDetailsGroup = fieldGroup.name === "businessDetails-group";
+
+    if (
+      (isPasswordGroup ||
+        isLocationGroup ||
+        isBankDetailsGroup ||
+        isBusinessDetailsGroup ||
+        isAddressGroup) &&
+      visibleFields.length === fieldGroup.gridCols
+    ) {
       return (
-        <div key={fieldGroup.name} className="space-y-3">
+        <div
+          key={fieldGroup.name}
+          className={`grid ${
+            isBankDetailsGroup ? "grid-cols-3" : "grid-cols-2"
+          } gap-2`}
+        >
           {visibleFields.map((subField) => (
             <div key={subField.name}>{renderField(subField)}</div>
           ))}
@@ -300,15 +325,19 @@ const Form = ({
       );
     }
 
-    return <div key={fieldGroup.name}>{renderField(fieldGroup)}</div>;
+    return (
+      <div key={fieldGroup.name} className="space-y-3">
+        {visibleFields.map((subField) => (
+          <div key={subField.name}>{renderField(subField)}</div>
+        ))}
+      </div>
+    );
   };
 
   return (
     <div className={className}>
-      {" "}
       {heading1 && (
-        <h2 className="text-sm font-bold text-left text-primary">
-          {" "}
+        <h2 className={"text-sm font-bold text-left text-primary"}>
           {heading1}
         </h2>
       )}
@@ -318,45 +347,54 @@ const Form = ({
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="p-2" />
 
-        {fields.map(renderFieldGroup)}
+        {fields.map((fieldGroup, index) => (
+          <React.Fragment key={index}>
+            {renderFieldGroup(fieldGroup)}
+          </React.Fragment>
+        ))}
 
         <div className="p-2" />
 
         <button
           type="submit"
-          className="w-full bg-primary text-white p-2 rounded-full hover:bg-secondary transition duration-300 text-xs"
+          className={
+            "w-full p-2 rounded-full hover:opacity-90 transition duration-300 text-xs text-white bg-primary hover:bg-secondary"
+          }
         >
           {button}
         </button>
       </form>
+
       {footerConfig?.loginSignupRedirect && !disabled.loginSignupRedirect && (
         <div className="text-center mt-2">
           <p className="text-xs">
             {footerConfig.loginSignupRedirect.text}{" "}
             <a
               href={footerConfig.loginSignupRedirect.link}
-              className="text-primary hover:underline"
+              className={"text-primary hover:underline"}
             >
               {footerConfig.loginSignupRedirect.linkText}
             </a>
           </p>
         </div>
       )}
+
       <div className="m-5 border-b border-gray-200" />
+
       {footerConfig?.terms && !disabled.terms && (
         <div className="text-center mt-2">
           <p className="text-xs">
             {footerConfig.terms.text}{" "}
             <a
               href={footerConfig.terms.link}
-              className="text-primary hover:underline"
+              className={"text-primary hover:underline"}
             >
               {footerConfig.terms.linkText}
             </a>{" "}
             and{" "}
             <a
               href={footerConfig.privacy.link}
-              className="text-primary hover:underline"
+              className={"text-primary hover:underline"}
             >
               {footerConfig.privacy.linkText}
             </a>
@@ -364,14 +402,18 @@ const Form = ({
           </p>
         </div>
       )}
+
       {footerConfig?.alternateSignup && !disabled.alternateSignup && (
         <div className="text-center mt-2">
           <p className="text-xs">
             {footerConfig.alternateSignup.text}{" "}
             <a
               href={footerConfig.alternateSignup.link}
-              className="text-primary hover:underline"
-              onClick={toggleRoleType}
+              className={"text-primary hover:underline"}
+              onClick={(e) => {
+                e.preventDefault();
+                toggleRoleType();
+              }}
             >
               {footerConfig.alternateSignup.linkText}
             </a>
