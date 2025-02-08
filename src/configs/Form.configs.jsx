@@ -38,7 +38,7 @@ export const footerConfigs = {
     alternateSignup: {
       text: "Tailor shop?",
       link: "/signup",
-      linkText: "Request to sign up as a Tailor Shop",
+      linkText: "Login as a Tailor Shop",
     },
   },
   tailorSignup: {
