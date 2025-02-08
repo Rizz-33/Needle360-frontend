@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Form from "../components/Form";
 import { footerConfigs, headingConfigs } from "../configs/Form.configs";
+import { useAuthStore } from "../store/Auth.store";
 
 const Signup = () => {
   const [values, setValues] = useState({
@@ -16,6 +18,10 @@ const Signup = () => {
     streetAddress: "",
     bankDetails: "",
   });
+
+  const { signup, error, isLoading } = useAuthStore();
+  const [formValues, setFormValues] = useState({});
+  const navigate = useNavigate();
 
   const [errors, setErrors] = useState({});
   const [disabled, setDisabled] = useState({
@@ -37,8 +43,15 @@ const Signup = () => {
     // You can perform additional actions based on roleType change here
   };
 
-  const handleSubmit = (formValues) => {
-    console.log("Form submitted with values:", formValues);
+  const handleSubmit = async (formValues) => {
+    e.preventDefault();
+
+    try {
+      await signup(formValues);
+      navigate("/verify-email");
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -58,7 +71,7 @@ const Signup = () => {
           onSubmit={handleSubmit}
           errors={errors}
           disabled={disabled}
-          button="Get Started"
+          button={isLoading ? "Loading..." : "Sign Up"}
           heading1={
             roleType === 1
               ? headingConfigs.customerSignup.heading1
@@ -76,6 +89,7 @@ const Signup = () => {
           }
           onRoleTypeChange={handleRoleTypeChange}
         />
+        {error && <p className="text-red-500">{error}</p>}
       </div>
     </div>
   );
