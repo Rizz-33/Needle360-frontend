@@ -84,7 +84,7 @@ export const footerConfigs = {
     },
   },
   forgotPassword: {
-    loginRedirect: {
+    loginSignupRedirect: {
       text: "Remembered your password?",
       link: "/login",
       linkText: "Login",
