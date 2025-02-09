@@ -89,6 +89,20 @@ export const footerConfigs = {
       link: "/login",
       linkText: "Login",
     },
+    terms: {
+      text: null,
+      link: null,
+      linkText: null,
+    },
+    privacy: {
+      link: null,
+      linkText: null,
+    },
+    alternateSignup: {
+      text: null,
+      link: null,
+      linkText: null,
+    },
   },
 };
 
