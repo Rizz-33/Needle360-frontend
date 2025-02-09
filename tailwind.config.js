@@ -8,6 +8,7 @@ export default {
         accent: "#181683",
         background: "#FFFFFF",
         secondary: "#D4D3F8",
+        hoverAccent: "#14126E",
       },
       fontFamily: {
         nunito: ["Nunito", "sans-serif"],
