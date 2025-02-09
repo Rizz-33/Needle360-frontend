@@ -83,6 +83,13 @@ export const footerConfigs = {
       linkText: "Sign up as a Customer",
     },
   },
+  forgotPassword: {
+    loginRedirect: {
+      text: "Remembered your password?",
+      link: "/login",
+      linkText: "Login",
+    },
+  },
 };
 
 export const headingConfigs = {
@@ -106,5 +113,9 @@ export const headingConfigs = {
     heading1: "Welcome Back to our platform!",
     heading2:
       "Log in to your account to manage your tailor shop or connect with customers.",
+  },
+  forgotPassword: {
+    heading1: "Forgot your password?",
+    heading2: "Enter your email address to reset your password.",
   },
 };
