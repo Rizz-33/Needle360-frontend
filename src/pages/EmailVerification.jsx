@@ -1,4 +1,3 @@
-import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { CustomButton } from "../components/Button"; // Ensure correct import
 
@@ -15,11 +14,11 @@ export default function EmailVerification() {
   return (
     <div className="flex w-full h-screen justify-center items-center bg-gradient-to-tr from-white via-blue-50 to-blue-100">
       <div className="p-6 rounded-2xl shadow-lg w-96 text-center bg-white">
-        <h2 className="text-xl font-semibold text-blue-600">
+        <h2 className="text-sm font-bold text-left text-primary">
           Verify Your Email
         </h2>
-        <p className="text-gray-500 text-sm mt-2 pb-4">
-          Enter the 6-digit code sent to your email address
+        <p className="text-xs font-light text-left pb-4">
+          Enter the 6-digit code sent to your email address.
         </p>
 
         <div className="flex justify-center gap-2 my-4 pb-4">
@@ -36,11 +35,10 @@ export default function EmailVerification() {
         </div>
 
         <CustomButton
-          text="Button"
+          text="Verify Email"
           color="primary"
           hover_color="hoverAccent"
           variant="filled"
-          iconRight={<ChevronRight />}
           width="w-full"
           height="h-9"
         />
