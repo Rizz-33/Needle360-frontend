@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useAuthStore } from "../store/Auth.store";
+import { CustomButton } from "./Button";
 
 const InputField = ({
   type,
@@ -377,15 +378,15 @@ const Form = ({
 
         <div className="p-2" />
 
-        <button
-          type="submit"
-          className={
-            "w-full p-2 rounded-full hover:opacity-90 transition duration-300 text-xs text-white bg-primary hover:bg-secondary"
-          }
+        <CustomButton
+          text={button}
+          color="primary"
+          hover_color="hoverAccent"
+          variant="filled"
+          width="w-full"
+          height="h-9"
           disabled={isLoading}
-        >
-          {button}
-        </button>
+        />
       </form>
 
       {footerConfig?.loginSignupRedirect && !disabled.loginSignupRedirect && (
