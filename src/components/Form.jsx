@@ -97,6 +97,9 @@ const Form = ({
   heading2,
   footerConfig,
   onRoleTypeChange,
+  showDivider = true,
+  showTerms = true,
+  showAlternateSignup = true,
 }) => {
   const [roleType, setRoleType] = useState(1);
 
@@ -399,9 +402,9 @@ const Form = ({
         </div>
       )}
 
-      <div className="m-5 border-b border-gray-200" />
+      {showDivider && <div className="m-5 border-b border-gray-200" />}
 
-      {footerConfig?.terms && !disabled.terms && (
+      {showTerms && footerConfig?.terms && !disabled.terms && (
         <div className="text-center mt-2">
           <p className="text-xs">
             {footerConfig.terms.text}{" "}
@@ -423,23 +426,25 @@ const Form = ({
         </div>
       )}
 
-      {footerConfig?.alternateSignup && !disabled.alternateSignup && (
-        <div className="text-center mt-2">
-          <p className="text-xs">
-            {footerConfig.alternateSignup.text}{" "}
-            <a
-              href={footerConfig.alternateSignup.link}
-              className={"text-primary hover:underline"}
-              onClick={(e) => {
-                e.preventDefault();
-                toggleRoleType();
-              }}
-            >
-              {footerConfig.alternateSignup.linkText}
-            </a>
-          </p>
-        </div>
-      )}
+      {showAlternateSignup &&
+        footerConfig?.alternateSignup &&
+        !disabled.alternateSignup && (
+          <div className="text-center mt-2">
+            <p className="text-xs">
+              {footerConfig.alternateSignup.text}{" "}
+              <a
+                href={footerConfig.alternateSignup.link}
+                className={"text-primary hover:underline"}
+                onClick={(e) => {
+                  e.preventDefault();
+                  toggleRoleType();
+                }}
+              >
+                {footerConfig.alternateSignup.linkText}
+              </a>
+            </p>
+          </div>
+        )}
     </div>
   );
 };
