@@ -15,6 +15,8 @@ export default function ForgotPassword() {
     setCode(newCode);
   };
 
+  console.log("Footer Config:", footerConfigs.forgotPassword.loginRedirect);
+
   const handleSubmit = (event) => {
     event.preventDefault();
     // Handle form submission logic here
@@ -34,6 +36,9 @@ export default function ForgotPassword() {
           heading1={headingConfigs.forgotPassword.heading1}
           heading2={headingConfigs.forgotPassword.heading2}
           footerConfig={footerConfigs.forgotPassword}
+          showDivider={false}
+          showTerms={false}
+          showAlternateSignup={false}
         />
       </div>
     </div>
