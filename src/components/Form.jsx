@@ -255,6 +255,14 @@ const Form = ({
         required: true,
       },
     ],
+    forgotPassword: [
+      {
+        name: "email",
+        type: "email",
+        placeholder: "Enter your email address",
+        required: true,
+      },
+    ],
   };
 
   const fields = customFields || defaultFields[formType] || [];
