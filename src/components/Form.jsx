@@ -385,6 +385,7 @@ const Form = ({
           variant="filled"
           width="w-full"
           height="h-9"
+          type="submit"
           disabled={isLoading}
         />
       </form>
