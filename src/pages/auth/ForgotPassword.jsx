@@ -1,6 +1,6 @@
 import { useState } from "react";
+import { Form } from "react-router-dom";
 import { CustomButton } from "../../components/Button";
-import Form from "../../components/Form";
 import { footerConfigs, headingConfigs } from "../../configs/Form.configs";
 import { useAuthStore } from "../../store/Auth.store";
 
@@ -23,7 +23,7 @@ export default function ForgotPassword() {
     }
   };
 
-  console.log("Footer Config:", footerConfigs.forgotPassword.loginRedirect);
+  console.log("Footer Config:", footerConfig.forgotPassword.loginRedirect);
 
   const handleSubmit = async () => {
     try {
