@@ -11,6 +11,7 @@ const CustomButton = ({
   width = "w-auto",
   height = "h-auto",
   type = "button", // Default type is "button"
+  onClick = () => {}, // Default onClick is an empty function
 }) => {
   const baseStyles =
     "flex items-center justify-center gap-2 transition-all text-xs rounded-full font-medium group";
@@ -43,6 +44,7 @@ const CustomButton = ({
         height
       )}
       disabled={disabled}
+      onClick={onClick} // Add onClick handler here
     >
       {iconLeft && <span>{React.cloneElement(iconLeft, { size: 14 })}</span>}
       {text}
