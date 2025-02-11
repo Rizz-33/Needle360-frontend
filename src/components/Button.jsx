@@ -10,20 +10,32 @@ const CustomButton = ({
   disabled = false,
   width = "w-auto",
   height = "h-auto",
+  type = "button", // Default type is "button"
 }) => {
   const baseStyles =
     "flex items-center justify-center gap-2 transition-all text-xs rounded-full font-medium group";
 
+  const colorClasses = {
+    primary: "bg-primary text-primary border-primary",
+    secondary: "bg-secondary text-secondary border-secondary",
+    accent: "bg-accent text-accent border-accent",
+  };
+
   const variantStyles = {
-    filled: `bg-${color} text-white hover:bg-accent`, // Explicit hover color
-    outlined: `border border-${color} text-${color} hover:bg-secondary`,
-    ghost: `text-${color} hover:bg-secondary`,
-    soft: `bg-${color}-light text-${color} hover:bg-accent`,
+    filled: `${colorClasses[color].split(" ")[0]} text-white hover:bg-accent`, // Explicit hover color
+    outlined: `border ${colorClasses[color].split(" ")[2]} ${
+      colorClasses[color].split(" ")[1]
+    } hover:bg-secondary`,
+    ghost: `${colorClasses[color].split(" ")[1]} hover:bg-secondary`,
+    soft: `${colorClasses[color].split(" ")[0]}-light ${
+      colorClasses[color].split(" ")[1]
+    } hover:bg-accent`,
     disabled: "bg-gray-300 text-gray-500 cursor-not-allowed",
   };
 
   return (
     <button
+      type={type} // Set the button type here
       className={clsx(
         baseStyles,
         variantStyles[disabled ? "disabled" : variant],
