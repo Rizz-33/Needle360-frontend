@@ -7,7 +7,9 @@ import { roleTypeNumbers } from "../configs/User.config";
 // const API_URL = window.env?.REACT_APP_API_URL || "http://localhost:3000";
 
 // Auth.store.jsx
-const API_URL = import.meta.env.API_URL || "http://localhost:4000";
+const BASE_API_URL = `${
+  import.meta.env.API_URL || "http://localhost:4000"
+}/api/auth`;
 
 // Add more axios configuration
 axios.defaults.withCredentials = true;
@@ -55,10 +57,7 @@ export const useAuthStore = create((set) => ({
 
     try {
       set({ isLoading: true });
-      const response = await axios.post(
-        `${API_URL}/api/auth/signup`,
-        mappedValues
-      );
+      const response = await axios.post(`${BASE_API_URL}/signup`, mappedValues);
       set({
         user: response.data.user,
         isAuthenticated: true,
@@ -78,7 +77,7 @@ export const useAuthStore = create((set) => ({
   verifyEmail: async (code) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.post(`${API_URL}/api/auth/verify-email`, {
+      const response = await axios.post(`${BASE_API_URL}/verify-email`, {
         code,
       });
       set({ user: response.data.user, isAuthenticated: true });
@@ -91,6 +90,19 @@ export const useAuthStore = create((set) => ({
       throw error;
     } finally {
       set({ isLoading: false });
+    }
+  },
+
+  checkAuth: async () => {
+    set({ isCheckingAuth: true, error: null });
+    try {
+      const response = await axios.get(`${BASE_API_URL}/check-auth`);
+      set({ user: response.data.user, isAuthenticated: true });
+      return response.data;
+    } catch (error) {
+      set({ error: null, isAuthenticated: false });
+    } finally {
+      set({ isCheckingAuth: false });
     }
   },
 }));
