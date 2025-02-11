@@ -4,8 +4,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import EmailVerification from "./pages/auth/EmailVerification";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import Login from "./pages/auth/Login";
+import ResetPassword from "./pages/auth/ResetPassword";
 import Signup from "./pages/auth/Signup";
-import Cart from "./pages/customers/Cart";
 import Home from "./pages/Home";
 import { useAuthStore } from "./store/Auth.store";
 
@@ -69,7 +69,9 @@ function App() {
         <Route
           path="/reset-password/:token"
           element={
-            <RedirectAuthenticatedUser>{<Cart />}</RedirectAuthenticatedUser>
+            <RedirectAuthenticatedUser>
+              {<ResetPassword />}
+            </RedirectAuthenticatedUser>
           }
         />
       </Routes>
