@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/Auth.store";
 import { CustomButton } from "./Button";
 
@@ -103,7 +104,7 @@ const Form = ({
   showAlternateSignup = true,
 }) => {
   const [roleType, setRoleType] = useState(1);
-
+  const navigate = useNavigate();
   const { isLoading } = useAuthStore();
 
   const toggleRoleType = () => {
@@ -267,6 +268,20 @@ const Form = ({
         required: true,
       },
     ],
+    resetPassword: [
+      {
+        name: "password",
+        type: "password",
+        placeholder: "Enter your new password",
+        required: true,
+      },
+      {
+        name: "confirmPassword",
+        type: "password",
+        placeholder: "Confirm your new password",
+        required: true,
+      },
+    ],
   };
 
   const fields = customFields || defaultFields[formType] || [];
@@ -391,17 +406,35 @@ const Form = ({
       </form>
 
       {footerConfig?.loginSignupRedirect && !disabled.loginSignupRedirect && (
-        <div className="text-center mt-2">
-          <p className="text-xs">
-            {footerConfig.loginSignupRedirect.text}{" "}
-            <a
-              href={footerConfig.loginSignupRedirect.link}
-              className={"text-primary hover:underline"}
-            >
-              {footerConfig.loginSignupRedirect.linkText}
-            </a>
-          </p>
-        </div>
+        <>
+          <div className="mt-2 flex items-right justify-end">
+            {formType === "login" && !disabled.forgotPassword && (
+              <a
+                href={footerConfig.forgotPasswordLink}
+                className={
+                  "text-primary hover:underline text-xs cursor-pointer"
+                }
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate("/forgot-password");
+                }}
+              >
+                Forgot Password?
+              </a>
+            )}
+          </div>
+          <div className="mt-2 flex justify-center items-center">
+            <p className="text-xs">
+              {footerConfig.loginSignupRedirect.text}{" "}
+              <a
+                href={footerConfig.loginSignupRedirect.link}
+                className={"text-primary hover:underline cursor-pointer"}
+              >
+                {footerConfig.loginSignupRedirect.linkText}
+              </a>
+            </p>
+          </div>
+        </>
       )}
 
       {showDivider && <div className="m-5 border-b border-gray-200" />}
@@ -412,14 +445,14 @@ const Form = ({
             {footerConfig.terms.text}{" "}
             <a
               href={footerConfig.terms.link}
-              className={"text-primary hover:underline"}
+              className={"text-primary hover:underline cursor-pointer"}
             >
               {footerConfig.terms.linkText}
             </a>{" "}
             and{" "}
             <a
               href={footerConfig.privacy.link}
-              className={"text-primary hover:underline"}
+              className={"text-primary hover:underline cursor-pointer"}
             >
               {footerConfig.privacy.linkText}
             </a>
@@ -436,7 +469,7 @@ const Form = ({
               {footerConfig.alternateSignup.text}{" "}
               <a
                 href={footerConfig.alternateSignup.link}
-                className={"text-primary hover:underline"}
+                className={"text-primary hover:underline cursor-pointer"}
                 onClick={(e) => {
                   e.preventDefault();
                   toggleRoleType();
