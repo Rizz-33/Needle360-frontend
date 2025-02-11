@@ -1,4 +1,6 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
+import { useNavigate, useParams } from "react-router-dom";
 import Form from "../../components/Form";
 import { headingConfigs } from "../../configs/Form.configs";
 import { useAuthStore } from "../../store/Auth.store";
@@ -7,7 +9,10 @@ export default function ResetPassword() {
   const [values, setValues] = useState({}); // Define values state
   const [errors, setErrors] = useState({}); // Define errors state
 
-  const { resetPassword } = useAuthStore();
+  const { resetPassword, error, isLoading } = useAuthStore();
+
+  const { token } = useParams();
+  const navigate = useNavigate();
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -22,15 +27,24 @@ export default function ResetPassword() {
 
   const handleSubmit = async () => {
     try {
-      await resetPassword(values);
-      setIsSubmitted(true);
+      if (!values.password || !values.confirmPassword) {
+        setErrors({
+          submit: "Please fill in all the fields.",
+        });
+        return;
+      }
+      await resetPassword(token, values.password);
+
+      toast.success(
+        "Password reset successfully!, Redirecting to login page..."
+      );
+
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
     } catch (error) {
       console.error("Error during reset password request:", error);
-      setErrors({
-        submit:
-          error.response?.data?.message ||
-          "Failed to submit. Please try again.",
-      });
+      toast.error("An error occurred during password reset.");
     }
   };
 
@@ -49,6 +63,7 @@ export default function ResetPassword() {
           showTerms={false}
           showAlternateSignup={false}
         />
+        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       </div>
     </div>
   );
