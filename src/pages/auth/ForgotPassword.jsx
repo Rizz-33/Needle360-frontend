@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { CustomButton } from "../components/Button";
-import Form from "../components/Form";
-import { footerConfigs, headingConfigs } from "../configs/Form.configs";
-import { useAuthStore } from "../store/Auth.store";
+import { CustomButton } from "../../components/Button";
+import Form from "../../components/Form";
+import { footerConfigs, headingConfigs } from "../../configs/Form.configs";
+import { useAuthStore } from "../../store/Auth.store";
 
 export default function ForgotPassword() {
   const [values, setValues] = useState({}); // Define values state
