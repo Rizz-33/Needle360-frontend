@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Form from "../components/Form";
 import { footerConfigs, headingConfigs } from "../configs/Form.configs";
+import { useAuthStore } from "../store/Auth.store";
 
 const Login = () => {
   const [values, setValues] = useState({
@@ -11,6 +13,9 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [disabled, setDisabled] = useState({});
   const [roleType, setRoleType] = useState(1);
+
+  const { login, isLoading, error } = useAuthStore();
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -25,8 +30,10 @@ const Login = () => {
     // You can perform additional actions based on roleType change here
   };
 
-  const handleSubmit = (formValues) => {
+  const handleSubmit = async (formValues) => {
     console.log("Form submitted with values:", formValues);
+    await login(formValues.email, formValues.password);
+    navigate("/");
   };
 
   return (
@@ -64,6 +71,9 @@ const Login = () => {
           }
           onRoleTypeChange={handleRoleTypeChange}
         />
+        {error && (
+          <p className="text-red-500 text-sm mt-2 text-center">{error}</p>
+        )}
       </div>
     </div>
   );
