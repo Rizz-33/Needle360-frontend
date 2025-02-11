@@ -1,4 +1,5 @@
 import React from "react";
+import { Toaster } from "react-hot-toast";
 import { Route, Routes } from "react-router-dom";
 import EmailVerification from "./pages/EmailVerification";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -16,6 +17,7 @@ function App() {
         <Route path="/verify-email" element={<EmailVerification />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
       </Routes>
+      <Toaster />
     </div>
   );
 }
