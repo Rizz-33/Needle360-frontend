@@ -112,6 +112,26 @@ export const useAuthStore = create((set) => ({
     }
   },
 
+  forgotPassword: async (email) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.post(`${BASE_API_URL}/forgot-password`, {
+        email,
+      });
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        (error.response?.status === 400
+          ? "Invalid email address"
+          : "An error occurred during forgot password request");
+      set({ error: errorMessage });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
   checkAuth: async () => {
     set({ isCheckingAuth: true, error: null });
     try {
