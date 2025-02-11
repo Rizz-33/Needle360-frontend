@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Form } from "../../components/Form";
+import Form from "../../components/Form";
 import { footerConfigs, headingConfigs } from "../../configs/Form.configs";
 import { useAuthStore } from "../../store/Auth.store";
 
@@ -10,11 +10,11 @@ const Login = () => {
     password: "",
   });
 
-  const [errors, setErrors] = useState({});
-  const [disabled, setDisabled] = useState({});
+  const [errors] = useState({});
+  const [disabled] = useState({});
   const [roleType, setRoleType] = useState(1);
 
-  const { login, isLoading, error } = useAuthStore();
+  const { login, error } = useAuthStore();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
