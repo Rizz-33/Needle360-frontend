@@ -1,12 +1,12 @@
 import React, { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import { Navigate, Route, Routes } from "react-router-dom";
+import EmailVerification from "./pages/auth/EmailVerification";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import Login from "./pages/auth/Login";
+import Signup from "./pages/auth/Signup";
 import Cart from "./pages/customers/Cart";
-import EmailVerification from "./pages/EmailVerification";
-import ForgotPassword from "./pages/ForgotPassword";
 import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
 import { useAuthStore } from "./store/Auth.store";
 
 const ProtectedRoute = ({ children }) => {
@@ -67,8 +67,10 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
         <Route
-          path="/cart"
-          element={<ProtectedRoute>{<Cart />}</ProtectedRoute>}
+          path="/reset-password/:token"
+          element={
+            <RedirectAuthenticatedUser>{<Cart />}</RedirectAuthenticatedUser>
+          }
         />
       </Routes>
       <Toaster />
