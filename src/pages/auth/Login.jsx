@@ -32,8 +32,13 @@ const Login = () => {
 
   const handleSubmit = async (formValues) => {
     console.log("Form submitted with values:", formValues);
-    await login(formValues.email, formValues.password);
-    navigate("/");
+    try {
+      await login(formValues.email, formValues.password);
+      navigate("/");
+    } catch (error) {
+      console.error("Login failed:", error);
+      // Handle the error appropriately here, e.g., show a notification to the user
+    }
   };
 
   return (
