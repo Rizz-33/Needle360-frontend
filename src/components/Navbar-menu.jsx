@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import React, { useState } from "react";
-import { FaChevronDown, FaHeart, FaShoppingCart } from "react-icons/fa";
+import { FaChevronDown, FaRegHeart, FaShoppingBag } from "react-icons/fa";
 
 const transition = {
   type: "spring",
@@ -93,10 +93,10 @@ const NavbarMenu = () => {
           Login
         </motion.a>
         <motion.div whileHover={{ scale: 1.1 }}>
-          <FaHeart className="text-primary cursor-pointer hover:text-hoverAccent" />
+          <FaRegHeart className="text-primary cursor-pointer hover:text-hoverAccent" />
         </motion.div>
         <motion.div whileHover={{ scale: 1.1 }}>
-          <FaShoppingCart className="text-primary cursor-pointer hover:text-hoverAccent text-base" />
+          <FaShoppingBag className="text-primary cursor-pointer hover:text-hoverAccent text-base" />
         </motion.div>
         <div className="border-l border-secondary h-6 mx-2"></div>
         <motion.img
