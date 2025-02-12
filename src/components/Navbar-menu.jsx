@@ -71,7 +71,7 @@ const NavbarMenu = () => {
         />
         <motion.div className="relative pl-8" whileHover={{ scale: 1.1 }}>
           <span className="cursor-pointer text-primary hover:text-hoverAccent flex items-center">
-            Categories <FaChevronDown className="ml-1 text-xs" />
+            Categories <FaChevronDown className="ml-2 text-[10px]" />
           </span>
           {/* Dropdown content can be added here */}
         </motion.div>
