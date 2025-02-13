@@ -7,27 +7,27 @@ export default function HeroSection() {
         {/* Left Content */}
         <div className="text-center md:text-left max-w-lg">
           <div className="flex items-center gap-4">
-            <span className="px-3 py-1 bg-secondary text-primary text-sm font-semibold rounded-full">
-              design
+            <span className="px-3 py-1 bg-secondary text-primary text-xs font-semibold rounded-full">
+              Custom Tailoring
             </span>
             <a
               href="#"
-              className="text-gray-600 text-sm font-medium hover:underline"
+              className="text-gray-600 text-xs font-medium hover:underline"
             >
-              see others design →
+              Explore Designs →
             </a>
           </div>
           <h1 className="mt-6 text-5xl font-bold text-gray-900 leading-tight">
-            A better way to ship <br /> your projects
+            Design, Customize, and Order <br /> Tailored Just for You
           </h1>
-          <p className="mt-4 text-lg text-gray-600">
-            Anim aute id magna aliqua ad ad non deserunt sunt. Qui irure qui
-            lorem cupidatat commodo. Elit sunt amet fugiat veniam occaecat
-            fugiat aliqua.
+          <p className="mt-4 text-sm text-gray-600">
+            Get the perfect fit with our tailor-made clothing platform. Choose
+            from professional tailors, upload your designs, and bring your
+            fashion ideas to life effortlessly.
           </p>
           <div className="mt-6 flex flex-col sm:flex-row gap-4">
             <CustomButton
-              text="Get Started"
+              text="Start Designing"
               color="primary"
               hover_color="hoverAccent"
               variant="filled"
@@ -36,7 +36,7 @@ export default function HeroSection() {
               type="submit"
             />
             <CustomButton
-              text="  Learn More"
+              text="Find a Tailor"
               color="primary"
               hover_color="hoverAccent"
               variant="outlined"
@@ -50,8 +50,8 @@ export default function HeroSection() {
         {/* Right Side Mobile Mockup */}
         <div className="relative w-full max-w-md">
           <img
-            src="/mobile-mockup.png"
-            alt="Mobile UI"
+            src="/tailor-mockup.png"
+            alt="Hero: A tailor working on a sewing machine and a customer"
             className="w-full rounded-2xl shadow-lg"
           />
         </div>
