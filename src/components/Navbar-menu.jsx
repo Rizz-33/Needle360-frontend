@@ -66,7 +66,7 @@ const NavbarMenu = () => {
         <motion.img
           src="/logo-black-full.png"
           alt="Logo"
-          className="h-8 pl-5"
+          className="h-6 pl-5"
           whileHover={{ scale: 1.1 }}
         />
         <motion.div className="relative pl-8" whileHover={{ scale: 1.1 }}>
