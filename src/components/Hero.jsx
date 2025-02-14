@@ -1,5 +1,5 @@
 import { CustomButton } from "./Button";
-import { TypewriterEffect } from "./TypewritterEffect";
+import { TypewriterEffect } from "./TypewriterEffect";
 
 export default function HeroSection() {
   const words = [
@@ -21,7 +21,7 @@ export default function HeroSection() {
       <div className="max-w-7xl w-full px-6 flex flex-col md:flex-row items-center gap-12">
         {/* Left Side Content */}
         <div className="text-center md:text-left max-w-2xl md:pr-12">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center justify-center md:justify-start gap-4">
             <span className="px-3 py-1 bg-secondary text-primary text-xs font-semibold rounded-full">
               Custom Tailoring
             </span>
@@ -32,18 +32,18 @@ export default function HeroSection() {
               Explore Designs →
             </a>
           </div>
-          <h1 className="mt-6 text-4xl font-bold text-gray-900 leading-tight">
+          <h1 className="mt-6 text-2xl md:text-3xl font-bold text-gray-900 leading-tight">
             <span className="inline">
               <TypewriterEffect words={words} />
             </span>
             Tailored Just for You
           </h1>
-          <p className="mt-4 text-sm text-gray-600">
+          <p className="mt-4 text-xs md:text-sm text-gray-600">
             Get the perfect fit with our tailor-made clothing platform. Choose
             from professional tailors, upload your designs, and bring your
             fashion ideas to life effortlessly.
           </p>
-          <div className="mt-6 flex flex-col sm:flex-row gap-4">
+          <div className="mt-6 flex flex-row flex-wrap gap-4 justify-center md:justify-start">
             <CustomButton
               text="Start Designing"
               color="primary"
