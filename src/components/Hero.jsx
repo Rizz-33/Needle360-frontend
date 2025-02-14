@@ -1,11 +1,26 @@
 import { CustomButton } from "./Button";
+import { TypewriterEffect } from "./TypewritterEffect";
 
 export default function HeroSection() {
+  const words = [
+    {
+      text: "Design,",
+    },
+    {
+      text: "Explore,",
+    },
+    {
+      text: "and",
+    },
+    {
+      text: "Order",
+    },
+  ];
   return (
     <section className="w-full h-[90vh] flex items-center justify-center bg-transparent">
       <div className="max-w-7xl w-full px-6 flex flex-col md:flex-row items-center gap-12">
-        {/* Left Content */}
-        <div className="text-center md:text-left max-w-lg">
+        {/* Left Side Content */}
+        <div className="text-center md:text-left max-w-2xl md:pr-12">
           <div className="flex items-center gap-4">
             <span className="px-3 py-1 bg-secondary text-primary text-xs font-semibold rounded-full">
               Custom Tailoring
@@ -17,8 +32,11 @@ export default function HeroSection() {
               Explore Designs →
             </a>
           </div>
-          <h1 className="mt-6 text-5xl font-bold text-gray-900 leading-tight">
-            Design, Customize, and Order <br /> Tailored Just for You
+          <h1 className="mt-6 text-4xl font-bold text-gray-900 leading-tight">
+            <span className="inline">
+              <TypewriterEffect words={words} />
+            </span>
+            Tailored Just for You
           </h1>
           <p className="mt-4 text-sm text-gray-600">
             Get the perfect fit with our tailor-made clothing platform. Choose
@@ -46,9 +64,8 @@ export default function HeroSection() {
             />
           </div>
         </div>
-
         {/* Right Side Mobile Mockup */}
-        <div className="relative w-full max-w-md">
+        <div className="relative w-full max-w-sm">
           <img
             src="/tailor-mockup.png"
             alt="Hero: A tailor working on a sewing machine and a customer"
