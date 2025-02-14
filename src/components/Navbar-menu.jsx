@@ -2,7 +2,12 @@
 
 import { motion } from "framer-motion";
 import React, { useState } from "react";
-import { FaChevronDown, FaRegHeart, FaShoppingBag } from "react-icons/fa";
+import {
+  FaChevronDown,
+  FaRegHeart,
+  FaSearch,
+  FaShoppingBag,
+} from "react-icons/fa";
 
 const transition = {
   type: "spring",
@@ -17,7 +22,7 @@ const MenuItem = ({ setActive, active, item, children }) => (
   <div onMouseEnter={() => setActive(item)} className="relative">
     <motion.p
       transition={{ duration: 0.3 }}
-      className="cursor-pointer text-primary hover:text-hoverAccent px-4" // Increased padding
+      className="cursor-pointer text-primary hover:text-hoverAccent px-2 sm:px-4 text-xs sm:text-sm"
     >
       {item}
     </motion.p>
@@ -46,14 +51,17 @@ const MenuItem = ({ setActive, active, item, children }) => (
 const Menu = ({ setActive, active, children }) => (
   <nav
     onMouseLeave={() => setActive(null)}
-    className="relative z-50 overflow-visible rounded-full border border-transparent dark:border-primary/[0.2] bg-white shadow-input flex justify-between items-center px-8 py-4 text-sm w-full max-w-screen-xl mx-auto shadow-lg shadow-gray-100"
+    className="relative z-50 overflow-visible rounded-full border border-transparent dark:border-primary/[0.2] bg-white shadow-input flex justify-between items-center px-2 py-1 sm:px-8 sm:py-4 text-xs sm:text-sm w-full max-w-screen-xl mx-auto shadow-lg shadow-gray-100"
   >
     {children}
   </nav>
 );
 
 const HoveredLink = ({ children, href }) => (
-  <a href={href} className="text-primary hover:text-hoverAccent px-2 text-xs">
+  <a
+    href={href}
+    className="text-primary hover:text-hoverAccent px-1 sm:px-2 text-xs sm:text-sm"
+  >
     {children}
   </a>
 );
@@ -62,47 +70,50 @@ const NavbarMenu = () => {
   const [active, setActive] = useState(null);
   return (
     <Menu setActive={setActive} active={active}>
-      <div className="flex items-center space-x-10">
+      <div className="flex items-center space-x-2 sm:space-x-10">
         <motion.img
           src="/logo-black-full.png"
           alt="Logo"
-          className="h-6 pl-5"
+          className="h-4 sm:h-6 pl-1 sm:pl-5"
           whileHover={{ scale: 1.1 }}
         />
-        <motion.div className="relative pl-8" whileHover={{ scale: 1.1 }}>
+        <motion.div className="relative pl-5" whileHover={{ scale: 1.1 }}>
           <span className="cursor-pointer text-primary hover:text-hoverAccent flex items-center">
             Categories <FaChevronDown className="ml-2 text-[10px]" />
           </span>
           {/* Dropdown content can be added here */}
         </motion.div>
       </div>
-      <div className="flex-grow mx-6">
+      <div className="flex-grow mx-1 sm:mx-6">
         <motion.input
           type="text"
           placeholder="Search..."
-          className="w-full px-4 py-2 border border-secondary rounded-full focus:border-primary hover:border-primary focus:outline-none"
+          className="hidden sm:block w-full px-1 py-1 sm:px-4 sm:py-2 border border-secondary rounded-full focus:border-primary hover:border-primary focus:outline-none"
           whileHover={{ scale: 1.02 }}
         />
+        <motion.div className="block sm:hidden">
+          <FaSearch className="text-primary cursor-pointer hover:text-hoverAccent mx-2" />
+        </motion.div>
       </div>
-      <div className="flex items-center space-x-4 pr-7">
+      <div className="flex items-center space-x-1 sm:space-x-4 pr-1 sm:pr-7">
         <motion.a
           href="/login"
-          className="text-primary hover:text-hoverAccent px-5"
+          className="text-primary hover:text-hoverAccent px-1 sm:px-5 text-xs sm:text-sm"
           whileHover={{ scale: 1.1 }}
         >
           Login
         </motion.a>
         <motion.div whileHover={{ scale: 1.1 }}>
-          <FaRegHeart className="text-primary cursor-pointer hover:text-hoverAccent" />
+          <FaRegHeart className="text-primary cursor-pointer hover:text-hoverAccent text-xs sm:text-base" />
         </motion.div>
         <motion.div whileHover={{ scale: 1.1 }}>
-          <FaShoppingBag className="text-primary cursor-pointer hover:text-hoverAccent text-base" />
+          <FaShoppingBag className="text-primary cursor-pointer hover:text-hoverAccent text-xs sm:text-base" />
         </motion.div>
-        <div className="border-l border-secondary h-6 mx-2"></div>
+        <div className="border-l border-secondary h-4 sm:h-6 mx-1 sm:mx-2"></div>
         <motion.img
           src="/logo-black-short.png"
           alt="Logo"
-          className="h-6 pl-5"
+          className="h-4 sm:h-6 pl-1 sm:pl-5"
           whileHover={{ scale: 1.3 }}
         />
       </div>
