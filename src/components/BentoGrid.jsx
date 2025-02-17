@@ -51,7 +51,7 @@ const BentoGrid = () => {
   ];
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-4 bg-white py-24">
+    <div className="w-full max-w-7xl mx-auto p-4 py-24">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[200px]">
         {cards.map((card, index) => (
           <div
