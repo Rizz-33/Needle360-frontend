@@ -132,4 +132,8 @@ export const headingConfigs = {
     heading1: "Forgot your password?",
     heading2: "Enter your email address to reset your password.",
   },
+  resetPassword: {
+    heading1: "Reset your password",
+    heading2: "Enter a new password for your account.",
+  },
 };

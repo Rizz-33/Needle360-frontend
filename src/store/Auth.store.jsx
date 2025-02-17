@@ -7,7 +7,9 @@ import { roleTypeNumbers } from "../configs/User.config";
 // const API_URL = window.env?.REACT_APP_API_URL || "http://localhost:3000";
 
 // Auth.store.jsx
-const API_URL = import.meta.env.API_URL || "http://localhost:4000";
+const BASE_API_URL = `${
+  import.meta.env.API_URL || "http://localhost:4000"
+}/api/auth`;
 
 // Add more axios configuration
 axios.defaults.withCredentials = true;
@@ -55,10 +57,7 @@ export const useAuthStore = create((set) => ({
 
     try {
       set({ isLoading: true });
-      const response = await axios.post(
-        `${API_URL}/api/auth/signup`,
-        mappedValues
-      );
+      const response = await axios.post(`${BASE_API_URL}/signup`, mappedValues);
       set({
         user: response.data.user,
         isAuthenticated: true,
@@ -72,6 +71,113 @@ export const useAuthStore = create((set) => ({
       throw error;
     } finally {
       set({ isLoading: false });
+    }
+  },
+
+  login: async (email, password) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.post(`${BASE_API_URL}/login`, {
+        email,
+        password,
+      });
+      set({ user: response.data.user, isAuthenticated: true, error: null });
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "An error occurred during login";
+      set({ error: errorMessage });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  logout: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      await axios.post(`${BASE_API_URL}/logout`);
+      set({ user: null, isAuthenticated: false, error: null });
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "An error occurred during logout";
+      set({ error: errorMessage });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  verifyEmail: async (code) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.post(`${BASE_API_URL}/verify-email`, {
+        code,
+      });
+      set({ user: response.data.user, isAuthenticated: true });
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        "An error occurred during email verification";
+      set({ error: errorMessage });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  forgotPassword: async (email) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.post(`${BASE_API_URL}/forgot-password`, {
+        email,
+      });
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        (error.response?.status === 400
+          ? "Invalid email address"
+          : "An error occurred during forgot password request");
+      set({ error: errorMessage });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  resetPassword: async (token, password) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.post(
+        `${BASE_API_URL}/reset-password/${token}`,
+        {
+          password,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        "An error occurred during password reset";
+      set({ error: errorMessage });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  checkAuth: async () => {
+    set({ isCheckingAuth: true, error: null });
+    try {
+      const response = await axios.get(`${BASE_API_URL}/check-auth`);
+      set({ user: response.data.user, isAuthenticated: true });
+      return response.data;
+    } catch (error) {
+      set({ error: null, isAuthenticated: false });
+    } finally {
+      set({ isCheckingAuth: false });
     }
   },
 }));

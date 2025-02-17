@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import Form from "../components/Form";
-import { footerConfigs, headingConfigs } from "../configs/Form.configs";
+import { useNavigate } from "react-router-dom";
+import Form from "../../components/Form";
+import { footerConfigs, headingConfigs } from "../../configs/Form.configs";
+import { useAuthStore } from "../../store/Auth.store";
 
 const Login = () => {
   const [values, setValues] = useState({
@@ -8,9 +10,12 @@ const Login = () => {
     password: "",
   });
 
-  const [errors, setErrors] = useState({});
-  const [disabled, setDisabled] = useState({});
+  const [errors] = useState({});
+  const [disabled] = useState({});
   const [roleType, setRoleType] = useState(1);
+
+  const { login, error } = useAuthStore();
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -25,8 +30,15 @@ const Login = () => {
     // You can perform additional actions based on roleType change here
   };
 
-  const handleSubmit = (formValues) => {
+  const handleSubmit = async (formValues) => {
     console.log("Form submitted with values:", formValues);
+    try {
+      await login(formValues.email, formValues.password);
+      navigate("/");
+    } catch (error) {
+      console.error("Login failed:", error);
+      // Handle the error appropriately here, e.g., show a notification to the user
+    }
   };
 
   return (
@@ -64,6 +76,9 @@ const Login = () => {
           }
           onRoleTypeChange={handleRoleTypeChange}
         />
+        {error && (
+          <p className="text-red-500 text-sm mt-2 text-center">{error}</p>
+        )}
       </div>
     </div>
   );
