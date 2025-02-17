@@ -2,7 +2,9 @@
 
 import React from "react";
 import BentoGrid from "../components/BentoGrid";
+import { HeroScrollDemo } from "../components/CallToAction";
 import FeaturedTailorsCarousel from "../components/FeaturedTailors";
+import Footer from "../components/Footer";
 import HeroSection from "../components/Hero";
 import HowItWorks from "../components/HowItWorks";
 import LongMarquee from "../components/LongMarquee";
@@ -20,6 +22,8 @@ const Home = () => {
             <BentoGrid />
             <FeaturedTailorsCarousel />
             <HowItWorks />
+            <HeroScrollDemo />
+            <Footer />
           </div>
         </div>
       </div>
