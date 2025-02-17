@@ -16,9 +16,10 @@ export default function HeroSection() {
       text: "Order",
     },
   ];
+
   return (
-    <section className="w-full h-[90vh] flex items-center justify-center bg-transparent">
-      <div className="max-w-7xl w-full px-6 flex flex-col md:flex-row items-center gap-12">
+    <section className="w-full min-h-max py-16">
+      <div className="max-w-7xl mx-auto w-full px-6 flex flex-col md:flex-row items-center gap-12">
         {/* Left Side Content */}
         <div className="text-center md:text-left max-w-2xl md:pr-12">
           <div className="flex items-center justify-center md:justify-start gap-4">

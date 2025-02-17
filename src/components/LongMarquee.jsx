@@ -2,7 +2,7 @@ import React from "react";
 
 const LogoMarquee = () => {
   return (
-    <div className="w-full overflow-hidden bg-transparent py-4">
+    <div className="w-full overflow-hidden bg-transparent pt-12">
       <div className="flex items-center gap-20 marquee">
         <div className="flex space-x-10">
           <img
