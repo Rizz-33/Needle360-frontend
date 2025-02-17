@@ -26,12 +26,15 @@ export default function HeroSection() {
             <span className="px-3 py-1 bg-secondary text-primary text-xs font-semibold rounded-full">
               Custom Tailoring
             </span>
-            <a
-              href="#"
-              className="text-gray-600 text-xs font-medium hover:underline"
-            >
-              Explore Designs →
-            </a>
+            <CustomButton
+              text="Explore Designs"
+              color="black"
+              variant="text"
+              hover_color="hoverAccent"
+              width="w-24"
+              type="submit"
+              onClick={() => (window.location.href = "/design")}
+            />
           </div>
           <h1 className="mt-6 text-2xl md:text-3xl font-bold text-gray-900 leading-tight">
             <span className="inline">
@@ -53,6 +56,7 @@ export default function HeroSection() {
               width="w-36"
               height="h-9"
               type="submit"
+              onClick={() => (window.location.href = "/design")}
             />
             <CustomButton
               text="Find a Tailor"
