@@ -3,40 +3,50 @@ import React from "react";
 const BentoGrid = () => {
   const cards = [
     {
-      title: "The Dawn of Innovation",
-      description: "Explore the birth of groundbreaking ideas and inventions.",
-      className: "col-span-1 row-span-1",
-    },
-    {
-      title: "The Digital Revolution",
-      description: "Dive into the transformative power of technology.",
-      className: "col-span-1 row-span-1",
-    },
-    {
-      title: "The Art of Design",
-      description: "Discover the beauty of thoughtful and functional design.",
-      className: "col-span-1 row-span-1",
-    },
-    {
-      title: "The Power of Communication",
+      title: "Who We Are",
       description:
-        "Understand the impact of effective communication in our lives.",
-      className: "col-span-2 row-span-1",
+        "A tailor shop network revolutionizing custom fashion in Sri Lanka.",
+      className: "col-span-1 row-span-1 bg-[#F0F0FF]",
+      image: "/images/who-we-are.svg",
     },
     {
-      title: "The Pursuit of Knowledge",
-      description: "Join the quest for understanding and enlightenment.",
-      className: "col-span-1 row-span-1",
+      title: "Our Mission",
+      description:
+        "Empowering tailors and customers with a seamless online platform for customized clothing.",
+      className: "col-span-1 row-span-1 bg-[#E8E8FF]",
     },
     {
-      title: "The Joy of Creation",
-      description: "Experience the thrill of bringing ideas to life.",
-      className: "col-span-1 row-span-1",
+      title: "Order Management",
+      description:
+        "Enabling tailor shops to manage, track, and fulfill customer orders efficiently.",
+      className: "col-span-1 row-span-1 bg-[#D8D8FF]",
+      image: "/images/order-management.svg",
     },
     {
-      title: "The Spirit of Adventure",
-      description: "Embark on exciting journeys and thrilling discoveries.",
-      className: "col-span-2 row-span-1",
+      title: "Design & Customization",
+      description:
+        "Customers can design garments, get feedback, and connect with the right tailor shop.",
+      className: "col-span-2 row-span-1 bg-[#E8E8FF]",
+      image: "/images/design-customization.svg",
+    },
+    {
+      title: "Tailor Shop Network",
+      description:
+        "Multiple tailor shops can register, receive orders, and grow their business online.",
+      className: "col-span-1 row-span-1 bg-[#F0F0FF]",
+    },
+    {
+      title: "Customer Creativity",
+      description:
+        "Customers can upload clothing ideas and receive tailor recommendations.",
+      className: "col-span-1 row-span-1 bg-[#F8F8FF]",
+    },
+    {
+      title: "A Unique Platform",
+      description:
+        "Pioneering a tailor shop-focused e-commerce experience in Sri Lanka.",
+      className: "col-span-2 row-span-1 bg-[#D8D8FF]",
+      image: "/images/a-unique-platform.svg",
     },
   ];
 
@@ -46,8 +56,15 @@ const BentoGrid = () => {
         {cards.map((card, index) => (
           <div
             key={index}
-            className={`${card.className} relative group rounded-3xl bg-gray-100 p-4 transition-all duration-300 hover:transform hover:scale-[1.02]`}
+            className={`${card.className} relative group rounded-3xl p-4 transition-all duration-300 hover:transform hover:scale-[1.02]`}
           >
+            {card.image && (
+              <img
+                src={card.image}
+                alt={card.title}
+                className="absolute top-4 right-4 w-16 h-16 opacity-50"
+              />
+            )}
             <div className="relative h-full flex flex-col justify-end">
               <h3 className="text-xl font-bold text-gray-900 mb-2">
                 {card.title}
