@@ -100,7 +100,7 @@ const NavbarMenu = () => {
   return (
     <nav
       onMouseLeave={() => setActive(null)}
-      className="relative z-50 overflow-visible rounded-full border border-transparent dark:border-primary/[0.2] bg-white shadow-input flex justify-between items-center px-2 py-1 sm:px-8 sm:py-4 text-xs sm:text-sm w-full max-w-screen-xl mx-auto shadow-lg shadow-gray-100"
+      className="fixed top-0 left-0 right-0 z-50 overflow-visible rounded-full border border-transparent dark:border-primary/[0.2] bg-white shadow-input flex justify-between items-center px-2 py-1 sm:px-8 sm:py-4 text-xs sm:text-sm w-full max-w-screen-xl mx-auto shadow-lg shadow-gray-100"
     >
       <div className="flex items-center space-x-2 sm:space-x-10">
         <motion.img
