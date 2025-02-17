@@ -106,8 +106,9 @@ const NavbarMenu = () => {
         <motion.img
           src="/logo-black-full.png"
           alt="Logo"
-          className="h-4 sm:h-6 pl-1 sm:pl-5"
+          className="h-4 sm:h-6 pl-1 sm:pl-5 cursor-pointer"
           whileHover={{ scale: 1.1 }}
+          onClick={() => (window.location.href = "/")}
         />
         <motion.div className="relative pl-5" whileHover={{ scale: 1.1 }}>
           <span className="cursor-pointer text-primary hover:text-hoverAccent flex items-center">
@@ -149,8 +150,9 @@ const NavbarMenu = () => {
         <motion.img
           src="/logo-black-short.png"
           alt="Logo"
-          className="h-4 sm:h-6 pl-1 sm:pl-5"
+          className="h-4 sm:h-6 pl-1 sm:pl-5 cursor-pointer"
           whileHover={{ scale: 1.3 }}
+          onClick={() => (window.location.href = "/designs")}
         />
       </div>
     </nav>
