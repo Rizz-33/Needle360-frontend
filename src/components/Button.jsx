@@ -10,33 +10,48 @@ const CustomButton = ({
   disabled = false,
   width = "w-auto",
   height = "h-auto",
-  type = "button", // Default type is "button"
-  onClick = () => {}, // Default onClick is an empty function
+  type = "button",
+  onClick = () => {},
 }) => {
   const baseStyles =
     "flex items-center justify-center gap-2 transition-all text-xs rounded-full font-medium group";
 
+  // Simplified color classes without need for splitting
   const colorClasses = {
-    primary: "bg-primary text-primary border-primary",
-    secondary: "bg-secondary text-secondary border-secondary",
-    accent: "bg-accent text-accent border-accent",
+    primary: {
+      bg: "bg-primary",
+      text: "text-primary",
+      border: "border-primary",
+      light: "bg-primary-light",
+    },
+    secondary: {
+      bg: "bg-secondary",
+      text: "text-secondary",
+      border: "border-secondary",
+      light: "bg-secondary-light",
+    },
+    accent: {
+      bg: "bg-accent",
+      text: "text-accent",
+      border: "border-accent",
+      light: "bg-accent-light",
+    },
   };
 
+  const defaultColor = colorClasses[color] || colorClasses.primary;
+
   const variantStyles = {
-    filled: `${colorClasses[color].split(" ")[0]} text-white hover:bg-accent`, // Explicit hover color
-    outlined: `border ${colorClasses[color].split(" ")[2]} ${
-      colorClasses[color].split(" ")[1]
-    } hover:bg-secondary`,
-    ghost: `${colorClasses[color].split(" ")[1]} hover:bg-secondary`,
-    soft: `${colorClasses[color].split(" ")[0]}-light ${
-      colorClasses[color].split(" ")[1]
-    } hover:bg-accent`,
+    filled: `${defaultColor.bg} text-white hover:bg-accent`,
+    outlined: `border ${defaultColor.border} ${defaultColor.text} hover:bg-secondary`,
+    ghost: `${defaultColor.text} hover:bg-secondary`,
+    soft: `${defaultColor.light} ${defaultColor.text} hover:bg-accent`,
+    text: `${defaultColor.text} bg-transparent hover:underline`,
     disabled: "bg-gray-300 text-gray-500 cursor-not-allowed",
   };
 
   return (
     <button
-      type={type} // Set the button type here
+      type={type}
       className={clsx(
         baseStyles,
         variantStyles[disabled ? "disabled" : variant],
@@ -44,7 +59,7 @@ const CustomButton = ({
         height
       )}
       disabled={disabled}
-      onClick={onClick} // Add onClick handler here
+      onClick={onClick}
     >
       {iconLeft && <span>{React.cloneElement(iconLeft, { size: 14 })}</span>}
       {text}
