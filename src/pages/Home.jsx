@@ -1,17 +1,23 @@
 "use client";
 
 import React from "react";
+import BentoGrid from "../components/BentoGrid";
 import HeroSection from "../components/Hero";
 import LongMarquee from "../components/LongMarquee";
 import NavbarMenu from "../components/Navbar-menu";
 
 const Home = () => {
   return (
-    <div className="flex w-full justify-center items-center bg-gradient-to-bl from-white to-blue-50 bg-grid-gray-300/[0.2] overflow-y-auto h-screen">
-      <div className="w-full bg-gradient-to-tr from-transparent to-white overflow-y-auto">
-        <NavbarMenu />
-        <HeroSection />
-        <LongMarquee />
+    <div className="h-screen overflow-y-auto">
+      <div className="min-h-screen w-full bg-gradient-to-bl from-white to-blue-50 bg-grid-gray-300/[0.2]">
+        <div className="w-full min-h-screen bg-gradient-to-tr from-transparent to-white pt-24">
+          <NavbarMenu />
+          <div>
+            <HeroSection />
+            <LongMarquee />
+            <BentoGrid />
+          </div>
+        </div>
       </div>
     </div>
   );
