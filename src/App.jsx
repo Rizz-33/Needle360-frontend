@@ -6,6 +6,7 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import Login from "./pages/auth/Login";
 import ResetPassword from "./pages/auth/ResetPassword";
 import Signup from "./pages/auth/Signup";
+import Design from "./pages/Design";
 import Home from "./pages/Home";
 import { useAuthStore } from "./store/Auth.store";
 
@@ -72,6 +73,15 @@ function App() {
             <RedirectAuthenticatedUser>
               {<ResetPassword />}
             </RedirectAuthenticatedUser>
+          }
+        />
+
+        <Route
+          path="/design/*"
+          element={
+            <ProtectedRoute>
+              <Design />
+            </ProtectedRoute>
           }
         />
       </Routes>
