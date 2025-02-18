@@ -80,11 +80,11 @@ const Footer = () => {
           </div>
         </div>
       </div>
-      <div className="bg-hoverAccent py-1">
-        <p className="text-center text-gray-400 text-xs">
-          needle360. All rights reserved.
+      <div className="bg-hoverAccent py-1 flex justify-between items-center">
+        <p className="text-gray-400 text-[10px] px-3">
+          needle360° All rights reserved.
         </p>
-        <p className="text-center text-gray-400 text-[10px]">
+        <p className="text-gray-400 text-[10px] px-3">
           <a href="https://github.com/Rizz-33" className="hover:text-white">
             @Rizz-33
           </a>
