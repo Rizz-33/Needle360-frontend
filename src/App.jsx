@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import EmailVerification from "./pages/auth/EmailVerification";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import Login from "./pages/auth/Login";
@@ -12,30 +12,41 @@ import { useAuthStore } from "./store/Auth.store";
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, user } = useAuthStore();
+  const location = useLocation();
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    // Save the attempted URL
+    return <Navigate to="/login" state={{ from: location }} replace={false} />;
   }
 
   if (!user.isVerified) {
-    return <Navigate to="/verify-email" replace />;
+    return (
+      <Navigate to="/verify-email" state={{ from: location }} replace={false} />
+    );
   }
 
   return children;
 };
 
+// RedirectAuthenticatedUser.js
 const RedirectAuthenticatedUser = ({ children }) => {
   const { isAuthenticated, user } = useAuthStore();
+  const location = useLocation();
 
-  if (isAuthenticated && user.isVerified) {
-    return <Navigate to="/" replace />;
+  if (
+    isAuthenticated &&
+    user.isVerified &&
+    (location.pathname === "/login" || location.pathname === "/signup")
+  ) {
+    const from = location.state?.from?.pathname || "/design";
+    return <Navigate to={from} replace={true} />;
   }
 
   return children;
 };
 
 function App() {
-  const { isCheckingAuth, checkAuth, isAuthenticated, user } = useAuthStore();
+  const { checkAuth, isAuthenticated, user } = useAuthStore();
 
   useEffect(() => {
     checkAuth();
