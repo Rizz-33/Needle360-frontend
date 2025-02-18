@@ -3,8 +3,8 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
 
-// ContainerScroll Component
-const ContainerScroll = ({ titleComponent, children }) => {
+// ScrollContainer Component
+const ScrollContainer = ({ titleComponent, children }) => {
   const containerRef = useRef(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -42,17 +42,17 @@ const ContainerScroll = ({ titleComponent, children }) => {
           perspective: "1000px",
         }}
       >
-        <Header translate={translate} titleComponent={titleComponent} />
-        <Card rotate={rotate} translate={translate} scale={scale}>
+        <ScrollHeader translate={translate} titleComponent={titleComponent} />
+        <ScrollCard rotate={rotate} translate={translate} scale={scale}>
           {children}
-        </Card>
+        </ScrollCard>
       </div>
     </div>
   );
 };
 
-// Header Component
-const Header = ({ translate, titleComponent }) => {
+// ScrollHeader Component
+const ScrollHeader = ({ translate, titleComponent }) => {
   return (
     <motion.div
       style={{
@@ -65,8 +65,8 @@ const Header = ({ translate, titleComponent }) => {
   );
 };
 
-// Card Component
-const Card = ({ rotate, scale, children }) => {
+// ScrollCard Component
+const ScrollCard = ({ rotate, scale, children }) => {
   return (
     <motion.div
       style={{
@@ -85,27 +85,31 @@ const Card = ({ rotate, scale, children }) => {
 };
 
 // HeroScrollDemo Component
-export function HeroScrollDemo() {
+export function DesignScroll() {
   return (
     <div className="flex flex-col overflow-hidden">
-      <ContainerScroll
+      <ScrollContainer
         titleComponent={
           <>
             <h1 className="text-4xl font-semibold text-black dark:text-white">
-              Unleash the power of <br />
+              Craft Your Own <br />
               <span className="text-4xl md:text-[6rem] font-bold mt-1 leading-none">
-                Scroll Animations
+                Custom Designs
               </span>
             </h1>
+            <p className="mt-4 mb-6 text-xs text-secondary dark:text-gray-300">
+              Turn your ideas into reality with tailor-made outfits. Personalize
+              every stitch, every color, and every fabric choice.
+            </p>
           </>
         }
       >
         <img
-          src="/linear.webp"
-          alt="hero"
+          src="/custom-design.webp"
+          alt="tailor shop hero"
           className="mx-auto rounded-2xl object-cover h-full object-left-top"
         />
-      </ContainerScroll>
+      </ScrollContainer>
     </div>
   );
 }
