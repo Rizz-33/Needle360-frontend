@@ -38,14 +38,25 @@ const CustomButton = ({
     },
   };
 
-  const defaultColor = colorClasses[color] || colorClasses.primary;
+  const isCustomColor = !colorClasses[color];
+  const defaultColor = colorClasses[color] || {};
 
   const variantStyles = {
-    filled: `${defaultColor.bg} text-white hover:bg-accent`,
-    outlined: `border ${defaultColor.border} ${defaultColor.text} hover:bg-secondary`,
-    ghost: `${defaultColor.text} hover:bg-secondary`,
-    soft: `${defaultColor.light} ${defaultColor.text} hover:bg-accent`,
-    text: `${defaultColor.text} bg-transparent hover:underline`,
+    filled: isCustomColor
+      ? `bg-${color} text-white hover:bg-${color}-dark`
+      : `${defaultColor.bg} text-white hover:bg-accent`,
+    outlined: isCustomColor
+      ? `border border-${color} text-${color} hover:bg-${color}-light`
+      : `border ${defaultColor.border} ${defaultColor.text} hover:bg-secondary`,
+    ghost: isCustomColor
+      ? `text-${color} hover:bg-${color}-light`
+      : `${defaultColor.text} hover:bg-secondary`,
+    soft: isCustomColor
+      ? `bg-${color}-light text-${color} hover:bg-${color}-dark`
+      : `${defaultColor.light} ${defaultColor.text} hover:bg-accent`,
+    text: isCustomColor
+      ? `text-${color} bg-transparent hover:underline`
+      : `${defaultColor.text} bg-transparent hover:underline`,
     disabled: "bg-gray-300 text-gray-500 cursor-not-allowed",
   };
 
@@ -61,9 +72,17 @@ const CustomButton = ({
       disabled={disabled}
       onClick={onClick}
     >
-      {iconLeft && <span>{React.cloneElement(iconLeft, { size: 14 })}</span>}
+      {iconLeft && (
+        <span className="icon-left">
+          {React.cloneElement(iconLeft, { size: 14 })}
+        </span>
+      )}
       {text}
-      {iconRight && <span>{React.cloneElement(iconRight, { size: 14 })}</span>}
+      {iconRight && (
+        <span className="icon-right">
+          {React.cloneElement(iconRight, { size: 14 })}
+        </span>
+      )}
     </button>
   );
 };
