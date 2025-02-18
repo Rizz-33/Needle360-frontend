@@ -1,14 +1,14 @@
 "use client";
 
 import React from "react";
-import BentoGrid from "../components/BentoGrid";
 import BlogSection from "../components/Blogs";
-import { DesignScroll } from "../components/DesignScroll";
 import FeaturedTailorsCarousel from "../components/FeaturedTailors";
 import Footer from "../components/Footer";
-import HeroSection from "../components/Hero";
 import HowItWorks from "../components/HowItWorks";
-import LongMarquee from "../components/LongMarquee";
+import BentoGrid from "../components/landing-page/BentoGrid";
+import { DesignScroll } from "../components/landing-page/DesignScroll";
+import HeroSection from "../components/landing-page/Hero";
+import LongMarquee from "../components/landing-page/LongMarquee";
 import NavbarMenu from "../components/Navbar-menu";
 
 const Home = () => {
