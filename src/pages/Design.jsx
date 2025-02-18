@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import Footer from "../components/Footer";
-import NavbarMenu from "../components/Navbar-menu";
+import Footer from "../components/ui/Footer";
+import NavbarMenu from "../components/ui/Navbar-menu";
 
 const Design = () => {
   return (
