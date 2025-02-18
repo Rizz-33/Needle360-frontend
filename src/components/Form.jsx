@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/Auth.store";
-import { CustomButton } from "./Button";
+import { CustomButton } from "./ui/Button";
 
 const InputField = ({
   type,

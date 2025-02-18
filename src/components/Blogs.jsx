@@ -1,6 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import React from "react";
-import { CustomButton } from "./Button";
+import { CustomButton } from "./ui/Button";
 
 const BlogSection = () => {
   return (

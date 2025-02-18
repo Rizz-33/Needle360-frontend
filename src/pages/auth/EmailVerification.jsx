@@ -1,7 +1,7 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import { CustomButton } from "../../components/Button";
+import { CustomButton } from "../../components/ui/Button";
 import { useAuthStore } from "../../store/Auth.store";
 
 export default function EmailVerification() {
