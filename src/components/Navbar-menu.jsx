@@ -152,7 +152,7 @@ const NavbarMenu = () => {
           alt="Logo"
           className="h-4 sm:h-6 pl-1 sm:pl-5 cursor-pointer"
           whileHover={{ scale: 1.3 }}
-          onClick={() => (window.location.href = "/designs")}
+          onClick={() => (window.location.href = "/design")}
         />
       </div>
     </nav>
