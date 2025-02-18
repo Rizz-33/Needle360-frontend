@@ -9,7 +9,7 @@ import {
   FaSearch,
   FaShoppingBag,
 } from "react-icons/fa";
-import { useAuthStore } from "../store/Auth.store";
+import { useAuthStore } from "../../store/Auth.store";
 
 const transition = {
   type: "spring",

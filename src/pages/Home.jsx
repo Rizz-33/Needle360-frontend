@@ -3,13 +3,13 @@
 import React from "react";
 import BlogSection from "../components/Blogs";
 import FeaturedTailorsCarousel from "../components/FeaturedTailors";
-import Footer from "../components/Footer";
 import HowItWorks from "../components/HowItWorks";
 import BentoGrid from "../components/landing-page/BentoGrid";
 import { DesignScroll } from "../components/landing-page/DesignScroll";
 import HeroSection from "../components/landing-page/Hero";
 import LongMarquee from "../components/landing-page/LongMarquee";
-import NavbarMenu from "../components/Navbar-menu";
+import Footer from "../components/ui/Footer";
+import NavbarMenu from "../components/ui/Navbar-menu";
 
 const Home = () => {
   return (
