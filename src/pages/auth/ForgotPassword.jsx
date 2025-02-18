@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { CustomButton } from "../../components/Button";
 import Form from "../../components/Form";
+import { CustomButton } from "../../components/ui/Button";
 import { footerConfigs, headingConfigs } from "../../configs/Form.configs";
 import { useAuthStore } from "../../store/Auth.store";
 
