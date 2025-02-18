@@ -1,4 +1,4 @@
-import { CustomButton } from "./Button";
+import { CustomButton } from "../Button";
 import { TypewriterEffect } from "./TypewriterEffect";
 
 export default function HeroSection() {
