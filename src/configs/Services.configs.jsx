@@ -46,3 +46,21 @@ export const bentoGridConfigs = [
     image: "/images/a-unique-platform.svg",
   },
 ];
+
+export const howItWorksConfig = [
+  {
+    title: "Upload or Design",
+    description:
+      "Upload your design, create a new one, or customize an existing template. Use our intuitive design tools to bring your vision to life. Access a wide range of design elements and templates to make your creation unique.",
+  },
+  {
+    title: "Choose Tailor",
+    description:
+      "Select tailors near you based on reviews, expertise, and location. Compare them to find the best match for your needs. View their portfolios and read customer testimonials to make an informed decision.",
+  },
+  {
+    title: "Order and Get It Delivered",
+    description:
+      "Place your order and have your custom outfit crafted and delivered to your doorstep. Track your order in real-time and receive updates on the progress. Enjoy a seamless hassle-free experience with our reliable delivery service.",
+  },
+];
