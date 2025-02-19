@@ -6,8 +6,6 @@ import { useAuthStore } from "../../store/Auth.store";
 
 const Signup = () => {
   const [roleType, setRoleType] = useState(1); // 1 for user, 4 for tailor shop
-
-  // In Signup.jsx
   const [values, setValues] = useState({
     name: "",
     businessName: "", // for tailor shop owner
@@ -50,7 +48,6 @@ const Signup = () => {
       ...prev,
       name: "",
       businessName: "",
-      // Reset other fields as needed
     }));
   };
 
@@ -71,7 +68,6 @@ const Signup = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Signup.jsx
   const handleSubmit = async (formValues) => {
     if (!validateForm()) return;
 
@@ -102,7 +98,7 @@ const Signup = () => {
       navigate("/verify-email");
     } catch (error) {
       console.error("Signup error details:", error);
-      // Error handling remains the same
+      // Handle different error scenarios
       if (error.code === "ERR_CONNECTION_REFUSED") {
         setErrors((prev) => ({
           ...prev,

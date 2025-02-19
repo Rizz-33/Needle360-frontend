@@ -17,6 +17,7 @@ const Login = () => {
   const { login, error } = useAuthStore();
   const navigate = useNavigate();
 
+  // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setValues((prevValues) => ({
@@ -25,11 +26,12 @@ const Login = () => {
     }));
   };
 
+  // Handle role type change
   const handleRoleTypeChange = (newRoleType) => {
     setRoleType(newRoleType);
-    // You can perform additional actions based on roleType change here
   };
 
+  // Handle form submission
   const handleSubmit = async (formValues) => {
     console.log("Form submitted with values:", formValues);
     try {
@@ -37,7 +39,6 @@ const Login = () => {
       navigate("/");
     } catch (error) {
       console.error("Login failed:", error);
-      // Handle the error appropriately here, e.g., show a notification to the user
     }
   };
 

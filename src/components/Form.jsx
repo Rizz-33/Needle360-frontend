@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/Auth.store";
 import { CustomButton } from "./ui/Button";
 
+// Input field component
 const InputField = ({
   type,
   name,
@@ -35,6 +36,7 @@ const InputField = ({
   </div>
 );
 
+// Select field component
 const SelectField = ({
   name,
   value,
@@ -67,7 +69,6 @@ const SelectField = ({
         </option>
       ))}
     </select>
-
     <span className="absolute right-0 pr-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
       <svg
         className={"text-gray-400"}
@@ -85,6 +86,7 @@ const SelectField = ({
   </div>
 );
 
+// Main form component
 const Form = ({
   customFields,
   formType,
@@ -107,10 +109,10 @@ const Form = ({
   const navigate = useNavigate();
   const { isLoading } = useAuthStore();
 
+  // Toggle role type between 1 and 4
   const toggleRoleType = () => {
     const newRoleType = roleType === 1 ? 4 : 1;
     setRoleType(newRoleType);
-    // Notify parent component of roleType change
     if (onRoleTypeChange) {
       onRoleTypeChange(newRoleType);
     }
@@ -286,11 +288,13 @@ const Form = ({
 
   const fields = customFields || defaultFields[formType] || [];
 
+  // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit({ ...values, roleType });
   };
 
+  // Render individual field
   const renderField = (field) => {
     if (disabled[field.name] === true) {
       return null;
@@ -319,8 +323,8 @@ const Form = ({
     );
   };
 
+  // Render field group
   const renderFieldGroup = (fieldGroup) => {
-    // Skip rendering if it's businessDetails-group and roleType is 1
     if (roleType === 1 && fieldGroup.name === "businessDetails-group") {
       return null;
     }

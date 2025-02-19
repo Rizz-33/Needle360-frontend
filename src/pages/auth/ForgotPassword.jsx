@@ -5,26 +5,26 @@ import { footerConfigs, headingConfigs } from "../../configs/Form.configs";
 import { useAuthStore } from "../../store/Auth.store";
 
 export default function ForgotPassword() {
-  const [values, setValues] = useState({}); // Define values state
-  const [errors, setErrors] = useState({}); // Define errors state
-  const [isSubmitted, setIsSubmitted] = useState(false); // Define isSubmitted state
-  const [email, setEmail] = useState(""); // Define email state
+  const [values, setValues] = useState({});
+  const [errors, setErrors] = useState({});
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [email, setEmail] = useState("");
 
   const { forgotPassword } = useAuthStore();
 
+  // Handle input changes and update state
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setValues({
-      ...values,
+    setValues((prevValues) => ({
+      ...prevValues,
       [name]: value,
-    });
+    }));
     if (name === "email") {
       setEmail(value);
     }
   };
 
-  console.log("Footer Config:", footerConfigs.forgotPassword.loginRedirect);
-
+  // Handle form submission
   const handleSubmit = async () => {
     try {
       await forgotPassword(values);
@@ -44,12 +44,12 @@ export default function ForgotPassword() {
       <div className="p-6 rounded-2xl shadow-lg w-96 text-center bg-white">
         {!isSubmitted ? (
           <Form
-            formType={"forgotPassword"}
+            formType="forgotPassword"
             values={values}
             onChange={handleChange}
             onSubmit={handleSubmit}
             errors={errors}
-            disabled={false} // Set disabled to false directly
+            disabled={false}
             button="Get Started"
             heading1={headingConfigs.forgotPassword.heading1}
             heading2={headingConfigs.forgotPassword.heading2}

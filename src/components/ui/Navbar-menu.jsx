@@ -95,7 +95,7 @@ const ProfileMenu = () => {
 
 const NavbarMenu = () => {
   const [active, setActive] = useState(null);
-  const { isAuthenticated } = useAuthStore(); // Get auth state
+  const { isAuthenticated } = useAuthStore();
 
   return (
     <nav

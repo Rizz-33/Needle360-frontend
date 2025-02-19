@@ -1,4 +1,3 @@
-// HeroScrollDemo.jsx
 "use client";
 import { motion, useScroll, useTransform } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
@@ -84,7 +83,7 @@ const ScrollCard = ({ rotate, scale, children }) => {
   );
 };
 
-// HeroScrollDemo Component
+// DesignScroll Component
 export function DesignScroll() {
   return (
     <div className="flex flex-col overflow-hidden">
