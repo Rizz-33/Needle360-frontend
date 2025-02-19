@@ -1,21 +1,16 @@
-// Auth.store.jsx
 import axios from "axios";
 import { create } from "zustand";
 import { roleTypeNumbers } from "../configs/User.config";
 
-// If you're using Create React App, uncomment this instead:
-// const API_URL = window.env?.REACT_APP_API_URL || "http://localhost:3000";
-
-// Auth.store.jsx
 const BASE_API_URL = `${
   import.meta.env.API_URL || "http://localhost:4000"
 }/api/auth`;
 
-// Add more axios configuration
+// Configure axios
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common["Content-Type"] = "application/json";
 
-// Optional: Add axios interceptors for better error handling
+// Add axios interceptors for error handling
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -32,22 +27,17 @@ export const useAuthStore = create((set) => ({
   isCheckingAuth: true,
 
   signup: async (values, roleType) => {
-    // Map frontend field names to backend field names
     const mappedValues = {
       email: values.email,
       password: values.password,
       name: roleType === 1 ? values.name : values.businessName,
       role: roleTypeNumbers[roleType] || roleType,
       contactNumber: values.contactNumber,
-
-      // For USER (roleType === 1)
       ...(roleType === 1 && {
         address: values.streetAddress,
         bankAccountNumber: values.accountNumber,
         bankName: values.bankName,
       }),
-
-      // For TAILOR_SHOP_OWNER (roleType === 4)
       ...(roleType === 4 && {
         shopName: values.businessName,
         shopAddress: values.streetAddress,
@@ -152,9 +142,7 @@ export const useAuthStore = create((set) => ({
     try {
       const response = await axios.post(
         `${BASE_API_URL}/reset-password/${token}`,
-        {
-          password,
-        }
+        { password }
       );
       return response.data;
     } catch (error) {

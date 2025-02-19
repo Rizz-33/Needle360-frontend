@@ -6,8 +6,8 @@ const Footer = () => {
     <footer className="bg-gradient-to-br from-black to-hoverAccent text-white">
       <div className="max-w-7xl mx-auto px-6 py-10">
         <div className="grid md:grid-cols-3 gap-10">
-          {/* Logo and Description */}
           <div className="md:text-left">
+            {/* Logo with hover effect and redirect on click */}
             <motion.img
               src="/logo-white-full.png"
               alt="Logo"
@@ -21,8 +21,8 @@ const Footer = () => {
             </p>
           </div>
 
-          {/* Links */}
           <div className="text-center md:text-left">
+            {/* Quick Links Section */}
             <h2 className="text-lg font-semibold mb-4">Quick Links</h2>
             <ul className="text-gray-200 text-sm space-y-2">
               <li>
@@ -48,8 +48,8 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Social Media */}
           <div className="text-center md:text-left">
+            {/* Social Media Links */}
             <h2 className="text-lg font-semibold mb-4">Follow Us</h2>
             <div className="flex justify-center md:justify-start space-x-6">
               <a

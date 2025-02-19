@@ -10,20 +10,21 @@ export default function EmailVerification() {
   const { error, verifyEmail } = useAuthStore();
   const navigate = useNavigate();
 
+  // Handle input change for each digit
   const handleChange = (index, value) => {
-    if (value.length > 1) return;
+    if (value.length > 1) return; // Prevent more than one character in each input
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Button clicked");
-    const verificationCode = code.join("");
+    const verificationCode = code.join(""); // Combine code array into a single string
     try {
       await verifyEmail(verificationCode);
-      navigate("/");
+      navigate("/"); // Navigate to home page on success
       toast.success("Email verified successfully!");
     } catch (error) {
       console.error("Error verifying email:", error);

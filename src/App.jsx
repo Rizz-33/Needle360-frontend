@@ -10,12 +10,12 @@ import Design from "./pages/Design";
 import Home from "./pages/Home";
 import { useAuthStore } from "./store/Auth.store";
 
+// Component to protect routes that require authentication
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, user } = useAuthStore();
   const location = useLocation();
 
   if (!isAuthenticated) {
-    // Save the attempted URL
     return <Navigate to="/login" state={{ from: location }} replace={false} />;
   }
 
@@ -28,7 +28,7 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// RedirectAuthenticatedUser.js
+// Component to redirect authenticated users away from login/signup pages
 const RedirectAuthenticatedUser = ({ children }) => {
   const { isAuthenticated, user } = useAuthStore();
   const location = useLocation();
@@ -52,9 +52,6 @@ function App() {
     checkAuth();
   }, [checkAuth]);
 
-  console.log("isAuthenticated", isAuthenticated);
-  console.log("user", user);
-
   return (
     <div className="max-h-screen bg-white text-black flex items-center justify-center relative overflow-hidden">
       <Routes>
@@ -77,16 +74,14 @@ function App() {
         />
         <Route path="/verify-email" element={<EmailVerification />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-
         <Route
           path="/reset-password/:token"
           element={
             <RedirectAuthenticatedUser>
-              {<ResetPassword />}
+              <ResetPassword />
             </RedirectAuthenticatedUser>
           }
         />
-
         <Route
           path="/design/*"
           element={

@@ -3,18 +3,10 @@ import { TypewriterEffect } from "./TypewriterEffect";
 
 export default function HeroSection() {
   const words = [
-    {
-      text: "Design,",
-    },
-    {
-      text: "Explore,",
-    },
-    {
-      text: "and",
-    },
-    {
-      text: "Order",
-    },
+    { text: "Design," },
+    { text: "Explore," },
+    { text: "and" },
+    { text: "Order" },
   ];
 
   return (
@@ -69,7 +61,8 @@ export default function HeroSection() {
             />
           </div>
         </div>
-        {/* Right Side Mobile Mockup */}
+
+        {/* Right Side Image */}
         <div className="relative w-full max-w-sm">
           <img
             src="/tailor-mockup.png"

@@ -16,7 +16,7 @@ const CustomButton = ({
   const baseStyles =
     "flex items-center justify-center gap-2 transition-all text-xs rounded-full font-medium group";
 
-  // Simplified color classes without need for splitting
+  // Define color classes for primary, secondary, and accent colors
   const colorClasses = {
     primary: {
       bg: "bg-primary",
@@ -41,6 +41,7 @@ const CustomButton = ({
   const isCustomColor = !colorClasses[color];
   const defaultColor = colorClasses[color] || {};
 
+  // Define styles for different button variants
   const variantStyles = {
     filled: isCustomColor
       ? `bg-${color} text-white hover:bg-${color}-dark`
