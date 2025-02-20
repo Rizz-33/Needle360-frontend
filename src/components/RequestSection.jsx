@@ -1,0 +1,34 @@
+import { ChevronRight } from "lucide-react";
+import React from "react";
+import { CustomButton } from "./ui/Button";
+
+const RequestSection = () => {
+  return (
+    <div className="flex flex-col items-center text-center py-20 bg-gradient-to-b from-transparent to-gray-400">
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+        Become a Tailor with Us
+      </h2>
+      <p className="m-8 text-sm text-gray-600 dark:text-gray-300 max-w-lg">
+        Are you passionate about fashion and design? Join our team of expert
+        tailors and start selling your custom-made clothing. We provide the
+        platform and support you need to showcase your designs and reach a wider
+        audience. Apply now to become a part of our growing community of
+        talented tailors.
+      </p>
+      <CustomButton
+        text="Request to Join"
+        color="primary"
+        hover_color="hoverAccent"
+        variant="filled"
+        width="w-36"
+        height="h-9"
+        type="submit"
+        onClick={() => console.log("Request to Join Clicked")}
+        iconRight={<ChevronRight />}
+      />{" "}
+      <div className="mb-12" />
+    </div>
+  );
+};
+
+export default RequestSection;
