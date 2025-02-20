@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import DesignerCanvas from "../components/design/DesignerCanvas";
 import Footer from "../components/ui/Footer";
 import NavbarMenu from "../components/ui/Navbar-menu";
 
@@ -12,7 +11,7 @@ const Design = () => {
         <div className="w-full min-h-screen bg-gradient-to-tr from-transparent to-white pt-24">
           <NavbarMenu />
           <div className="w-full">
-            <DesignerCanvas />
+            {/* <DesignerCanvas /> */}
             <Footer />
           </div>
         </div>
