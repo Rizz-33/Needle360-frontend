@@ -1,13 +1,13 @@
 "use client";
 
 import React from "react";
-import BlogSection from "../components/Blogs";
 import FeaturedTailorsCarousel from "../components/FeaturedTailors";
 import HowItWorks from "../components/HowItWorks";
 import BentoGrid from "../components/landing-page/BentoGrid";
 import { DesignScroll } from "../components/landing-page/DesignScroll";
 import HeroSection from "../components/landing-page/Hero";
 import LongMarquee from "../components/landing-page/LongMarquee";
+import RequestSection from "../components/RequestSection";
 import Footer from "../components/ui/Footer";
 import NavbarMenu from "../components/ui/Navbar-menu";
 
@@ -24,7 +24,7 @@ const Home = () => {
             <FeaturedTailorsCarousel />
             <HowItWorks />
             <DesignScroll />
-            <BlogSection />
+            <RequestSection />
             <Footer />
           </div>
         </div>

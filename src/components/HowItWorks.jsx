@@ -4,7 +4,7 @@ import { howItWorksConfig } from "../configs/Services.configs";
 
 const HowItWorks = () => {
   return (
-    <div className="w-full max-w-7xl mx-auto py-12">
+    <div className="w-full max-w-7xl mx-auto pt-12">
       <h2 className="text-3xl font-bold text-center mb-8">How It Works</h2>
       <div className="flex items-center justify-between relative overflow-hidden">
         {howItWorksConfig.map((step, index) => (
@@ -22,6 +22,15 @@ const HowItWorks = () => {
             <p className="text-gray-600 text-xs mx-24">{step.description}</p>
           </motion.div>
         ))}
+      </div>
+      <div className="text-center mt-8">
+        <p className="text-gray-600 text-xs">
+          Read our{" "}
+          <a href="/blogs" className="text-primary underline">
+            blogs
+          </a>{" "}
+          to have a better idea of how it works.
+        </p>
       </div>
     </div>
   );

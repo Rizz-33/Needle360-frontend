@@ -36,7 +36,7 @@ const ScrollContainer = ({ titleComponent, children }) => {
       ref={containerRef}
     >
       <div
-        className="py-10 md:py-40 w-full relative"
+        className="py-5 md:py-20 w-full relative"
         style={{
           perspective: "1000px",
         }}
