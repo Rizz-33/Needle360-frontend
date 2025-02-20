@@ -1,5 +1,5 @@
 import { CustomButton } from "../ui/Button";
-import { TypewriterEffect } from "./TypewriterEffect";
+import { TypewriterEffect } from "../ui/TypewriterEffect";
 
 export default function HeroSection() {
   const words = [

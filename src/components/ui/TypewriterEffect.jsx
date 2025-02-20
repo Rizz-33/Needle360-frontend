@@ -4,7 +4,7 @@ import { motion, stagger, useAnimate, useInView } from "framer-motion";
 import { useEffect } from "react";
 import { cn } from "../../lib/utils";
 
-export const TypewriterEffect = ({ words, className, cursorClassName }) => {
+const TypewriterEffect = ({ words, className, cursorClassName }) => {
   // Convert words into an array of characters
   const wordsArray = words.map((word) => ({
     ...word,
@@ -56,7 +56,7 @@ export const TypewriterEffect = ({ words, className, cursorClassName }) => {
   return (
     <div
       className={cn(
-        "text-base sm:text-xl md:text-3xl lg:text-4xl font-bold text-center sm:text-left",
+        "text-base sm:text-xl md:text-3xl lg:text-4xl font-bold",
         className
       )}
     >
@@ -78,11 +78,9 @@ export const TypewriterEffect = ({ words, className, cursorClassName }) => {
   );
 };
 
-export const TypewriterEffectSmooth = ({
-  words,
-  className,
-  cursorClassName,
-}) => {
+export { TypewriterEffect };
+
+const TypewriterEffectSmooth = ({ words, className, cursorClassName }) => {
   // Convert words into an array of characters
   const wordsArray = words.map((word) => ({
     ...word,
@@ -108,7 +106,7 @@ export const TypewriterEffectSmooth = ({
   );
 
   return (
-    <div className={cn("flex space-x-1 text-center sm:text-left", className)}>
+    <div className={cn("flex space-x-1", className)}>
       <motion.div
         className="overflow-hidden"
         initial={{ width: "0%" }}
