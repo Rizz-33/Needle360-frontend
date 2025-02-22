@@ -1,31 +1,19 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
+import { useShopStore } from "../store/Shop.store";
 
 const FeaturedTailorsCarousel = () => {
-  const tailors = [
-    {
-      name: "Elegant Stitches",
-      image: "/images/tailor1.jpg",
-      rating: "4.8",
-    },
-    {
-      name: "Royal Threads",
-      image: "/images/tailor2.jpg",
-      rating: "4.7",
-    },
-    {
-      name: "Urban Tailors",
-      image: "/images/tailor3.jpg",
-      rating: "4.9",
-    },
-    {
-      name: "Classic Fits",
-      image: "/images/tailor4.jpg",
-      rating: "4.6",
-    },
-  ];
+  const { tailors, isLoading, error, fetchTailors } = useShopStore();
+
+  useEffect(() => {
+    fetchTailors();
+  }, [fetchTailors]);
+
+  useEffect(() => {
+    console.log(tailors);
+  }, [tailors]);
 
   const settings = {
     dots: true,
@@ -52,28 +40,44 @@ const FeaturedTailorsCarousel = () => {
     ],
   };
 
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+
   return (
-    <div className="w-full max-w-7xl mx-auto py-16">
-      <h2 className="text-3xl font-bold text-center mb-8">
-        Featured Tailor Shops
-      </h2>
-      <Slider {...settings}>
-        {tailors.map((tailor, index) => (
-          <div key={index} className="p-4">
-            <div className="bg-white shadow-lg rounded-xl overflow-hidden">
-              <img
-                src={tailor.image}
-                alt={tailor.name}
-                className="w-full h-64 object-cover"
-              />
-              <div className="p-4 text-center">
-                <h3 className="text-xl font-semibold">{tailor.name}</h3>
-                <p className="text-gray-600">⭐ {tailor.rating}</p>
+    <div className="w-full max-w-7xl mx-auto">
+      {tailors.length > 0 ? (
+        <>
+          <h2 className="text-3xl font-bold text-center mt-8 mb-6">
+            Featured Tailor Shops
+          </h2>
+          <Slider {...settings}>
+            {tailors.map((tailor, index) => (
+              <div key={index} className="p-4">
+                <div className="bg-white shadow-lg rounded-xl overflow-hidden mb-8">
+                  <img
+                    src={tailor.logoUrl}
+                    alt={tailor.shopName}
+                    className="w-full h-64 object-cover"
+                  />
+                  <div className="p-4 text-center">
+                    <h3 className="text-ms font-semibold">{tailor.name}</h3>
+                    <p className="text-gray-600 text-xs">
+                      {tailor.shopAddress}
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
-      </Slider>
+            ))}
+          </Slider>
+        </>
+      ) : (
+        <div className="text-center"></div>
+      )}
     </div>
   );
 };
