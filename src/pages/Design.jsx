@@ -5,6 +5,7 @@ import Categories from "../components/Categories";
 import HeroSection from "../components/design/Hero";
 import Footer from "../components/ui/Footer";
 import NavbarMenu from "../components/ui/Navbar-menu";
+import ProductCard from "../components/ui/ProductCard";
 
 const Design = () => {
   return (
@@ -16,6 +17,7 @@ const Design = () => {
             {/* <DesignerCanvas /> */}
             <HeroSection />
             <Categories />
+            <ProductCard />
             <Footer />
           </div>
         </div>
