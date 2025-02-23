@@ -1,6 +1,8 @@
-# Needle360 - Tailor Shop E-Commerce Platform
+# Needle360 - Digital Marketplace and Community Hub for the tailoring sector in Sri Lanka
 
-![Needle360 Logo](https://github.com/Rizz-33/Needle360-frontend/blob/main/public/logo-white-full.png)
+<div align="center" style="padding: 20px;">
+    <img src="https://github.com/Rizz-33/Needle360-frontend/blob/main/public/logo-white-full.png" alt="Needle360 Logo">
+</div>
 
 ## Overview
 
@@ -96,7 +98,7 @@ This project is licensed under the [MIT License](LICENSE).
 For any queries, feel free to reach out:
 
 - **GitHub**: [@Rizz-33](https://github.com/Rizz-33)
-- **Email**: your-email@example.com
+- **Email**: TBD
 
 ---
 
