@@ -82,14 +82,7 @@ function App() {
             </RedirectAuthenticatedUser>
           }
         />
-        <Route
-          path="/design/*"
-          element={
-            <ProtectedRoute>
-              <Design />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/design/*" element={<Design />} />
       </Routes>
       <Toaster />
     </div>
