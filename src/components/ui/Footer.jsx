@@ -23,8 +23,8 @@ const Footer = () => {
 
           <div className="text-center md:text-left">
             {/* Quick Links Section */}
-            <h2 className="text-lg font-semibold mb-4">Quick Links</h2>
-            <ul className="text-gray-200 text-sm space-y-2">
+            <h2 className="text-sm font-semibold mb-4">Quick Links</h2>
+            <ul className="text-gray-200 text-[12px] space-y-2">
               <li>
                 <a href="#home" className="hover:text-white">
                   Home
@@ -50,7 +50,7 @@ const Footer = () => {
 
           <div className="text-center md:text-left">
             {/* Social Media Links */}
-            <h2 className="text-lg font-semibold mb-4">Follow Us</h2>
+            <h2 className="text-sm font-semibold mb-4">Follow Us</h2>
             <div className="flex justify-center md:justify-start space-x-6">
               <a
                 href="https://facebook.com"
