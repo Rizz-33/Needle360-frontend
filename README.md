@@ -1,6 +1,6 @@
 # Needle360 - Digital Marketplace and Community Hub for the tailoring sector in Sri Lanka
 
-<div align="center" style="padding: 20px;">
+<div align="center" style="padding: 96px;">
     <img src="https://github.com/Rizz-33/Needle360-frontend/blob/main/public/logo-white-full.png" alt="Needle360 Logo">
 </div>
 
