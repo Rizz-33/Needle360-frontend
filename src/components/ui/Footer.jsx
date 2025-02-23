@@ -3,7 +3,7 @@ import React from "react";
 
 const Footer = () => {
   return (
-    <footer className="bg-gradient-to-br from-black to-hoverAccent text-white">
+    <footer className="w-full bg-gradient-to-br from-gray-900 via-hoverAccent to-primary text-white">
       <div className="max-w-7xl mx-auto px-6 py-10">
         <div className="grid md:grid-cols-3 gap-10">
           <div className="md:text-left">
@@ -36,7 +36,7 @@ const Footer = () => {
                 </a>
               </li>
               <li>
-                <a href="#services" className="hover:text-white">
+                <a href="/services" className="hover:text-white">
                   Services
                 </a>
               </li>

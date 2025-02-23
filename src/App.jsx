@@ -8,6 +8,7 @@ import ResetPassword from "./pages/auth/ResetPassword";
 import Signup from "./pages/auth/Signup";
 import Design from "./pages/Design";
 import Home from "./pages/Home";
+import OurServices from "./pages/Service";
 import { useAuthStore } from "./store/Auth.store";
 
 // Component to protect routes that require authentication
@@ -83,6 +84,7 @@ function App() {
           }
         />
         <Route path="/design/*" element={<Design />} />
+        <Route path="/services" element={<OurServices />} />
       </Routes>
       <Toaster />
     </div>
