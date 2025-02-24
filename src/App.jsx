@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import FashionDesignTool from "./components/design/Tool";
 import EmailVerification from "./pages/auth/EmailVerification";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import Login from "./pages/auth/Login";
@@ -85,6 +86,7 @@ function App() {
         />
         <Route path="/design/*" element={<Design />} />
         <Route path="/services" element={<OurServices />} />
+        <Route path="/design-tool" element={<FashionDesignTool />} />
       </Routes>
       <Toaster />
     </div>
