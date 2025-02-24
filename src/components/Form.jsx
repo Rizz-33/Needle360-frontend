@@ -120,6 +120,42 @@ const Form = ({
 
   // Default fields configuration
   const defaultFields = {
+    forgotPassword: [
+      {
+        name: "email",
+        type: "email",
+        placeholder: "Enter your email address",
+        required: true,
+      },
+    ],
+    login: [
+      {
+        name: "email",
+        type: "email",
+        placeholder: "Enter your email address",
+        required: true,
+      },
+      {
+        name: "password",
+        type: "password",
+        placeholder: "Enter your password",
+        required: true,
+      },
+    ],
+    resetPassword: [
+      {
+        name: "password",
+        type: "password",
+        placeholder: "Enter your new password",
+        required: true,
+      },
+      {
+        name: "confirmPassword",
+        type: "password",
+        placeholder: "Confirm your new password",
+        required: true,
+      },
+    ],
     signup: [
       {
         name: roleType === 1 ? "name" : "businessName",
@@ -165,13 +201,23 @@ const Form = ({
           {
             name: "country",
             type: "select",
-            options: ["Country1", "Country2"],
+            options: ["Sri Lanka"],
             required: true,
           },
           {
             name: "province",
             type: "select",
-            options: ["Province1", "Province2"],
+            options: [
+              "Central Province",
+              "Eastern Province",
+              "Northern Province",
+              "Southern Province",
+              "Western Province",
+              "North Western Province",
+              "North Central Province",
+              "Uva Province",
+              "Sabaragamuwa Province",
+            ],
             required: true,
           },
         ],
@@ -183,7 +229,47 @@ const Form = ({
           {
             name: "city",
             type: "select",
-            options: ["City1", "City2"],
+            options: [
+              "Ampara",
+              "Anuradhapura",
+              "Aranayake",
+              "Badulla",
+              "Batticaloa",
+              "Bulathkohupitiya",
+              "Colombo",
+              "Dehiowita",
+              "Dehiwala",
+              "Deraniyagala",
+              "Galigamuwa",
+              "Galle",
+              "Gampaha",
+              "Hambantota",
+              "Hatton",
+              "Hemmathagama",
+              "Jaffna",
+              "Kalutara",
+              "Kandy",
+              "Kegalle",
+              "Kilinochchi",
+              "Kitulgala",
+              "Kurunegala",
+              "Mannar",
+              "Matale",
+              "Matara",
+              "Mawanella",
+              "Monaragala",
+              "Mullaitivu",
+              "Negombo",
+              "Nuwara Eliya",
+              "Polonnaruwa",
+              "Puttalam",
+              "Rambukkana",
+              "Ratnapura",
+              "Trincomalee",
+              "Vavuniya",
+              "Wattala",
+              "Yatiyanthota",
+            ],
             required: true,
           },
           {
@@ -248,42 +334,6 @@ const Form = ({
           ]
         : []
     ),
-    login: [
-      {
-        name: "email",
-        type: "email",
-        placeholder: "Enter your email address",
-        required: true,
-      },
-      {
-        name: "password",
-        type: "password",
-        placeholder: "Enter your password",
-        required: true,
-      },
-    ],
-    forgotPassword: [
-      {
-        name: "email",
-        type: "email",
-        placeholder: "Enter your email address",
-        required: true,
-      },
-    ],
-    resetPassword: [
-      {
-        name: "password",
-        type: "password",
-        placeholder: "Enter your new password",
-        required: true,
-      },
-      {
-        name: "confirmPassword",
-        type: "password",
-        placeholder: "Confirm your new password",
-        required: true,
-      },
-    ],
   };
 
   const fields = customFields || defaultFields[formType] || [];
