@@ -1,3 +1,5 @@
+import { PenTool, Ruler, Share2, ZoomIn } from "lucide-react";
+
 export const bentoGridConfigs = [
   {
     title: "Who We Are",
@@ -62,5 +64,33 @@ export const howItWorksConfig = [
     title: "Order and Get It Delivered",
     description:
       "Place your order and have your custom outfit crafted and delivered to your doorstep. Track your order in real-time and receive updates on the progress. Enjoy a seamless hassle-free experience with our reliable delivery service.",
+  },
+];
+
+export const designFeatures = [
+  {
+    id: "customize",
+    icon: PenTool,
+    title: "Custom Design Tools",
+    description:
+      "Intuitive design interface with measurement tools and fabric selection",
+  },
+  {
+    id: "collaborate",
+    icon: Share2,
+    title: "Real-time Collaboration",
+    description: "Work directly with tailors to perfect your design choices",
+  },
+  {
+    id: "measure",
+    icon: Ruler,
+    title: "Smart Measurements",
+    description: "AI-powered measurement suggestions and size recommendations",
+  },
+  {
+    id: "preview",
+    icon: ZoomIn,
+    title: "3D Preview",
+    description: "Virtual try-on technology to visualize your designs",
   },
 ];

@@ -1,48 +1,12 @@
 import { motion } from "framer-motion";
-import {
-  Palette,
-  PenTool,
-  Ruler,
-  Scissors,
-  ScrollText,
-  Share2,
-  ZoomIn,
-} from "lucide-react";
+import { Palette, Scissors, ScrollText, Share2 } from "lucide-react";
 import React, { useState } from "react";
 import Footer from "../components/ui/Footer";
 import NavbarMenu from "../components/ui/Navbar-menu";
+import { designFeatures } from "../configs/Services.configs";
 
 const OurServices = () => {
   const [activeFeature, setActiveFeature] = useState("customize");
-
-  const designFeatures = [
-    {
-      id: "customize",
-      icon: PenTool,
-      title: "Custom Design Tools",
-      description:
-        "Intuitive design interface with measurement tools and fabric selection",
-    },
-    {
-      id: "collaborate",
-      icon: Share2,
-      title: "Real-time Collaboration",
-      description: "Work directly with tailors to perfect your design choices",
-    },
-    {
-      id: "measure",
-      icon: Ruler,
-      title: "Smart Measurements",
-      description:
-        "AI-powered measurement suggestions and size recommendations",
-    },
-    {
-      id: "preview",
-      icon: ZoomIn,
-      title: "3D Preview",
-      description: "Virtual try-on technology to visualize your designs",
-    },
-  ];
 
   return (
     <div className="h-screen w-full overflow-y-auto bg-white py-20 flex">
