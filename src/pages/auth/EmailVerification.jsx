@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { CustomButton } from "../../components/ui/Button";
@@ -6,25 +6,56 @@ import { useAuthStore } from "../../store/Auth.store";
 
 export default function EmailVerification() {
   const [code, setCode] = useState(["", "", "", "", "", ""]);
-
+  const inputsRef = useRef([]);
   const { error, verifyEmail } = useAuthStore();
   const navigate = useNavigate();
 
-  // Handle input change for each digit
   const handleChange = (index, value) => {
-    if (value.length > 1) return; // Prevent more than one character in each input
+    if (!/^\d*$/.test(value)) return; // Allow only numeric values
+
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
+
+    // Move to next input if a number is entered
+    if (value && index < 5) {
+      inputsRef.current[index + 1]?.focus();
+    }
   };
 
-  // Handle form submission
+  const handleKeyDown = (index, e) => {
+    if (e.key === "Backspace") {
+      const newCode = [...code];
+      if (!newCode[index] && index > 0) {
+        inputsRef.current[index - 1]?.focus();
+      }
+      newCode[index] = "";
+      setCode(newCode);
+    }
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text").slice(0, 6); // Take only the first 6 digits
+    if (!/^\d{1,6}$/.test(pastedText)) return; // Allow only numeric values
+
+    const newCode = [...code];
+    pastedText.split("").forEach((char, i) => {
+      newCode[i] = char;
+    });
+
+    setCode(newCode);
+
+    // Move focus to the last filled input
+    inputsRef.current[Math.min(pastedText.length, 5)]?.focus();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const verificationCode = code.join(""); // Combine code array into a single string
+    const verificationCode = code.join("");
     try {
       await verifyEmail(verificationCode);
-      navigate("/"); // Navigate to home page on success
+      navigate("/");
       toast.success("Email verified successfully!");
     } catch (error) {
       console.error("Error verifying email:", error);
@@ -50,6 +81,9 @@ export default function EmailVerification() {
                 maxLength="1"
                 value={digit}
                 onChange={(e) => handleChange(index, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(index, e)}
+                onPaste={handlePaste}
+                ref={(el) => (inputsRef.current[index] = el)}
                 className="w-10 h-10 border border-gray-300 rounded text-center text-lg focus:outline-none focus:ring-2 focus:ring-primary"
               />
             ))}
