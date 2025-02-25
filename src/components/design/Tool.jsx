@@ -408,24 +408,29 @@ const FashionDesignTool = () => {
 
   return (
     <div className="h-screen overflow-y-auto w-full">
-      <header className="bg-blue-600 text-white p-4">
-        <h1 className="text-2xl font-bold">Fashion Design Studio</h1>
+      <header className="border-b border-primary p-2 flex items-center bg-primary/10 bg-grid-secondary/[0.2]">
+        <img src="/logo-black-short.png" alt="Logo" className="h-8 w-8 mx-2" />
+        <h1 className="text-xs font-semibold pl-4 text-primary/80">
+          Design Studio
+        </h1>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
         <div className="w-64 bg-gray-100 p-4 overflow-y-auto">
-          <h2 className="text-lg font-semibold mb-4">Design Options</h2>
+          <h2 className="text-sm font-bold text-gray-900 mb-4">
+            Design Options
+          </h2>
 
           <div className="mb-6">
-            <h3 className="font-medium mb-2">Garment Type</h3>
+            <h3 className="text-xs mb-2 text-gray-600">Garment Type</h3>
             <div className="space-y-2">
               {garmentTypes.map((type) => (
                 <button
                   key={type}
-                  className={`block w-full text-left px-3 py-2 rounded ${
+                  className={`block w-full text-left px-3 py-2 rounded-full shadow ${
                     activeGarment === type
-                      ? "bg-blue-500 text-white"
-                      : "bg-white"
+                      ? "bg-secondary text-xs text-primary"
+                      : "bg-secondary/15 text-xs text-gray-900"
                   }`}
                   onClick={() => setActiveGarment(type)}
                 >
@@ -436,17 +441,16 @@ const FashionDesignTool = () => {
           </div>
 
           <div className="mb-6">
-            <h3 className="font-medium mb-2">Style</h3>
+            <h3 className="text-xs mb-2 text-gray-600">Style</h3>
             <div className="space-y-2">
               {getStyleOptions().map((style) => (
                 <button
                   key={style}
-                  className={`block w-full text-left px-3 py-2 rounded ${
+                  className={`block w-full text-left px-3 py-2 rounded-full shadow ${
                     garmentStyle === style
-                      ? "bg-blue-500 text-white"
-                      : "bg-white"
+                      ? "bg-secondary text-xs text-primary"
+                      : "bg-secondary/15 text-xs text-gray-900"
                   }`}
-                  onClick={() => setGarmentStyle(style)}
                 >
                   {style
                     .split("-")
@@ -458,9 +462,9 @@ const FashionDesignTool = () => {
           </div>
 
           <div className="mb-6">
-            <h3 className="font-medium mb-2">Fabric Type</h3>
+            <h3 className="text-xs mb-2 text-gray-600">Fabric Type</h3>
             <select
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border text-xs rounded-full"
               value={fabricTexture}
               onChange={(e) => setFabricTexture(e.target.value)}
             >
@@ -473,7 +477,7 @@ const FashionDesignTool = () => {
           </div>
 
           <div className="mb-6">
-            <h3 className="font-medium mb-2">Color</h3>
+            <h3 className="text-xs mb-2 text-gray-600">Color</h3>
             <input
               type="color"
               className="w-full h-10 border rounded cursor-pointer"
@@ -483,15 +487,15 @@ const FashionDesignTool = () => {
           </div>
 
           <div className="mb-6">
-            <h3 className="font-medium mb-2">Size</h3>
+            <h3 className="text-xs mb-2 text-gray-600">Size</h3>
             <div className="flex flex-wrap gap-2">
               {sizeOptions.map((size) => (
                 <button
                   key={size}
                   className={`px-3 py-1 rounded ${
                     garmentSize === size
-                      ? "bg-blue-500 text-white"
-                      : "bg-white border"
+                      ? "bg-secondary text-xs text-primary"
+                      : "bg-secondary/15 text-xs text-gray-900"
                   }`}
                   onClick={() => setGarmentSize(size)}
                 >
@@ -503,7 +507,7 @@ const FashionDesignTool = () => {
 
           <div className="mb-6">
             <button
-              className="w-full px-3 py-2 bg-purple-500 text-white rounded"
+              className="w-full px-3 py-2 bg-gradient-to-tl from-primary to-black via-hoverAccent text-white rounded-full"
               onClick={toggleCanvas}
             >
               {showCanvas ? "Hide Drawing Canvas" : "Show Drawing Canvas"}
@@ -511,10 +515,10 @@ const FashionDesignTool = () => {
           </div>
 
           <div className="mb-6">
-            <h3 className="font-medium mb-2">Add Text</h3>
+            <h3 className="text-xs mb-2 text-gray-600">Add Text</h3>
             <input
               type="text"
-              className="w-full p-2 border rounded mb-2"
+              className="w-full p-2 border rounded mb-2 text-sm"
               value={customText}
               onChange={(e) => setCustomText(e.target.value)}
             />
@@ -544,7 +548,7 @@ const FashionDesignTool = () => {
               className="w-full mb-2"
             />
             <button
-              className="w-full px-3 py-2 bg-blue-500 text-white rounded"
+              className="w-full px-3 py-2 bg-primary text-white rounded-full"
               onClick={addCustomText}
             >
               Add 3D Text
@@ -553,7 +557,7 @@ const FashionDesignTool = () => {
 
           {showCanvas && (
             <div className="mb-6">
-              <h3 className="font-medium mb-2">Drawing Tools</h3>
+              <h3 className="text-xs mb-2 text-gray-600">Drawing Tools</h3>
               <input
                 type="color"
                 className="w-full h-10 mb-2"
@@ -589,12 +593,12 @@ const FashionDesignTool = () => {
           )}
 
           <div className="p-4 bg-gray-100 border-t">
-            <h3 className="font-medium mb-2">Accessories</h3>
+            <h3 className="text-xs mb-2 text-gray-600">Accessories</h3>
             <div className="flex flex-wrap items-center gap-2">
               {accessoryOptions.map((accessory) => (
                 <button
                   key={accessory.id}
-                  className="px-3 py-1 bg-white rounded border text-sm hover:bg-blue-50"
+                  className="px-3 py-1 bg-white rounded border text-xs hover:bg-blue-50"
                   onClick={() => addAccessory(accessory.id)}
                 >
                   + {accessory.name}
@@ -604,7 +608,7 @@ const FashionDesignTool = () => {
 
             {accessories.length > 0 && (
               <div className="mt-3">
-                <h4 className="text-sm font-medium mb-2">
+                <h4 className="text-xs mb-2 text-gray-600">
                   Applied Accessories:
                 </h4>
                 <div className="space-y-2">
@@ -651,40 +655,44 @@ const FashionDesignTool = () => {
         </div>
 
         <div className="w-64 bg-gray-100 p-4 overflow-y-auto">
-          <h2 className="text-lg font-semibold mb-4">Design Details</h2>
+          <h2 className="text-sm font-bold text-gray-900 mb-4">
+            Design Details
+          </h2>
 
           <div className="space-y-3">
             <div>
-              <span className="font-medium">Garment: </span>
+              <span className="font-medium text-xs">Garment: </span>
               {activeGarment.charAt(0).toUpperCase() + activeGarment.slice(1)}
             </div>
             <div>
-              <span className="font-medium">Style: </span>
+              <span className="font-medium text-xs">Style: </span>
               {garmentStyle
                 .split("-")
                 .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                 .join(" ")}
             </div>
             <div>
-              <span className="font-medium">Fabric: </span>
+              <span className="font-medium text-xs">Fabric: </span>
               {fabricTexture.charAt(0).toUpperCase() + fabricTexture.slice(1)}
             </div>
             <div>
-              <span className="font-medium">Size: </span>
+              <span className="font-medium text-xs">Size: </span>
               {garmentSize.charAt(0).toUpperCase() + garmentSize.slice(1)}
             </div>
             <div>
-              <span className="font-medium">Accessories: </span>
+              <span className="font-medium text-xs">Accessories: </span>
               {accessories.length} items
             </div>
           </div>
 
           <div className="mt-6">
-            <h3 className="font-medium mb-2">Export Options</h3>
-            <button className="w-full px-3 py-2 bg-green-500 text-white rounded mb-2">
+            <h3 className="text-sm font-bold text-gray-900 mb-4">
+              Export Options
+            </h3>
+            <button className="w-full px-3 py-2 bg-primary text-white text-sm rounded-full mb-2">
               Save Design
             </button>
-            <button className="w-full px-3 py-2 bg-blue-500 text-white rounded">
+            <button className="w-full px-3 py-2 bg-transparent text-primary text-sm rounded-full border border-primary">
               Export 3D Model
             </button>
           </div>
