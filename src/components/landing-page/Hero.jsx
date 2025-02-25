@@ -48,7 +48,7 @@ export default function HeroSection() {
               width="w-36"
               height="h-9"
               type="submit"
-              onClick={() => (window.location.href = "/design")}
+              onClick={() => (window.location.href = "/design-tool")}
             />
             <CustomButton
               text="Find a Tailor"
