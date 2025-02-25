@@ -19,6 +19,7 @@ const FashionDesignTool = () => {
   const [accessories, setAccessories] = useState([]);
   const [customText, setCustomText] = useState("");
   const [textPosition, setTextPosition] = useState({ x: 0, y: 0 });
+  const [showCanvas, setShowCanvas] = useState(false); // Control canvas visibility
 
   // Canvas and 3D viewer references
   const canvasRef = useRef(null);
@@ -309,6 +310,13 @@ const FashionDesignTool = () => {
     }
   };
 
+  // Handle removing accessories from the garment
+  const removeAccessory = (index) => {
+    const newAccessories = [...accessories];
+    newAccessories.splice(index, 1);
+    setAccessories(newAccessories);
+  };
+
   // Handle adding custom text to the garment
   const addCustomText = () => {
     if (customText.trim() === "") return;
@@ -320,6 +328,11 @@ const FashionDesignTool = () => {
 
     // Reset the text input
     setCustomText("");
+  };
+
+  // Toggle canvas visibility
+  const toggleCanvas = () => {
+    setShowCanvas(!showCanvas);
   };
 
   // Drawing functionality - in a real app, this would integrate with a canvas drawing API
@@ -336,7 +349,7 @@ const FashionDesignTool = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="h-screen overflow-y-auto w-full">
       <header className="bg-blue-600 text-white p-4">
         <h1 className="text-2xl font-bold">Fashion Design Studio</h1>
       </header>
@@ -436,20 +449,14 @@ const FashionDesignTool = () => {
             </div>
           </div>
 
-          {/* Accessories */}
+          {/* Toggle Canvas Button */}
           <div className="mb-6">
-            <h3 className="font-medium mb-2">Accessories</h3>
-            <div className="space-y-2">
-              {accessoryOptions.map((accessory) => (
-                <button
-                  key={accessory.id}
-                  className="block w-full text-left px-3 py-2 bg-white rounded border"
-                  onClick={() => addAccessory(accessory.id)}
-                >
-                  {accessory.name}
-                </button>
-              ))}
-            </div>
+            <button
+              className="w-full px-3 py-2 bg-purple-500 text-white rounded"
+              onClick={toggleCanvas}
+            >
+              {showCanvas ? "Hide Drawing Canvas" : "Show Drawing Canvas"}
+            </button>
           </div>
 
           {/* Custom Text */}
@@ -473,30 +480,75 @@ const FashionDesignTool = () => {
 
         {/* Center - Main working area */}
         <div className="flex-1 flex flex-col">
-          {/* Design Canvas (for 2D drawing and text) */}
-          <div className="flex-1 border-b relative">
-            <canvas
-              ref={canvasRef}
-              className="w-full h-full bg-white"
-              onMouseDown={handleCanvasDraw}
-              onMouseMove={(e) => e.buttons === 1 && handleCanvasDraw(e)}
-            />
-
-            {/* Display accessories and text (simplified representation) */}
-            {accessories.map((acc, idx) => (
-              <div
-                key={idx}
-                className="absolute bg-gray-200 px-2 py-1 rounded text-xs cursor-move"
-                style={{ top: `${50 + idx * 30}px`, left: "50px" }}
-                draggable
-              >
-                {acc.name}
-              </div>
-            ))}
-          </div>
-
-          {/* 3D Preview */}
+          {/* 3D Preview - Now positioned at the top */}
           <div className="flex-1" ref={threeContainerRef}></div>
+
+          {/* Design Canvas (for 2D drawing and text) - Now optional and toggled */}
+          {showCanvas && (
+            <div className="h-64 border-t border-b relative">
+              <canvas
+                ref={canvasRef}
+                className="w-full h-full bg-white"
+                onMouseDown={handleCanvasDraw}
+                onMouseMove={(e) => e.buttons === 1 && handleCanvasDraw(e)}
+              />
+
+              {/* Display text (simplified representation) */}
+              {customText && (
+                <div
+                  className="absolute bg-gray-200 px-2 py-1 rounded text-xs cursor-move"
+                  style={{
+                    top: `${textPosition.y}px`,
+                    left: `${textPosition.x}px`,
+                  }}
+                  draggable
+                >
+                  {customText}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Accessories Bar - Positioned below the 3D model */}
+          <div className="p-4 bg-gray-100 border-t">
+            <h3 className="font-medium mb-2">Accessories</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              {accessoryOptions.map((accessory) => (
+                <button
+                  key={accessory.id}
+                  className="px-3 py-1 bg-white rounded border text-sm hover:bg-blue-50"
+                  onClick={() => addAccessory(accessory.id)}
+                >
+                  + {accessory.name}
+                </button>
+              ))}
+            </div>
+
+            {/* Display currently applied accessories */}
+            {accessories.length > 0 && (
+              <div className="mt-3">
+                <h4 className="text-sm font-medium mb-2">
+                  Applied Accessories:
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {accessories.map((acc, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-blue-100 px-3 py-1 rounded-full text-sm flex items-center"
+                    >
+                      <span>{acc.name}</span>
+                      <button
+                        className="ml-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs"
+                        onClick={() => removeAccessory(idx)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Sidebar - Preview/Details */}
