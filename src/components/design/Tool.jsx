@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { FontLoader } from "three/examples/jsm/loaders/FontLoader"; // Import FontLoader
+import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
 import BlouseModel from "./3D-Models/Blouse.model";
 import DressModel from "./3D-Models/Dress.model";
 import JacketModel from "./3D-Models/Jacket.model";
@@ -207,11 +207,9 @@ const FashionDesignTool = () => {
         if (Array.isArray(child.material)) {
           child.material.forEach((mat) => {
             mat.color.set(garmentColor);
-            // Remove roughness and metalness since they're not supported by MeshPhongMaterial
           });
         } else {
           child.material.color.set(garmentColor);
-          // Remove roughness and metalness
         }
       }
     });
@@ -291,7 +289,7 @@ const FashionDesignTool = () => {
   const addCustomText = () => {
     if (!customText.trim() || !modelRef.current) return;
 
-    const loader = new FontLoader(); // Use imported FontLoader
+    const loader = new FontLoader();
     loader.load(
       "https://threejs.org/examples/fonts/helvetiker_regular.typeface.json",
       (font) => {
@@ -407,7 +405,7 @@ const FashionDesignTool = () => {
   const toggleCanvas = () => setShowCanvas(!showCanvas);
 
   return (
-    <div className="h-screen overflow-y-auto w-full">
+    <div className="h-screen w-full flex flex-col overflow-hidden">
       <header className="border-b border-primary p-2 flex items-center bg-primary/10 bg-grid-secondary/[0.2]">
         <img src="/logo-black-short.png" alt="Logo" className="h-8 w-8 mx-2" />
         <h1 className="text-xs font-semibold pl-4 text-primary/80">
@@ -416,171 +414,193 @@ const FashionDesignTool = () => {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-64 bg-gray-100 p-4 overflow-y-auto">
+        {/* Left Sidebar - Design Options */}
+        <div className="w-64 bg-gray-100 p-4 overflow-y-auto flex-shrink-0">
           <h2 className="text-sm font-bold text-gray-900 mb-4">
             Design Options
           </h2>
 
-          <div className="mb-6">
-            <h3 className="text-xs mb-2 text-gray-600">Garment Type</h3>
-            <div className="space-y-2">
-              {garmentTypes.map((type) => (
-                <button
-                  key={type}
-                  className={`block w-full text-left px-3 py-2 rounded-full shadow ${
-                    activeGarment === type
-                      ? "bg-secondary text-xs text-primary"
-                      : "bg-secondary/15 text-xs text-gray-900"
-                  }`}
-                  onClick={() => setActiveGarment(type)}
-                >
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </button>
-              ))}
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-xs mb-2 text-gray-600">Garment Type</h3>
+              <div className="flex flex-wrap gap-1 mb-1">
+                {garmentTypes.map((type) => (
+                  <button
+                    key={type}
+                    className={`px-2 py-1 rounded-full text-xs mb-1 ${
+                      activeGarment === type
+                        ? "bg-secondary text-primary"
+                        : "bg-secondary/15 text-gray-900"
+                    }`}
+                    onClick={() => setActiveGarment(type)}
+                  >
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="mb-6">
-            <h3 className="text-xs mb-2 text-gray-600">Style</h3>
-            <div className="space-y-2">
-              {getStyleOptions().map((style) => (
-                <button
-                  key={style}
-                  className={`block w-full text-left px-3 py-2 rounded-full shadow ${
-                    garmentStyle === style
-                      ? "bg-secondary text-xs text-primary"
-                      : "bg-secondary/15 text-xs text-gray-900"
-                  }`}
-                >
-                  {style
-                    .split("-")
-                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join(" ")}
-                </button>
-              ))}
+            <div>
+              <h3 className="text-xs mb-1 text-gray-600">Style</h3>
+              <div className="flex flex-wrap gap-1">
+                {getStyleOptions().map((style) => (
+                  <button
+                    key={style}
+                    className={`px-2 py-1 text-xs rounded-full mb-1 ${
+                      garmentStyle === style
+                        ? "bg-secondary text-primary"
+                        : "bg-secondary/15 text-gray-900"
+                    }`}
+                    onClick={() => setGarmentStyle(style)}
+                  >
+                    {style
+                      .split("-")
+                      .map(
+                        (word) => word.charAt(0).toUpperCase() + word.slice(1)
+                      )
+                      .join(" ")}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="mb-6">
-            <h3 className="text-xs mb-2 text-gray-600">Fabric Type</h3>
-            <select
-              className="w-full p-2 border text-xs rounded-full"
-              value={fabricTexture}
-              onChange={(e) => setFabricTexture(e.target.value)}
-            >
-              {fabricTypes.map((fabric) => (
-                <option key={fabric} value={fabric}>
-                  {fabric.charAt(0).toUpperCase() + fabric.slice(1)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="text-xs mb-2 text-gray-600">Color</h3>
-            <input
-              type="color"
-              className="w-full h-10 border rounded cursor-pointer"
-              value={garmentColor}
-              onChange={(e) => setGarmentColor(e.target.value)}
-            />
-          </div>
-
-          <div className="mb-6">
-            <h3 className="text-xs mb-2 text-gray-600">Size</h3>
-            <div className="flex flex-wrap gap-2">
-              {sizeOptions.map((size) => (
-                <button
-                  key={size}
-                  className={`px-3 py-1 rounded ${
-                    garmentSize === size
-                      ? "bg-secondary text-xs text-primary"
-                      : "bg-secondary/15 text-xs text-gray-900"
-                  }`}
-                  onClick={() => setGarmentSize(size)}
-                >
-                  {size.charAt(0).toUpperCase() + size.slice(1)}
-                </button>
-              ))}
+            <div>
+              <h3 className="text-xs mb-1 text-gray-600">Fabric Type</h3>
+              <select
+                className="w-full p-1 border text-xs rounded-full"
+                value={fabricTexture}
+                onChange={(e) => setFabricTexture(e.target.value)}
+              >
+                {fabricTypes.map((fabric) => (
+                  <option key={fabric} value={fabric}>
+                    {fabric.charAt(0).toUpperCase() + fabric.slice(1)}
+                  </option>
+                ))}
+              </select>
             </div>
-          </div>
 
-          <div className="mb-6">
-            <button
-              className="w-full px-3 py-2 bg-gradient-to-tl from-primary to-black via-hoverAccent text-white rounded-full"
-              onClick={toggleCanvas}
-            >
-              {showCanvas ? "Hide Drawing Canvas" : "Show Drawing Canvas"}
-            </button>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="text-xs mb-2 text-gray-600">Add Text</h3>
-            <input
-              type="text"
-              className="w-full p-2 border rounded mb-2 text-sm"
-              value={customText}
-              onChange={(e) => setCustomText(e.target.value)}
-            />
-            <input
-              type="color"
-              className="w-full h-10 mb-2"
-              value={textProperties.color}
-              onChange={(e) =>
-                setTextProperties((prev) => ({
-                  ...prev,
-                  color: e.target.value,
-                }))
-              }
-            />
-            <input
-              type="range"
-              min="0.1"
-              max="0.5"
-              step="0.1"
-              value={textProperties.fontSize}
-              onChange={(e) =>
-                setTextProperties((prev) => ({
-                  ...prev,
-                  fontSize: parseFloat(e.target.value),
-                }))
-              }
-              className="w-full mb-2"
-            />
-            <button
-              className="w-full px-3 py-2 bg-primary text-white rounded-full"
-              onClick={addCustomText}
-            >
-              Add 3D Text
-            </button>
-          </div>
-
-          {showCanvas && (
-            <div className="mb-6">
-              <h3 className="text-xs mb-2 text-gray-600">Drawing Tools</h3>
+            <div>
+              <h3 className="text-xs mb-1 text-gray-600">Color</h3>
               <input
                 type="color"
-                className="w-full h-10 mb-2"
-                value={drawColor}
-                onChange={(e) => setDrawColor(e.target.value)}
-              />
-              <input
-                type="range"
-                min="1"
-                max="10"
-                value={brushSize}
-                onChange={(e) => setBrushSize(parseInt(e.target.value))}
-                className="w-full"
+                className="w-full h-8 border rounded cursor-pointer"
+                value={garmentColor}
+                onChange={(e) => setGarmentColor(e.target.value)}
               />
             </div>
-          )}
+
+            <div>
+              <h3 className="text-xs mb-1 text-gray-600">Size</h3>
+              <div className="flex flex-wrap gap-1">
+                {sizeOptions.map((size) => (
+                  <button
+                    key={size}
+                    className={`px-2 py-1 rounded text-xs ${
+                      garmentSize === size
+                        ? "bg-secondary text-primary"
+                        : "bg-secondary/15 text-gray-900"
+                    }`}
+                    onClick={() => setGarmentSize(size)}
+                  >
+                    {size.charAt(0).toUpperCase() + size.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <button
+                className="w-full px-3 py-2 text-xs bg-gradient-to-tl from-primary to-black via-hoverAccent text-white rounded-full"
+                onClick={toggleCanvas}
+              >
+                {showCanvas ? "Hide Drawing Canvas" : "Show Drawing Canvas"}
+              </button>
+            </div>
+
+            <div>
+              <h3 className="text-xs mb-1 text-gray-600">Add Text</h3>
+              <input
+                type="text"
+                className="w-full p-1 border rounded mb-1 text-xs"
+                value={customText}
+                onChange={(e) => setCustomText(e.target.value)}
+                placeholder="Enter text..."
+              />
+              <div className="flex items-center gap-1 mb-1">
+                <span className="text-xs">Color:</span>
+                <input
+                  type="color"
+                  className="flex-1 h-6"
+                  value={textProperties.color}
+                  onChange={(e) =>
+                    setTextProperties((prev) => ({
+                      ...prev,
+                      color: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="flex items-center gap-1 mb-2">
+                <span className="text-xs">Size:</span>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="0.5"
+                  step="0.1"
+                  value={textProperties.fontSize}
+                  onChange={(e) =>
+                    setTextProperties((prev) => ({
+                      ...prev,
+                      fontSize: parseFloat(e.target.value),
+                    }))
+                  }
+                  className="flex-1 accent-primary h-1"
+                />
+              </div>
+              <button
+                className="w-full px-3 py-2 text-xs bg-primary text-white rounded-full"
+                onClick={addCustomText}
+              >
+                Add 3D Text
+              </button>
+            </div>
+
+            {showCanvas && (
+              <div>
+                <h3 className="text-xs mb-1 text-gray-600">Drawing Tools</h3>
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-xs">Color:</span>
+                  <input
+                    type="color"
+                    className="flex-1 h-6"
+                    value={drawColor}
+                    onChange={(e) => setDrawColor(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs">Size:</span>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={brushSize}
+                    onChange={(e) => setBrushSize(parseInt(e.target.value))}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex-1 flex flex-col">
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* 3D Model Container */}
           <div className="flex-1" ref={threeContainerRef}></div>
 
+          {/* Drawing Canvas (Optional) */}
           {showCanvas && (
-            <div className="h-64 border-t border-b relative">
+            <div className="h-48 border-t border-b relative">
               <canvas
                 ref={canvasRef}
                 className="w-full h-full bg-transparent"
@@ -592,13 +612,14 @@ const FashionDesignTool = () => {
             </div>
           )}
 
-          <div className="p-4 bg-gray-100 border-t">
-            <h3 className="text-xs mb-2 text-gray-600">Accessories</h3>
-            <div className="flex flex-wrap items-center gap-2">
+          {/* Accessories Footer */}
+          <div className="p-2 bg-gray-100 border-t">
+            <h3 className="text-xs mb-1 text-gray-600">Accessories</h3>
+            <div className="flex flex-wrap items-center gap-1">
               {accessoryOptions.map((accessory) => (
                 <button
                   key={accessory.id}
-                  className="px-3 py-1 bg-white rounded border text-xs hover:bg-blue-50"
+                  className="px-2 py-1 bg-white rounded border text-xs hover:bg-blue-50"
                   onClick={() => addAccessory(accessory.id)}
                 >
                   + {accessory.name}
@@ -607,18 +628,18 @@ const FashionDesignTool = () => {
             </div>
 
             {accessories.length > 0 && (
-              <div className="mt-3">
-                <h4 className="text-xs mb-2 text-gray-600">
+              <div className="mt-2">
+                <h4 className="text-xs mb-1 text-gray-600">
                   Applied Accessories:
                 </h4>
-                <div className="space-y-2">
+                <div className="space-y-1 max-h-24 overflow-y-auto">
                   {accessories.map((acc, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between bg-blue-100 p-2 rounded"
+                      className="flex items-center justify-between bg-blue-100 p-1 rounded text-xs"
                     >
                       <span>{acc.name}</span>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1 items-center">
                         <input
                           type="range"
                           min="0.5"
@@ -637,10 +658,10 @@ const FashionDesignTool = () => {
                               mesh.scale.setScalar(newAccessories[idx].scale);
                             setAccessories(newAccessories);
                           }}
-                          className="w-20"
+                          className="w-16"
                         />
                         <button
-                          className="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs"
+                          className="w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-xs"
                           onClick={() => removeAccessory(idx)}
                         >
                           ×
@@ -654,45 +675,46 @@ const FashionDesignTool = () => {
           </div>
         </div>
 
-        <div className="w-64 bg-gray-100 p-4 overflow-y-auto">
+        {/* Right Sidebar - Design Details */}
+        <div className="w-64 bg-gray-100 p-4 overflow-y-auto flex-shrink-0">
           <h2 className="text-sm font-bold text-gray-900 mb-4">
             Design Details
           </h2>
 
-          <div className="space-y-3">
+          <div className="space-y-2 text-xs">
             <div>
-              <span className="font-medium text-xs">Garment: </span>
+              <span className="font-medium">Garment: </span>
               {activeGarment.charAt(0).toUpperCase() + activeGarment.slice(1)}
             </div>
             <div>
-              <span className="font-medium text-xs">Style: </span>
+              <span className="font-medium">Style: </span>
               {garmentStyle
                 .split("-")
                 .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                 .join(" ")}
             </div>
             <div>
-              <span className="font-medium text-xs">Fabric: </span>
+              <span className="font-medium">Fabric: </span>
               {fabricTexture.charAt(0).toUpperCase() + fabricTexture.slice(1)}
             </div>
             <div>
-              <span className="font-medium text-xs">Size: </span>
+              <span className="font-medium">Size: </span>
               {garmentSize.charAt(0).toUpperCase() + garmentSize.slice(1)}
             </div>
             <div>
-              <span className="font-medium text-xs">Accessories: </span>
+              <span className="font-medium">Accessories: </span>
               {accessories.length} items
             </div>
           </div>
 
           <div className="mt-6">
-            <h3 className="text-sm font-bold text-gray-900 mb-4">
+            <h3 className="text-sm font-bold text-gray-900 mb-3">
               Export Options
             </h3>
-            <button className="w-full px-3 py-2 bg-primary text-white text-sm rounded-full mb-2">
+            <button className="w-full px-3 py-2 bg-primary text-white text-xs rounded-full mb-2">
               Save Design
             </button>
-            <button className="w-full px-3 py-2 bg-transparent text-primary text-sm rounded-full border border-primary">
+            <button className="w-full px-3 py-2 bg-transparent text-primary text-xs rounded-full border border-primary">
               Export 3D Model
             </button>
           </div>
