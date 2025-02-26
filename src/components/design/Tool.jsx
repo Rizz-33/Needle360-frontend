@@ -108,14 +108,29 @@ const FashionDesignTool = () => {
       threeContainerRef.current.clientWidth,
       threeContainerRef.current.clientHeight
     );
+    // Enable physically correct lighting to improve color accuracy
+    renderer.physicallyCorrectLights = true;
+    // Improve color rendering with tone mapping and encoding
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+
     threeContainerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    // Increase ambient light to prevent colors from appearing too dark
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
+
+    // Add multiple lights for better illumination from different angles
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(0, 1, 1);
     scene.add(directionalLight);
+
+    // Add a second directional light from opposite direction to avoid shadows
+    const backLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    backLight.position.set(0, 0, -1);
+    scene.add(backLight);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -168,6 +183,13 @@ const FashionDesignTool = () => {
     if (modelRef.current) updateGarmentProperties();
   }, [fabricTexture, garmentColor, garmentSize]);
 
+  // Helper function to convert hex color to THREE.Color
+  const getThreeColor = (hexColor) => {
+    const color = new THREE.Color(hexColor);
+    // Adjust gamma to compensate for WebGL rendering which tends to darken colors
+    return color;
+  };
+
   const loadGarmentModel = (garmentType, style) => {
     if (!sceneRef.current) return;
     if (modelRef.current) sceneRef.current.remove(modelRef.current);
@@ -204,14 +226,42 @@ const FashionDesignTool = () => {
   const updateGarmentProperties = () => {
     if (!modelRef.current) return;
 
+    // Use the improved color conversion
+    const threeColor = getThreeColor(garmentColor);
+
     modelRef.current.traverse((child) => {
       if (child.isMesh && child.material && !child.name.includes("accessory")) {
+        // Create more accurate materials for better color representation
         if (Array.isArray(child.material)) {
           child.material.forEach((mat) => {
-            mat.color.set(garmentColor);
+            // Clone the material to prevent affecting other instances
+            const newMaterial = new THREE.MeshStandardMaterial({
+              color: threeColor,
+              metalness: 0.1,
+              roughness: 0.8,
+              emissive: threeColor.clone().multiplyScalar(0.1), // Slight emissive effect to brighten
+            });
+
+            // Preserve any textures from the original material
+            if (mat.map) newMaterial.map = mat.map;
+
+            // Replace the material
+            child.material = newMaterial;
           });
         } else {
-          child.material.color.set(garmentColor);
+          // Clone the material to prevent affecting other instances
+          const newMaterial = new THREE.MeshStandardMaterial({
+            color: threeColor,
+            metalness: 0.1,
+            roughness: 0.8,
+            emissive: threeColor.clone().multiplyScalar(0.1), // Slight emissive effect to brighten
+          });
+
+          // Preserve any textures from the original material
+          if (child.material.map) newMaterial.map = child.material.map;
+
+          // Replace the material
+          child.material = newMaterial;
         }
       }
     });
@@ -241,9 +291,10 @@ const FashionDesignTool = () => {
     if (!accessoryToAdd || !modelRef.current) return;
 
     const geometry = new THREE.SphereGeometry(0.1, 32, 32);
-    const material = new THREE.MeshPhongMaterial({
+    const material = new THREE.MeshStandardMaterial({
       color: 0x666666,
-      shininess: 100,
+      metalness: 0.5,
+      roughness: 0.5,
     });
     const accessoryMesh = new THREE.Mesh(geometry, material);
     accessoryMesh.name = `accessory_${accessoryId}_${Date.now()}`;
@@ -318,8 +369,11 @@ const FashionDesignTool = () => {
           curveSegments: 12,
         });
 
-        const material = new THREE.MeshPhongMaterial({
-          color: textProperties.color,
+        // Use MeshStandardMaterial for consistent look with other elements
+        const material = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(textProperties.color),
+          metalness: 0.1,
+          roughness: 0.7,
         });
         const textMesh = new THREE.Mesh(geometry, material);
         textMesh.name = `text_${Date.now()}`;
@@ -408,12 +462,16 @@ const FashionDesignTool = () => {
             ? child.material[0]
             : child.material;
 
-          // Clone the material to avoid modifying the original
-          const newMaterial = material.clone();
-          newMaterial.map = texture;
-          newMaterial.transparent = true;
-          newMaterial.needsUpdate = true;
+          // Create new material with proper color and texture
+          const newMaterial = new THREE.MeshStandardMaterial({
+            color: getThreeColor(garmentColor),
+            metalness: 0.1,
+            roughness: 0.8,
+            map: texture,
+            transparent: true,
+          });
 
+          newMaterial.needsUpdate = true;
           child.material = newMaterial;
         }
       });
