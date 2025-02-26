@@ -27,6 +27,8 @@ const FashionDesignTool = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawColor, setDrawColor] = useState("#000000");
   const [brushSize, setBrushSize] = useState(2);
+  const [showRemoveAccessoriesPanel, setShowRemoveAccessoriesPanel] =
+    useState(false);
 
   const canvasRef = useRef(null);
   const threeContainerRef = useRef(null);
@@ -284,6 +286,22 @@ const FashionDesignTool = () => {
     if (mesh) modelRef.current.remove(mesh);
 
     setAccessories((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeAllAccessories = () => {
+    if (!modelRef.current) return;
+
+    accessories.forEach((accessory) => {
+      const mesh = modelRef.current.getObjectByName(accessory.meshId);
+      if (mesh) modelRef.current.remove(mesh);
+    });
+
+    setAccessories([]);
+    setShowRemoveAccessoriesPanel(false);
+  };
+
+  const toggleRemoveAccessoriesPanel = () => {
+    setShowRemoveAccessoriesPanel(!showRemoveAccessoriesPanel);
   };
 
   const addCustomText = () => {
@@ -596,7 +614,48 @@ const FashionDesignTool = () => {
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* 3D Model Container */}
-          <div className="flex-1" ref={threeContainerRef}></div>
+          <div className="flex-1 relative" ref={threeContainerRef}>
+            {/* Floating Remove Accessories Panel */}
+            {showRemoveAccessoriesPanel && accessories.length > 0 && (
+              <div className="absolute top-4 right-4 bg-white p-3 rounded-lg shadow-lg z-10 w-64 max-h-96 overflow-y-auto">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-sm font-bold">Manage Accessories</h3>
+                  <button
+                    className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center"
+                    onClick={toggleRemoveAccessoriesPanel}
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {accessories.map((acc, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between bg-secondary/30 p-2 rounded-full"
+                    >
+                      <div className="flex items-center">
+                        <span className="text-xs font-medium">{acc.name}</span>
+                      </div>
+                      <button
+                        className="px-2 py-1 bg-red-500 text-white text-xs rounded-full"
+                        onClick={() => removeAccessory(idx)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  className="w-full mt-3 px-3 py-2 bg-red-500 text-white text-xs rounded-full"
+                  onClick={removeAllAccessories}
+                >
+                  Remove All Accessories
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Drawing Canvas (Optional) */}
           {showCanvas && (
@@ -614,7 +673,17 @@ const FashionDesignTool = () => {
 
           {/* Accessories Footer */}
           <div className="p-2 bg-gray-100 border-t">
-            <h3 className="text-xs mb-1 text-gray-600">Accessories</h3>
+            <div className="flex justify-between items-center mb-1">
+              <h3 className="text-xs text-gray-600">Accessories</h3>
+              {accessories.length > 0 && (
+                <button
+                  className="text-xs text-primary hover:underline"
+                  onClick={toggleRemoveAccessoriesPanel}
+                >
+                  Manage Accessories
+                </button>
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-1">
               {accessoryOptions.map((accessory) => (
                 <button
@@ -630,10 +699,10 @@ const FashionDesignTool = () => {
             {accessories.length > 0 && (
               <div className="mt-2">
                 <h4 className="text-xs mb-1 text-gray-600">
-                  Applied Accessories:
+                  Applied Accessories: {accessories.length}
                 </h4>
                 <div className="space-y-1 max-h-24 overflow-y-auto">
-                  {accessories.map((acc, idx) => (
+                  {accessories.slice(0, 3).map((acc, idx) => (
                     <div
                       key={idx}
                       className="flex items-center justify-between bg-blue-100 p-1 rounded text-xs"
@@ -658,7 +727,7 @@ const FashionDesignTool = () => {
                               mesh.scale.setScalar(newAccessories[idx].scale);
                             setAccessories(newAccessories);
                           }}
-                          className="w-16"
+                          className="w-16 accent-primary h-1"
                         />
                         <button
                           className="w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-xs"
@@ -669,6 +738,14 @@ const FashionDesignTool = () => {
                       </div>
                     </div>
                   ))}
+                  {accessories.length > 3 && (
+                    <div
+                      className="text-right text-xs text-primary hover:underline cursor-pointer"
+                      onClick={toggleRemoveAccessoriesPanel}
+                    >
+                      +{accessories.length - 3} more...
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -701,10 +778,37 @@ const FashionDesignTool = () => {
               <span className="font-medium">Size: </span>
               {garmentSize.charAt(0).toUpperCase() + garmentSize.slice(1)}
             </div>
-            <div>
-              <span className="font-medium">Accessories: </span>
-              {accessories.length} items
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="font-medium">Accessories: </span>
+                {accessories.length} items
+              </div>
+              {accessories.length > 0 && (
+                <button
+                  className="text-xs text-primary hover:underline"
+                  onClick={toggleRemoveAccessoriesPanel}
+                >
+                  Manage
+                </button>
+              )}
             </div>
+            {accessories.length > 0 && (
+              <div className="pl-2 pt-1 space-y-1">
+                {accessories.slice(0, 5).map((acc, idx) => (
+                  <div key={idx} className="text-xs text-gray-600">
+                    • {acc.name}
+                  </div>
+                ))}
+                {accessories.length > 5 && (
+                  <div
+                    className="text-xs text-primary hover:underline cursor-pointer"
+                    onClick={toggleRemoveAccessoriesPanel}
+                  >
+                    +{accessories.length - 5} more...
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="mt-6">
