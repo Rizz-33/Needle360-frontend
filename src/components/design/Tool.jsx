@@ -482,6 +482,13 @@ const FashionDesignTool = () => {
 
   return (
     <div className="h-screen w-full flex flex-col overflow-hidden">
+      {/* Mobile Warning Banner */}
+      <div className="md:hidden bg-yellow-100 p-3 text-center">
+        <p className="text-sm font-medium text-yellow-800">
+          For the best experience, please use a laptop or desktop computer.
+        </p>
+      </div>
+
       <header className="border-b border-primary p-2 flex items-center bg-primary/10 bg-grid-secondary/[0.2]">
         <img src="/logo-black-short.png" alt="Logo" className="h-8 w-8 mx-2" />
         <h1 className="text-xs font-semibold pl-4 text-primary/80">
@@ -489,7 +496,53 @@ const FashionDesignTool = () => {
         </h1>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      {/* Alternative mobile view */}
+      <div className="md:hidden flex-1 flex flex-col items-center justify-center p-4 text-center">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-16 w-16 text-gray-400 mb-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+          />
+        </svg>
+        <h2 className="text-lg font-bold text-gray-800 mb-2">
+          Limited Mobile Experience
+        </h2>
+        <p className="text-gray-600 mb-6">
+          Our 3D Design Studio requires a larger screen for the best experience.
+          Please switch to a laptop or desktop computer to access all features.
+        </p>
+        <a
+          href="/design"
+          className="px-4 py-2 bg-primary text-white rounded-full text-sm flex items-center"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
+          </svg>
+          Back to Home
+        </a>
+      </div>
+
+      {/* Main content - only visible on larger screens */}
+      <div className="hidden md:flex flex-1 overflow-hidden">
         {/* Left Sidebar - Design Options */}
         <div className="w-64 bg-gray-100 p-4 overflow-y-auto flex-shrink-0">
           <h2 className="text-sm font-bold text-gray-900 mb-4">
