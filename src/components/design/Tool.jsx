@@ -14,6 +14,7 @@ const FashionDesignTool = () => {
   const [garmentStyle, setGarmentStyle] = useState("regular");
   const [fabricTexture, setFabricTexture] = useState("cotton");
   const [garmentColor, setGarmentColor] = useState("#ffffff");
+  const [backgroundColor, setBackgroundColor] = useState("#f0f0f0"); // New state for background color
   const [garmentSize, setGarmentSize] = useState("medium");
   const [accessories, setAccessories] = useState([]);
   const [customText, setCustomText] = useState("");
@@ -86,11 +87,21 @@ const FashionDesignTool = () => {
     { id: "pocket", name: "Pockets", type: "structure" },
   ];
 
+  // Background color presets
+  const backgroundColorPresets = [
+    { name: "Light Gray", value: "#f0f0f0" },
+    { name: "White", value: "#ffffff" },
+    { name: "Black", value: "#000000" },
+    { name: "Light Blue", value: "#e6f7ff" },
+    { name: "Light Pink", value: "#fff1f0" },
+  ];
+
   useEffect(() => {
     if (!threeContainerRef.current) return;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf0f0f0);
+    // Use the backgroundColor state instead of hardcoded value
+    scene.background = new THREE.Color(backgroundColor);
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(
@@ -170,6 +181,13 @@ const FashionDesignTool = () => {
       }
     };
   }, []);
+
+  // Update background color when it changes
+  useEffect(() => {
+    if (sceneRef.current) {
+      sceneRef.current.background = new THREE.Color(backgroundColor);
+    }
+  }, [backgroundColor]);
 
   useEffect(() => {
     if (sceneRef.current) loadGarmentModel(activeGarment, garmentStyle);
@@ -609,13 +627,41 @@ const FashionDesignTool = () => {
             </div>
 
             <div>
-              <h3 className="text-xs mb-1 text-gray-600">Color</h3>
+              <h3 className="text-xs mb-1 text-gray-600">Garment Color</h3>
               <input
                 type="color"
                 className="w-full h-8 border rounded cursor-pointer"
                 value={garmentColor}
                 onChange={(e) => setGarmentColor(e.target.value)}
               />
+            </div>
+
+            {/* New section for background color */}
+            <div>
+              <h3 className="text-xs mb-1 text-gray-600">Background Color</h3>
+              <input
+                type="color"
+                className="w-full h-8 border rounded cursor-pointer mb-2"
+                value={backgroundColor}
+                onChange={(e) => setBackgroundColor(e.target.value)}
+              />
+              <div className="flex flex-wrap gap-1">
+                {backgroundColorPresets.map((preset) => (
+                  <button
+                    key={preset.value}
+                    className="px-2 py-1 text-xs rounded bg-secondary/15 text-gray-900"
+                    onClick={() => setBackgroundColor(preset.value)}
+                    style={{
+                      borderBottom:
+                        backgroundColor === preset.value
+                          ? "2px solid #000"
+                          : "none",
+                    }}
+                  >
+                    {preset.name}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div>
