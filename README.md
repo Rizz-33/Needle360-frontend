@@ -34,7 +34,7 @@ This project aims to revolutionize the tailor industry by providing a one-stop d
 
 ## Technology Stack
 
-- **Frontend**: React.js, TailwindCSS, Redux
+- **Frontend**: React.js, TailwindCSS
 - **Backend**: Node.js, Express.js
 - **Database**: MongoDB
 - **Authentication**: Firebase/Auth0
@@ -62,13 +62,13 @@ git clone https://github.com/Rizz-33/Needle360-frontend.git
 cd Needle360-frontend
 
 # Install dependencies
-pnpm install  # or npm install / yarn install
+npm install  # or npm install / yarn install
 ```
 
 ### Running the Development Server
 
 ```bash
-pnpm dev  # or npm run dev / yarn dev
+npm dev  # or npm run dev / yarn dev
 ```
 
 The application will be available at `http://localhost:3000`
