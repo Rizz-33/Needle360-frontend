@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { FaChevronLeft } from "react-icons/fa";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
@@ -508,6 +509,13 @@ const FashionDesignTool = () => {
       </div>
 
       <header className="border-b border-primary p-2 flex items-center bg-primary/10 bg-grid-secondary/[0.2]">
+        <a
+          href="/design"
+          className="flex items-center justify-center h-8 w-8 mx-2 rounded-full hover:bg-primary/10"
+          title="Back to Design"
+        >
+          <FaChevronLeft className="h-3 text-primary/80" />
+        </a>
         <img src="/logo-black-short.png" alt="Logo" className="h-8 w-8 mx-2" />
         <h1 className="text-xs font-semibold pl-4 text-primary/80">
           Design Studio
@@ -537,26 +545,6 @@ const FashionDesignTool = () => {
           Our 3D Design Studio requires a larger screen for the best experience.
           Please switch to a laptop or desktop computer to access all features.
         </p>
-        <a
-          href="/design"
-          className="px-4 py-2 bg-primary text-white rounded-full text-sm flex items-center"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 mr-2"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10 19l-7-7m0 0l7-7m-7 7h18"
-            />
-          </svg>
-          Back to Home
-        </a>
       </div>
 
       {/* Main content - only visible on larger screens */}
