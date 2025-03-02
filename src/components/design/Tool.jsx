@@ -511,8 +511,8 @@ const FashionDesignTool = () => {
       <header className="border-b border-primary p-2 flex items-center bg-primary/10 bg-grid-secondary/[0.2]">
         <a
           href="/design"
-          className="flex items-center justify-center h-8 w-8 mx-2 rounded-full hover:bg-primary/10"
-          title="Back to Design"
+          className="flex items-center justify-center h-8 w-8 rounded-full hover:bg-primary/10"
+          title="Browse Design"
         >
           <FaChevronLeft className="h-3 text-primary/80" />
         </a>
