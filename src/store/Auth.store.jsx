@@ -30,20 +30,33 @@ export const useAuthStore = create((set) => ({
     const mappedValues = {
       email: values.email,
       password: values.password,
-      name: roleType === 1 ? values.name : values.businessName,
+      name: values.name,
       role: roleTypeNumbers[roleType] || roleType,
       contactNumber: values.contactNumber,
+      country: values.country,
+      province: values.province,
+      city: values.city,
+      postalCode: values.postalCode,
+      bankAccountNumber: values.accountNumber,
+      bankName: values.bankName,
       ...(roleType === 1 && {
-        address: values.streetAddress,
-        bankAccountNumber: values.accountNumber,
-        bankName: values.bankName,
+        address: values.address,
       }),
       ...(roleType === 4 && {
-        shopName: values.businessName,
-        shopAddress: values.streetAddress,
-        shopRegistrationNumber: values.registrationNumber,
+        shopName: values.shopName,
+        shopAddress: values.address,
+        shopRegistrationNumber: values.shopRegistrationNumber,
+        taxId: values.taxId,
+        logoUrl: values.logoUrl || null,
       }),
     };
+
+    console.log("Mapped Values:", mappedValues);
+    console.log("Role Type:", roleType);
+    console.log(
+      "Shop Registration Number:",
+      mappedValues.shopRegistrationNumber
+    );
 
     try {
       set({ isLoading: true });
