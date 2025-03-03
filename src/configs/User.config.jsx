@@ -6,6 +6,6 @@ export const roleTypes = {
 
 export const roleTypeNumbers = {
   customer: 1,
-  tailor: 2,
-  admin: 3,
+  tailor: 4,
+  admin: 9,
 };
