@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/Auth.store";
 import { CustomButton } from "./ui/Button";
@@ -83,17 +83,127 @@ const SelectField = ({
         />
       </svg>
     </span>
+    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
   </div>
 );
+
+// Logo upload component for TailorShop
+const LogoUpload = ({ onChange, error, value }) => {
+  const [previewUrl, setPreviewUrl] = useState(null);
+
+  // Initialize preview URL if value exists
+  useEffect(() => {
+    if (value) {
+      setPreviewUrl(value);
+    }
+  }, [value]);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const fileUrl = reader.result;
+        setPreviewUrl(fileUrl);
+        onChange({ target: { name: "logoUrl", value: fileUrl } });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <div className="w-full">
+      <div className="flex flex-col items-center">
+        <div
+          className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer overflow-hidden"
+          onClick={() => document.getElementById("logo-upload").click()}
+        >
+          {previewUrl ? (
+            <img
+              src={previewUrl}
+              alt="Shop logo preview"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="text-center p-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-8 w-8 text-gray-400 mx-auto"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
+              </svg>
+              <p className="text-xs mt-2">Upload Shop Logo</p>
+            </div>
+          )}
+        </div>
+        <input
+          id="logo-upload"
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+        <p className="text-xs mt-2">Click to upload logo</p>
+        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+      </div>
+    </div>
+  );
+};
+
+// Form stepper component for multi-step forms
+const FormStepper = ({ currentStep, totalSteps }) => {
+  return (
+    <div className="mb-6">
+      <div className="flex justify-between mb-2">
+        {Array.from({ length: totalSteps }, (_, i) => (
+          <div
+            key={i}
+            className={`w-8 h-8 rounded-full flex items-center justify-center ${
+              i < currentStep
+                ? "bg-green-500 text-white"
+                : i === currentStep
+                ? "bg-primary text-white"
+                : "bg-gray-200 text-gray-600"
+            }`}
+          >
+            {i + 1}
+          </div>
+        ))}
+      </div>
+      <div className="flex w-full">
+        {Array.from({ length: totalSteps - 1 }, (_, i) => (
+          <div
+            key={i}
+            className={`h-1 flex-1 ${
+              i < currentStep ? "bg-green-500" : "bg-gray-200"
+            }`}
+          ></div>
+        ))}
+      </div>
+      <p className="text-center mt-2 text-xs text-gray-600">
+        Step {currentStep + 1} of {totalSteps}
+      </p>
+    </div>
+  );
+};
 
 // Main form component
 const Form = ({
   customFields,
   formType,
-  values,
+  values = {},
   onChange,
   onSubmit,
   errors = {},
+  setErrors = () => {},
   disabled = {},
   button = "Submit",
   className = "",
@@ -104,10 +214,44 @@ const Form = ({
   showDivider = true,
   showTerms = true,
   showAlternateSignup = true,
+  multiStep = false,
 }) => {
-  const [roleType, setRoleType] = useState(1);
+  const [roleType, setRoleType] = useState(1); // 1 for user, 4 for tailor shop
+  const [currentStep, setCurrentStep] = useState(0);
+  const [formValues, setFormValues] = useState({ ...values });
+  const [formErrors, setFormErrors] = useState({ ...errors });
+  const totalSteps = 3; // for multi-step forms like tailor shop signup
   const navigate = useNavigate();
   const { isLoading } = useAuthStore();
+
+  // Update internal form values when external values change
+  useEffect(() => {
+    setFormValues({ ...values });
+  }, [values]);
+
+  // Update internal errors when external errors change
+  useEffect(() => {
+    setFormErrors({ ...errors });
+  }, [errors]);
+
+  // Handle form field changes
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    const newValues = { ...formValues, [name]: value };
+    setFormValues(newValues);
+
+    // Clear error for this field when user changes it
+    if (formErrors[name]) {
+      const newErrors = { ...formErrors };
+      delete newErrors[name];
+      setFormErrors(newErrors);
+      setErrors(newErrors);
+    }
+
+    if (onChange) {
+      onChange({ target: { name, value } });
+    }
+  };
 
   // Toggle role type between 1 and 4
   const toggleRoleType = () => {
@@ -116,6 +260,69 @@ const Form = ({
     if (onRoleTypeChange) {
       onRoleTypeChange(newRoleType);
     }
+  };
+
+  // Validate individual steps
+  const validateStep = (step) => {
+    const newErrors = {};
+
+    if (step === 0) {
+      // Validate account details
+      if (!formValues.name) newErrors.name = "Name is required";
+
+      if (!formValues.email) newErrors.email = "Email is required";
+      else if (!/\S+@\S+\.\S+/.test(formValues.email))
+        newErrors.email = "Please enter a valid email";
+
+      if (!formValues.password) newErrors.password = "Password is required";
+      else if (formValues.password.length < 8)
+        newErrors.password = "Password must be at least 8 characters";
+
+      if (!formValues.confirmPassword)
+        newErrors.confirmPassword = "Please confirm your password";
+      else if (formValues.password !== formValues.confirmPassword)
+        newErrors.confirmPassword = "Passwords do not match";
+    } else if (step === 1) {
+      // Validate business details
+      if (roleType === 4) {
+        if (!formValues.shopName)
+          newErrors.shopName = "Business name is required";
+      } else {
+        if (!formValues.name) newErrors.name = "Name is required";
+      }
+
+      if (!formValues.contactNumber)
+        newErrors.contactNumber = "Contact number is required";
+      if (!formValues.address) newErrors.address = "Street address is required";
+      if (!formValues.city) newErrors.city = "City is required";
+      if (!formValues.province) newErrors.province = "Province is required";
+      if (!formValues.postalCode)
+        newErrors.postalCode = "Postal code is required";
+    } else if (step === 2) {
+      // Validate bank details
+      if (!formValues.bankName) newErrors.bankName = "Bank name is required";
+      if (!formValues.accountNumber)
+        newErrors.accountNumber = "Account number is required";
+      if (!formValues.accountName)
+        newErrors.accountName = "Account name is required";
+
+      if (roleType === 4 && !formValues.shopRegistrationNumber)
+        newErrors.shopRegistrationNumber = "Registration number is required";
+    }
+
+    setFormErrors(newErrors);
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep((prev) => Math.min(prev + 1, totalSteps - 1));
+    }
+  };
+
+  const handlePrevious = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
   // Default fields configuration
@@ -158,10 +365,9 @@ const Form = ({
     ],
     signup: [
       {
-        name: roleType === 1 ? "name" : "businessName",
+        name: "name",
         type: "text",
-        placeholder:
-          roleType === 1 ? "Enter your name" : "Enter your business name",
+        placeholder: "Enter your name",
         required: true,
       },
       {
@@ -281,7 +487,7 @@ const Form = ({
         ],
       },
       {
-        name: "streetAddress",
+        name: "address",
         type: "text",
         placeholder: "Enter your street address",
         required: true,
@@ -310,30 +516,173 @@ const Form = ({
           },
         ],
       },
-    ].concat(
-      roleType === 4
-        ? [
-            {
-              name: "businessDetails-group",
-              gridCols: 2,
-              fields: [
-                {
-                  name: "registrationNumber",
-                  type: "text",
-                  placeholder: "Enter your registration number",
-                  required: true,
-                },
-                {
-                  name: "taxId",
-                  type: "text",
-                  placeholder: "Enter your tax ID",
-                  required: true,
-                },
-              ],
-            },
-          ]
-        : []
-    ),
+    ],
+    // Multi-step form fields for tailor shop signup
+    tailorSignup: [
+      // Step 1: Account Information
+      {
+        step: 0,
+        fields: [
+          {
+            name: "name",
+            type: "text",
+            placeholder: "Enter your name",
+            required: true,
+          },
+          {
+            name: "email",
+            type: "email",
+            placeholder: "Enter your email address",
+            required: true,
+          },
+          {
+            name: "password",
+            type: "password",
+            placeholder: "Set a password",
+            required: true,
+          },
+          {
+            name: "confirmPassword",
+            type: "password",
+            placeholder: "Confirm your password",
+            required: true,
+          },
+        ],
+      },
+      // Step 2: Business Details
+      {
+        step: 1,
+        fields: [
+          {
+            name: "shopName",
+            type: "text",
+            placeholder: "Enter your business name",
+            required: true,
+          },
+          {
+            name: "logoUrl",
+            type: "logo",
+            placeholder: "Upload Shop Logo",
+          },
+          {
+            name: "contactNumber",
+            type: "tel",
+            placeholder: "Enter contact number",
+            required: true,
+          },
+          {
+            name: "location-group",
+            gridCols: 2,
+            fields: [
+              {
+                name: "country",
+                type: "select",
+                options: ["Sri Lanka"],
+                required: true,
+              },
+              {
+                name: "province",
+                type: "select",
+                options: [
+                  "Central Province",
+                  "Eastern Province",
+                  "Northern Province",
+                  "Southern Province",
+                  "Western Province",
+                  "North Western Province",
+                  "North Central Province",
+                  "Uva Province",
+                  "Sabaragamuwa Province",
+                ],
+                required: true,
+              },
+            ],
+          },
+          {
+            name: "address-group",
+            gridCols: 2,
+            fields: [
+              {
+                name: "city",
+                type: "select",
+                options: [
+                  "Colombo",
+                  "Kandy",
+                  "Galle",
+                  "Jaffna",
+                  "Batticaloa",
+                  "Negombo",
+                  "Anuradhapura",
+                  "Ratnapura",
+                  // Other cities as needed
+                ],
+                required: true,
+              },
+              {
+                name: "postalCode",
+                type: "text",
+                placeholder: "Enter postal code",
+                required: true,
+              },
+            ],
+          },
+          {
+            name: "address",
+            type: "text",
+            placeholder: "Enter street address",
+            required: true,
+          },
+        ],
+      },
+      // Step 3: Banking & Registration
+      {
+        step: 2,
+        fields: [
+          {
+            name: "bankDetails-group",
+            gridCols: 3,
+            fields: [
+              {
+                name: "accountNumber",
+                type: "text",
+                placeholder: "Account number",
+                required: true,
+              },
+              {
+                name: "accountName",
+                type: "text",
+                placeholder: "Account name",
+                required: true,
+              },
+              {
+                name: "bankName",
+                type: "text",
+                placeholder: "Bank name",
+                required: true,
+              },
+            ],
+          },
+          {
+            name: "businessDetails-group",
+            gridCols: 2,
+            fields: [
+              {
+                name: "shopRegistrationNumber",
+                type: "text",
+                placeholder: "Business registration number",
+                required: true,
+              },
+              {
+                name: "taxId",
+                type: "text",
+                placeholder: "Tax ID",
+                required: false,
+              },
+            ],
+          },
+        ],
+      },
+    ],
   };
 
   const fields = customFields || defaultFields[formType] || [];
@@ -341,7 +690,47 @@ const Form = ({
   // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({ ...values, roleType });
+
+    // For multi-step forms, handle navigation between steps
+    if (multiStep) {
+      // If we're not at the last step, move to the next step
+      if (currentStep < totalSteps - 1) {
+        handleNext();
+        return;
+      }
+
+      // If we're at the last step, validate before submitting
+      if (!validateStep(currentStep)) {
+        return;
+      }
+    } else {
+      // For non-multi-step forms, validate all fields
+      let hasErrors = false;
+      const newErrors = {};
+
+      fields.forEach((field) => {
+        if (field.fields) {
+          field.fields.forEach((subField) => {
+            if (subField.required && !formValues[subField.name]) {
+              newErrors[subField.name] = `${subField.name} is required`;
+              hasErrors = true;
+            }
+          });
+        } else if (field.required && !formValues[field.name]) {
+          newErrors[field.name] = `${field.name} is required`;
+          hasErrors = true;
+        }
+      });
+
+      if (hasErrors) {
+        setFormErrors(newErrors);
+        setErrors(newErrors);
+        return;
+      }
+    }
+
+    // If validation passes, submit the form with all collected values
+    onSubmit({ ...formValues, roleType });
   };
 
   // Render individual field
@@ -352,16 +741,18 @@ const Form = ({
 
     const commonProps = {
       name: field.name,
-      value: values[field.name] || "",
-      onChange,
+      value: formValues[field.name] || "",
+      onChange: handleChange,
       required: field.required,
       disabled: disabled[field.name] || false,
-      error: errors[field.name],
+      error: formErrors[field.name],
       roleType,
     };
 
     if (field.type === "select") {
       return <SelectField {...commonProps} options={field.options} />;
+    } else if (field.type === "logo") {
+      return <LogoUpload {...commonProps} />;
     }
 
     return (
@@ -426,6 +817,41 @@ const Form = ({
     );
   };
 
+  // Render the fields for the current step if this is a multi-step form
+  const renderStepContent = () => {
+    if (!multiStep) {
+      return fields.map((fieldGroup, index) => (
+        <React.Fragment key={index}>
+          {renderFieldGroup(fieldGroup)}
+        </React.Fragment>
+      ));
+    }
+
+    // For multi-step forms like tailorSignup
+    const currentStepFields = fields.find(
+      (stepFields) => stepFields.step === currentStep
+    );
+
+    if (!currentStepFields) return null;
+
+    return (
+      <div className="space-y-4">
+        {currentStepFields.fields.map((field, index) => (
+          <React.Fragment key={index}>{renderFieldGroup(field)}</React.Fragment>
+        ))}
+      </div>
+    );
+  };
+
+  // Debug output when in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log("Current step:", currentStep);
+      console.log("Form values:", formValues);
+      console.log("Form errors:", formErrors);
+    }
+  }, [currentStep, formValues, formErrors]);
+
   return (
     <div className={className}>
       {heading1 && (
@@ -436,60 +862,110 @@ const Form = ({
       {heading2 && (
         <h2 className="text-xs font-light text-left mb-2">{heading2}</h2>
       )}
+
+      {multiStep && (
+        <FormStepper currentStep={currentStep} totalSteps={totalSteps} />
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="p-2" />
 
-        {fields.map((fieldGroup, index) => (
-          <React.Fragment key={index}>
-            {renderFieldGroup({ ...fieldGroup, roleType })}
-          </React.Fragment>
-        ))}
+        {renderStepContent()}
 
         <div className="p-2" />
 
-        <CustomButton
-          text={button}
-          color="primary"
-          hover_color="hoverAccent"
-          variant="filled"
-          width="w-full"
-          height="h-9"
-          type="submit"
-          disabled={isLoading}
-        />
-      </form>
+        {multiStep ? (
+          <div className="flex justify-between mt-6">
+            {currentStep > 0 && (
+              <CustomButton
+                text="Previous"
+                color="secondary"
+                hover_color="gray-300"
+                variant="outlined"
+                width="w-1/3"
+                height="h-9"
+                type="button"
+                onClick={handlePrevious}
+              />
+            )}
 
-      {footerConfig?.loginSignupRedirect && !disabled.loginSignupRedirect && (
-        <>
-          <div className="mt-2 flex items-right justify-end">
-            {formType === "login" && !disabled.forgotPassword && (
-              <a
-                href={footerConfig.forgotPasswordLink}
-                className={
-                  "text-primary hover:underline text-xs cursor-pointer"
-                }
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigate("/forgot-password");
-                }}
-              >
-                Forgot Password?
-              </a>
+            {currentStep < totalSteps - 1 ? (
+              <CustomButton
+                text="Next"
+                color="primary"
+                hover_color="hoverAccent"
+                variant="filled"
+                width={currentStep === 0 ? "w-full" : "w-1/3"}
+                height="h-9"
+                type="button"
+                onClick={handleNext}
+                className={currentStep === 0 ? "" : "ml-auto"}
+              />
+            ) : (
+              <CustomButton
+                text={isLoading ? "Registering..." : "Complete Registration"}
+                color="primary"
+                hover_color="hoverAccent"
+                variant="filled"
+                width="w-2/3"
+                height="h-9"
+                type="submit"
+                disabled={isLoading}
+                className="ml-auto"
+              />
             )}
           </div>
-          <div className="mt-2 flex justify-center items-center">
-            <p className="text-xs">
-              {footerConfig.loginSignupRedirect.text}{" "}
-              <a
-                href={footerConfig.loginSignupRedirect.link}
-                className={"text-primary hover:underline cursor-pointer"}
-              >
-                {footerConfig.loginSignupRedirect.linkText}
-              </a>
-            </p>
-          </div>
-        </>
-      )}
+        ) : (
+          <CustomButton
+            text={button}
+            color="primary"
+            hover_color="hoverAccent"
+            variant="filled"
+            width="w-full"
+            height="h-9"
+            type="submit"
+            disabled={isLoading}
+          />
+        )}
+      </form>
+
+      {!multiStep &&
+        footerConfig?.loginSignupRedirect &&
+        !disabled.loginSignupRedirect && (
+          <>
+            <div className="mt-2 flex items-right justify-end">
+              {formType === "login" && !disabled.forgotPassword && (
+                <a
+                  href={footerConfig.forgotPasswordLink}
+                  className={
+                    "text-primary hover:underline text-xs cursor-pointer"
+                  }
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate("/forgot-password");
+                  }}
+                >
+                  Forgot Password?
+                </a>
+              )}
+            </div>
+            <div className="mt-2 flex justify-center items-center">
+              <p className="text-xs">
+                {footerConfig.loginSignupRedirect.text}{" "}
+                <a
+                  href={footerConfig.loginSignupRedirect.link}
+                  className={"text-primary hover:underline cursor-pointer"}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate(footerConfig.loginSignupRedirect.link);
+                  }}
+                >
+                  {footerConfig.loginSignupRedirect.linkText}
+                </a>
+              </p>
+            </div>
+          </>
+        )}
 
       {showDivider && <div className="m-5 border-b border-gray-200" />}
 
