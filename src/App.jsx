@@ -10,6 +10,7 @@ import Signup from "./pages/auth/Signup";
 import Design from "./pages/Design";
 import Home from "./pages/Home";
 import OurServices from "./pages/Service";
+import PendingApproval from "./pages/tailorshop/PendingApproval";
 import { useAuthStore } from "./store/Auth.store";
 
 // Component to protect routes that require authentication
@@ -87,6 +88,7 @@ function App() {
         <Route path="/design/*" element={<Design />} />
         <Route path="/services" element={<OurServices />} />
         <Route path="/design-tool" element={<FashionDesignTool />} />
+        <Route path="/pending-approvals" element={<PendingApproval />} />
       </Routes>
       <Toaster />
     </div>
