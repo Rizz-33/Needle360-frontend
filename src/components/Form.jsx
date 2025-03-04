@@ -115,7 +115,7 @@ const LogoUpload = ({ onChange, error, value }) => {
     <div className="w-full">
       <div className="flex flex-col items-center">
         <div
-          className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer overflow-hidden"
+          className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer overflow-hidden"
           onClick={() => document.getElementById("logo-upload").click()}
         >
           {previewUrl ? (
@@ -125,10 +125,10 @@ const LogoUpload = ({ onChange, error, value }) => {
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="text-center p-4">
+            <div className="text-center p-2">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-8 w-8 text-gray-400 mx-auto"
+                className="h-6 w-6 text-gray-400 mx-auto"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -161,36 +161,31 @@ const LogoUpload = ({ onChange, error, value }) => {
 // Form stepper component for multi-step forms
 const FormStepper = ({ currentStep, totalSteps }) => {
   return (
-    <div className="mb-6">
-      <div className="flex justify-between mb-2">
+    <div className="my-6">
+      <div className="flex justify-between items-center">
         {Array.from({ length: totalSteps }, (_, i) => (
-          <div
-            key={i}
-            className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              i < currentStep
-                ? "bg-green-500 text-white"
-                : i === currentStep
-                ? "bg-primary text-white"
-                : "bg-gray-200 text-gray-600"
-            }`}
-          >
-            {i + 1}
-          </div>
+          <React.Fragment key={i}>
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                i < currentStep
+                  ? "bg-primary text-white text-sm"
+                  : i === currentStep
+                  ? "bg-primary text-white text-sm"
+                  : "bg-gray-200 text-gray-600 text-xs"
+              }`}
+            >
+              {i + 1}
+            </div>
+            {i < totalSteps - 1 && (
+              <div
+                className={`h-[2px] flex-1 mx-2 ${
+                  i < currentStep ? "bg-primary" : "bg-gray-200"
+                }`}
+              ></div>
+            )}
+          </React.Fragment>
         ))}
       </div>
-      <div className="flex w-full">
-        {Array.from({ length: totalSteps - 1 }, (_, i) => (
-          <div
-            key={i}
-            className={`h-1 flex-1 ${
-              i < currentStep ? "bg-green-500" : "bg-gray-200"
-            }`}
-          ></div>
-        ))}
-      </div>
-      <p className="text-center mt-2 text-xs text-gray-600">
-        Step {currentStep + 1} of {totalSteps}
-      </p>
     </div>
   );
 };
@@ -879,7 +874,7 @@ const Form = ({
             {currentStep > 0 && (
               <CustomButton
                 text="Previous"
-                color="secondary"
+                color="primary"
                 hover_color="gray-300"
                 variant="outlined"
                 width="w-1/3"
@@ -907,7 +902,7 @@ const Form = ({
                 color="primary"
                 hover_color="hoverAccent"
                 variant="filled"
-                width="w-2/3"
+                width="w-1/3"
                 height="h-9"
                 type="submit"
                 disabled={isLoading}
