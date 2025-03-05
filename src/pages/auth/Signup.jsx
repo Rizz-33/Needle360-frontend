@@ -133,9 +133,7 @@ const Signup = () => {
 
     try {
       await signup(payload, roleType);
-      roleType === 1
-        ? navigate("/verify-email")
-        : navigate("/pending-approval");
+      navigate("/verify-email");
     } catch (error) {
       console.error("Signup error details:", error);
       // Handle different error scenarios
