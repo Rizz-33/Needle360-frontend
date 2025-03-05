@@ -15,11 +15,21 @@ import { useAuthStore } from "./store/Auth.store";
 
 // Component to protect routes that require authentication
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isApproved, isAuthenticated, user } = useAuthStore();
   const location = useLocation();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace={false} />;
+  }
+
+  if (!isApproved) {
+    return (
+      <Navigate
+        to="/pending-approval"
+        state={{ from: location }}
+        replace={false}
+      />
+    );
   }
 
   if (!user.isVerified) {
@@ -58,7 +68,14 @@ function App() {
   return (
     <div className="max-h-screen bg-white text-black flex items-center justify-center relative overflow-hidden">
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/signup"
           element={
