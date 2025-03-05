@@ -104,11 +104,8 @@ const Signup = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (formValues) => {
+  const handleSubmit = async () => {
     if (!validateForm()) return;
-
-    // Map roleType to the correct role string
-    const role = roleType === 1 ? "user" : "tailor-shop-owner";
 
     const payload = {
       name: values.name,
@@ -123,7 +120,7 @@ const Signup = () => {
       accountNumber: values.accountNumber,
       bankName: values.bankName,
       role: roleType === 1 ? "user" : "tailor-shop-owner",
-      ...(roleType == 4 && {
+      ...(roleType === 4 && {
         shopName: values.shopName,
         shopRegistrationNumber: values.shopRegistrationNumber,
         taxId: values.taxId,

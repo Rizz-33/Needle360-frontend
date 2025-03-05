@@ -2,13 +2,12 @@ import { useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { CustomButton } from "../../components/ui/Button";
-import { roleTypes } from "../../configs/User.config";
 import { useAuthStore } from "../../store/Auth.store";
 
 export default function EmailVerification() {
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const inputsRef = useRef([]);
-  const { error, verifyEmail } = useAuthStore();
+  const { error, verifyEmail, isApproved } = useAuthStore();
   const navigate = useNavigate();
 
   const handleChange = (index, value) => {
@@ -56,7 +55,7 @@ export default function EmailVerification() {
     const verificationCode = code.join("");
     try {
       await verifyEmail(verificationCode);
-      roleTypes === 1 ? navigate("/") : navigate("/pending-approval");
+      isApproved ? navigate("/") : navigate("/pending-approval");
       toast.success("Email verified successfully!");
     } catch (error) {
       console.error("Error verifying email:", error);
