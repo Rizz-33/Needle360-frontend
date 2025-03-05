@@ -88,7 +88,7 @@ function App() {
         <Route path="/design/*" element={<Design />} />
         <Route path="/services" element={<OurServices />} />
         <Route path="/design-tool" element={<FashionDesignTool />} />
-        <Route path="/pending-approvals" element={<PendingApproval />} />
+        <Route path="/pending-approval" element={<PendingApproval />} />
       </Routes>
       <Toaster />
     </div>
