@@ -102,7 +102,14 @@ function App() {
             </RedirectAuthenticatedUser>
           }
         />
-        <Route path="/design/*" element={<Design />} />
+        <Route
+          path="/design/*"
+          element={
+            <ProtectedRoute>
+              <Design />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/services" element={<OurServices />} />
         <Route path="/design-tool" element={<FashionDesignTool />} />
         <Route path="/pending-approval" element={<PendingApproval />} />
