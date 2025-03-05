@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import FashionDesignTool from "./components/design/Tool";
@@ -15,14 +15,42 @@ import { useAuthStore } from "./store/Auth.store";
 
 // Component to protect routes that require authentication
 const ProtectedRoute = ({ children }) => {
-  const { isApproved, isAuthenticated, user } = useAuthStore();
+  const [isInitialized, setIsInitialized] = useState(false);
+  const { isApproved, isAuthenticated, user, checkAuth, checkApproval } =
+    useAuthStore();
   const location = useLocation();
+
+  useEffect(() => {
+    const verifyAuthAndApproval = async () => {
+      try {
+        // First check authentication
+        const authResult = await checkAuth();
+
+        // Then check approval status if authenticated
+        if (authResult && authResult.user) {
+          const approvalResult = await checkApproval();
+        }
+      } catch (error) {
+        console.error("Verification Error:", error);
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+
+    verifyAuthAndApproval();
+  }, []);
+
+  // Wait for initialization before rendering
+  if (!isInitialized) {
+    return null; // Or a loading spinner
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace={false} />;
   }
 
   if (!isApproved) {
+    console.warn("User not approved, redirecting to pending approval");
     return (
       <Navigate
         to="/pending-approval"

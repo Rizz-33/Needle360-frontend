@@ -19,7 +19,7 @@ axios.interceptors.response.use(
   }
 );
 
-export const useAuthStore = create((set) => ({
+export const useAuthStore = create((set, get) => ({
   user: null,
   isAuthenticated: false,
   error: null,
@@ -52,27 +52,34 @@ export const useAuthStore = create((set) => ({
       }),
     };
 
-    console.log("Mapped Values:", mappedValues);
-    console.log("Role Type:", roleType);
-    console.log(
-      "Shop Registration Number:",
-      mappedValues.shopRegistrationNumber
-    );
-
     try {
       set({ isLoading: true });
       const response = await axios.post(`${BASE_API_URL}/signup`, mappedValues);
+
+      // Set user data directly from signup response
+      const userData = response.data.user;
+      const normalizedUser = {
+        ...userData,
+        id: userData._id || userData.id,
+      };
+
       set({
-        user: response.data.user,
+        user: normalizedUser,
         isAuthenticated: true,
-        isApproved: roleType === 1,
+        isApproved: normalizedUser.isApproved || false,
         error: null,
       });
+
       return response.data;
     } catch (error) {
       const errorMessage =
         error.response?.data?.message || "An error occurred during signup";
-      set({ error: errorMessage });
+      set({
+        error: errorMessage,
+        user: null,
+        isAuthenticated: false,
+        isApproved: false,
+      });
       throw error;
     } finally {
       set({ isLoading: false });
@@ -175,12 +182,87 @@ export const useAuthStore = create((set) => ({
     set({ isCheckingAuth: true, error: null });
     try {
       const response = await axios.get(`${BASE_API_URL}/check-auth`);
-      set({ user: response.data.user, isAuthenticated: true });
-      return response.data;
+      const userData = response.data.user;
+
+      // Normalize the user object to have a consistent 'id' property
+      const normalizedUser = {
+        ...userData,
+        id: userData._id || userData.id,
+      };
+
+      set({
+        user: normalizedUser,
+        isAuthenticated: true,
+        isApproved: normalizedUser.isApproved || false,
+      });
+
+      return { user: normalizedUser };
     } catch (error) {
-      set({ error: null, isAuthenticated: false });
+      console.error("CheckAuth Error:", error);
+      set({
+        user: null,
+        isAuthenticated: false,
+        isApproved: false,
+        error: null,
+      });
+      return null;
     } finally {
       set({ isCheckingAuth: false });
+    }
+  },
+
+  checkApproval: async () => {
+    set({ isCheckingApproval: true, isLoading: true, error: null });
+
+    try {
+      // Get the latest user state
+      const currentUser = get().user;
+
+      // Check for both _id and id
+      const userId = currentUser?._id || currentUser?.id;
+
+      if (!userId) {
+        console.warn("No authenticated user ID found in checkApproval");
+        set({
+          isApproved: false,
+          error: "No authenticated user found",
+        });
+        return { isApproved: false };
+      }
+
+      const response = await axios.get(
+        `${BASE_API_URL}/check-approval/${userId}`
+      );
+
+      const isApproved = response.data.isApproved === true;
+
+      set({
+        isApproved: isApproved,
+        user: {
+          ...currentUser,
+          isApproved: isApproved,
+        },
+      });
+
+      return { isApproved };
+    } catch (error) {
+      console.error("CheckApproval Error:", error);
+
+      const errorMessage =
+        error.response?.data?.message ||
+        "An error occurred while checking approval status";
+
+      set({
+        error: errorMessage,
+        isApproved: false,
+      });
+
+      return { isApproved: false };
+    } finally {
+      set({
+        isCheckingApproval: false,
+        isLoading: false,
+      });
     }
   },
 }));
