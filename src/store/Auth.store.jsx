@@ -25,6 +25,7 @@ export const useAuthStore = create((set) => ({
   error: null,
   isLoading: false,
   isCheckingAuth: true,
+  isApproved: false,
 
   signup: async (values, roleType) => {
     const mappedValues = {
@@ -64,6 +65,7 @@ export const useAuthStore = create((set) => ({
       set({
         user: response.data.user,
         isAuthenticated: true,
+        isApproved: roleType === 1,
         error: null,
       });
       return response.data;
