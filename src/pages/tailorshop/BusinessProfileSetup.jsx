@@ -600,7 +600,7 @@ const BusinessProfileSetup = () => {
                         .map((component) => (
                           <span
                             key={component.id}
-                            className="inline-flex items-center text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded"
+                            className="inline-flex items-center text-xs bg-secondary/20 text-blue-800 px-2 py-0.5 rounded-full"
                           >
                             {component.icon} {component.title}
                           </span>
