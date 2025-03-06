@@ -19,37 +19,16 @@ axios.interceptors.response.use(
 );
 
 export const useShopStore = create((set) => ({
-  logos: [],
   tailors: [],
   isLoading: false,
   error: null,
 
-  fetchLogos: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await axios.get(`${BASE_API_URL}/logos`);
-      const shopLogos = response.data
-        .map((shop) => ({
-          url: shop.logoUrl,
-          name: shop.shopName || "Shop Logo",
-        }))
-        .filter((logo) => logo.url); // Remove empty/null logos
-
-      set({ logos: shopLogos });
-    } catch (error) {
-      set({
-        error: error.response?.data?.message || "Failed to load logos",
-      });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
+  // Single function to fetch tailor data (including logos)
   fetchTailors: async () => {
     set({ isLoading: true, error: null });
     try {
       const response = await axios.get(`${BASE_API_URL}/tailors`);
-      console.log("API Response:", response.data); // Log the response to check the structure
+      console.log("API Response:", response.data);
 
       const tailorData = response.data
         .map((tailor) => ({
@@ -62,13 +41,8 @@ export const useShopStore = create((set) => ({
         }))
         .filter((tailor) => tailor.email); // Filtering out any null or undefined emails
 
-      console.log("Filtered Tailors:", tailorData); // Log the filtered data
-
       // Update the state
       set({ tailors: tailorData });
-
-      // Check if the state is updated correctly
-      console.log("Updated Tailors in Store:", tailorData);
     } catch (error) {
       console.error("Error fetching tailors:", error);
       set({ error: error.response?.data?.message || "Failed to load tailors" });
