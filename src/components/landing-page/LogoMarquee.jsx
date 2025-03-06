@@ -2,11 +2,19 @@ import React, { useEffect } from "react";
 import { useShopStore } from "../../store/Shop.store";
 
 const LogoMarquee = () => {
-  const { logos, isLoading, error, fetchLogos } = useShopStore();
+  const { tailors, isLoading, error, fetchTailors } = useShopStore();
 
   useEffect(() => {
-    fetchLogos();
-  }, []);
+    fetchTailors();
+  }, [fetchTailors]);
+
+  // Extract logos from tailors data
+  const logos = tailors
+    .map((tailor) => ({
+      url: tailor.logoUrl,
+      name: tailor.shopName || "Shop Logo",
+    }))
+    .filter((logo) => logo.url); // Remove empty/null logos
 
   if (isLoading || error || !logos.length) {
     return null;
