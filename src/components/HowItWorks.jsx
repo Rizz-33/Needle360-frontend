@@ -4,7 +4,7 @@ import { howItWorksConfig } from "../configs/Services.configs";
 
 const HowItWorks = () => {
   return (
-    <div className="w-full max-w-7xl mx-auto pt-12">
+    <div className="w-full max-w-7xl mx-auto pt-12 mt-28">
       <h2 className="text-3xl font-bold text-center mb-8">How It Works</h2>
       <div className="flex items-center justify-between relative overflow-hidden">
         {howItWorksConfig.map((step, index) => (
