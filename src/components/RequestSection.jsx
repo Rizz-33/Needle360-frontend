@@ -4,7 +4,7 @@ import { CustomButton } from "./ui/Button";
 
 const RequestSection = () => {
   return (
-    <div className="flex flex-col items-center text-center py-20 bg-gradient-to-b from-transparent to-gray-400">
+    <div className="flex flex-col items-center text-center py-20 bg-transparent border-t border-primary">
       <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
         Become a Tailor with Us
       </h2>
