@@ -1,0 +1,850 @@
+import { AnimatePresence, motion } from "framer-motion";
+import React, { useEffect, useState } from "react";
+import { FaPortrait, FaUpload } from "react-icons/fa";
+import { CustomButton } from "../../components/ui/Button";
+
+// Mock data for the profile components with content fields
+const profileComponents = [
+  {
+    id: "offers",
+    title: "Offers",
+    icon: "🏷️",
+    enabled: false,
+    contentFields: [
+      { name: "title", label: "Offer Title", type: "text" },
+      { name: "description", label: "Offer Description", type: "textarea" },
+      { name: "image", label: "Offer Image", type: "image" },
+    ],
+    items: [],
+  },
+  {
+    id: "designs",
+    title: "Designs",
+    icon: "🎨",
+    enabled: false,
+    contentFields: [
+      { name: "title", label: "Design Title", type: "text" },
+      { name: "description", label: "Design Description", type: "textarea" },
+      { name: "image", label: "Design Image", type: "image" },
+    ],
+    items: [],
+  },
+  {
+    id: "availability",
+    title: "Availability",
+    icon: "📅",
+    enabled: false,
+    contentFields: [
+      { name: "day", label: "Day", type: "text" },
+      { name: "hours", label: "Hours", type: "text" },
+    ],
+    items: [],
+  },
+  {
+    id: "address",
+    title: "Address",
+    icon: "📍",
+    enabled: false,
+    contentFields: [
+      { name: "street", label: "Street Address", type: "text" },
+      { name: "city", label: "City", type: "text" },
+      { name: "state", label: "State/Province", type: "text" },
+      { name: "zip", label: "Zip/Postal Code", type: "text" },
+      { name: "country", label: "Country", type: "text" },
+    ],
+    items: [],
+  },
+  {
+    id: "services",
+    title: "Services",
+    icon: "🛠️",
+    enabled: false,
+    contentFields: [
+      { name: "title", label: "Service Title", type: "text" },
+      { name: "description", label: "Description", type: "textarea" },
+      { name: "price", label: "Price", type: "text" },
+    ],
+    items: [],
+  },
+  {
+    id: "reviews",
+    title: "Reviews",
+    icon: "⭐",
+    enabled: false,
+    contentFields: [
+      { name: "reviewer", label: "Reviewer Name", type: "text" },
+      { name: "comment", label: "Review Comment", type: "textarea" },
+      { name: "rating", label: "Rating (1-5)", type: "text" },
+    ],
+    items: [],
+  },
+  {
+    id: "ratings",
+    title: "Ratings",
+    icon: "📊",
+    enabled: false,
+    contentFields: [
+      { name: "category", label: "Category", type: "text" },
+      { name: "rating", label: "Rating (1-5)", type: "text" },
+    ],
+    items: [],
+  },
+];
+
+const BusinessProfileSetup = () => {
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [profileImage, setProfileImage] = useState(null);
+  const [businessName, setBusinessName] = useState("");
+  const [bio, setBio] = useState("");
+  const [components, setComponents] = useState(profileComponents);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [newItemData, setNewItemData] = useState({});
+  const [editingComponent, setEditingComponent] = useState(null);
+
+  // Steps for the stepper
+  const steps = [
+    { id: "basics", title: "Basic Info" },
+    { id: "components", title: "Components" },
+    { id: "content", title: "Add Content" },
+    { id: "preview", title: "Preview" },
+  ];
+
+  // Handle welcome message timer - reduced to 5 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowWelcome(false);
+    }, 5000); // 5 seconds instead of 10
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Handle profile image upload
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => setProfileImage(e.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle component image upload
+  const handleComponentImageUpload = (e, fieldName) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setNewItemData({
+          ...newItemData,
+          [fieldName]: e.target.result,
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Toggle component selection
+  const toggleComponent = (id) => {
+    setComponents(
+      components.map((comp) =>
+        comp.id === id ? { ...comp, enabled: !comp.enabled } : comp
+      )
+    );
+  };
+
+  // Navigate to next step
+  const nextStep = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  // Navigate to previous step
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  // Set current component for editing
+  const startEditing = (componentId) => {
+    setEditingComponent(componentId);
+    setNewItemData({});
+  };
+
+  // Handle input change for new item
+  const handleNewItemChange = (fieldName, value) => {
+    setNewItemData({
+      ...newItemData,
+      [fieldName]: value,
+    });
+  };
+
+  // Add new item to component
+  const addNewItem = () => {
+    if (editingComponent) {
+      setComponents(
+        components.map((comp) =>
+          comp.id === editingComponent
+            ? {
+                ...comp,
+                items: [...comp.items, { id: Date.now(), ...newItemData }],
+              }
+            : comp
+        )
+      );
+      setNewItemData({});
+    }
+  };
+
+  // Render content for each step
+  const renderStepContent = () => {
+    switch (steps[currentStep].id) {
+      case "basics":
+        return (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-xl shadow-lg p-6 md:p-8"
+          >
+            <h2 className="text-lg font-semibold text-gray-800 mb-6">
+              Basic Information
+            </h2>
+
+            {/* Profile Photo */}
+            <div className="flex flex-col md:flex-row gap-8 items-center mb-8">
+              <div className="flex-shrink-0">
+                <div
+                  className="w-32 h-32 rounded-full flex items-center justify-center overflow-hidden bg-secondary/20 cursor-pointer relative group"
+                  onClick={() =>
+                    document.getElementById("profile-upload").click()
+                  }
+                >
+                  {profileImage ? (
+                    <img
+                      src={profileImage}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-xl text-secondary">
+                      <FaUpload className="h-24" />
+                    </span>
+                  )}
+                  <div className="absolute inset-0 bg-black bg-opacity-20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-white text-sm">Change Photo</span>
+                  </div>
+                </div>
+                <input
+                  type="file"
+                  id="profile-upload"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
+                <p className="text-center mt-2 text-xs text-gray-500">
+                  Click to change
+                </p>
+              </div>
+
+              <div className="flex-grow w-full">
+                <div className="mb-4">
+                  <label
+                    htmlFor="businessName"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Business Name
+                  </label>
+                  <input
+                    type="text"
+                    id="businessName"
+                    className="w-full text-xs px-4 py-2 border border-gray-300 rounded-full focus:ring-primary focus:border-primary transition-colors"
+                    placeholder="Your Business Name"
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="bio"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Bio
+                  </label>
+                  <textarea
+                    id="bio"
+                    rows="2"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-full text-xs focus:ring-primary focus:border-primary transition-colors"
+                    placeholder="Tell customers about your business..."
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        );
+      case "components":
+        return (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-xl shadow-lg p-6 md:p-8"
+          >
+            <h2 className="text-lg font-semibold text-gray-800">
+              Customize Your Profile
+            </h2>
+            <p className="text-gray-600 mb-6 text-xs">
+              Select which components to display on your business profile
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {components.map((component) => (
+                <motion.div
+                  key={component.id}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`p-4 rounded-lg cursor-pointer border-2 transition-all ${
+                    component.enabled
+                      ? "border-secondary/20 bg-blue-50"
+                      : "border-gray-200 hover:border-secondary"
+                  }`}
+                  onClick={() => toggleComponent(component.id)}
+                >
+                  <div className="flex items-center">
+                    <span className="text-xl mr-3">{component.icon}</span>
+                    <div className="flex-grow">
+                      <h3 className="font-medium text-gray-800 text-sm">
+                        {component.title}
+                      </h3>
+                      <p className="text-sm text-gray-500 text-xs">
+                        Show {component.title.toLowerCase()} on your profile
+                      </p>
+                    </div>
+                    <div
+                      className={`w-10 h-6 rounded-full p-1 transition-colors ${
+                        component.enabled ? "bg-primary/50" : "bg-gray-200"
+                      }`}
+                    >
+                      <motion.div
+                        className="bg-white w-4 h-4 rounded-full shadow-md"
+                        animate={{
+                          x: component.enabled ? 16 : 0,
+                        }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 500,
+                          damping: 30,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        );
+      case "content":
+        const enabledComponents = components.filter((comp) => comp.enabled);
+        return (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-xl shadow-lg p-6 md:p-8"
+          >
+            <h2 className="text-lg font-semibold text-gray-800 mb-6">
+              Add Content
+            </h2>
+
+            {enabledComponents.length > 0 ? (
+              <div className="space-y-8">
+                {enabledComponents.map((component) => (
+                  <div
+                    key={component.id}
+                    className="border-b pb-6 last:border-0"
+                  >
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-medium text-sm flex items-center">
+                        <span className="mr-2">{component.icon}</span>{" "}
+                        {component.title}
+                      </h3>
+                      <button
+                        onClick={() => startEditing(component.id)}
+                        className="px-3 py-1 border border-primary text-primary rounded-full hover:bg-secondary/60 text-xs font-medium transition"
+                      >
+                        Add {component.title}
+                      </button>
+                    </div>
+
+                    {/* Show existing items for this component */}
+                    {component.items.length > 0 ? (
+                      <div className="space-y-3 mb-4">
+                        {component.items.map((item, index) => (
+                          <div
+                            key={item.id}
+                            className="bg-gray-50 p-3 rounded-lg"
+                          >
+                            <div className="flex justify-between items-center">
+                              <h4 className="font-medium text-gray-800">
+                                {item.title ||
+                                  item.name ||
+                                  item.day ||
+                                  item.category ||
+                                  item.reviewer ||
+                                  item.street ||
+                                  `Item ${index + 1}`}
+                              </h4>
+                            </div>
+                            <div className="flex mt-2">
+                              {item.image && (
+                                <div className="w-16 h-16 rounded overflow-hidden mr-3">
+                                  <img
+                                    src={item.image}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              )}
+                              <div className="text-sm text-gray-600">
+                                {item.description ||
+                                  item.hours ||
+                                  item.comment ||
+                                  item.price ||
+                                  ""}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 italic text-xs mb-4">
+                        No {component.title.toLowerCase()} added yet
+                      </p>
+                    )}
+
+                    {/* Form for adding new item */}
+                    {editingComponent === component.id && (
+                      <div className="bg-blue-50 p-4 rounded-lg mt-3">
+                        <h4 className="font-medium text-gray-800 mb-3">
+                          Add New {component.title.slice(0, -1)}
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {component.contentFields.map((field) => (
+                            <div
+                              key={field.name}
+                              className={
+                                field.type === "textarea" ? "md:col-span-2" : ""
+                              }
+                            >
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {field.label}
+                              </label>
+                              {field.type === "text" && (
+                                <input
+                                  type="text"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                  value={newItemData[field.name] || ""}
+                                  onChange={(e) =>
+                                    handleNewItemChange(
+                                      field.name,
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              )}
+                              {field.type === "textarea" && (
+                                <textarea
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                  rows="3"
+                                  value={newItemData[field.name] || ""}
+                                  onChange={(e) =>
+                                    handleNewItemChange(
+                                      field.name,
+                                      e.target.value
+                                    )
+                                  }
+                                ></textarea>
+                              )}
+                              {field.type === "image" && (
+                                <div>
+                                  <div className="flex items-center">
+                                    <input
+                                      type="file"
+                                      id={`${component.id}-${field.name}`}
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) =>
+                                        handleComponentImageUpload(
+                                          e,
+                                          field.name
+                                        )
+                                      }
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        document
+                                          .getElementById(
+                                            `${component.id}-${field.name}`
+                                          )
+                                          .click()
+                                      }
+                                      className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
+                                    >
+                                      Select Image
+                                    </button>
+                                    {newItemData[field.name] && (
+                                      <span className="ml-2 text-green-600 text-sm">
+                                        Image selected
+                                      </span>
+                                    )}
+                                  </div>
+                                  {newItemData[field.name] && (
+                                    <div className="mt-2 w-16 h-16 rounded overflow-hidden">
+                                      <img
+                                        src={newItemData[field.name]}
+                                        alt=""
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex justify-end mt-4 space-x-2">
+                          <button
+                            type="button"
+                            className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm"
+                            onClick={() => setEditingComponent(null)}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            className="px-3 py-1 bg-primary text-white rounded-lg hover:bg-blue-700 text-sm"
+                            onClick={addNewItem}
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500 text-xs">
+                  You haven't selected any components yet
+                </p>
+                <button
+                  onClick={() => setCurrentStep(1)}
+                  className="mt-4 px-8 py-2 bg-primary text-white rounded-full hover:bg-blue-700 text-xs"
+                >
+                  Go back to select components
+                </button>
+              </div>
+            )}
+          </motion.div>
+        );
+      case "preview":
+        return (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-xl shadow-lg p-6 md:p-8 overflow-hidden"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-gray-800">
+                Profile Preview
+              </h2>
+            </div>
+
+            <div className="bg-gray-100 rounded-lg p-6 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full filter blur-3xl opacity-20 -mr-20 -mt-20"></div>
+
+              <div className="relative z-10">
+                <div className="flex items-center space-x-4 mb-6">
+                  <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                    {profileImage ? (
+                      <img
+                        src={profileImage}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-xl text-primary/20">
+                        <FaPortrait />
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800">
+                      {businessName || "Your Business Name"}
+                    </h3>
+                    <div className="flex space-x-1 mt-1">
+                      {components
+                        .filter((c) => c.enabled)
+                        .slice(0, 3)
+                        .map((component) => (
+                          <span
+                            key={component.id}
+                            className="inline-flex items-center text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded"
+                          >
+                            {component.icon} {component.title}
+                          </span>
+                        ))}
+                      {components.filter((c) => c.enabled).length > 3 && (
+                        <span className="inline-flex items-center text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                          +{components.filter((c) => c.enabled).length - 3} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-gray-600 mb-6 text-xs">
+                  {bio ||
+                    "Your business bio will appear here. Add a compelling description to attract customers."}
+                </p>
+
+                <div className="space-y-4">
+                  {components
+                    .filter((c) => c.enabled)
+                    .map((component) => (
+                      <div
+                        key={component.id}
+                        className="p-4 bg-white rounded-lg shadow-sm"
+                      >
+                        <h4 className="font-medium flex items-center text-gray-800 mb-3">
+                          <span className="mr-2">{component.icon}</span>{" "}
+                          {component.title}
+                        </h4>
+
+                        {component.items.length > 0 ? (
+                          <div className="space-y-3">
+                            {component.items.map((item) => (
+                              <div
+                                key={item.id}
+                                className="flex border-b pb-3 last:border-0 last:pb-0"
+                              >
+                                {item.image && (
+                                  <div className="w-16 h-16 rounded overflow-hidden mr-3 flex-shrink-0">
+                                    <img
+                                      src={item.image}
+                                      alt=""
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                )}
+                                <div>
+                                  <h5 className="font-medium text-gray-800">
+                                    {item.title ||
+                                      item.name ||
+                                      item.day ||
+                                      item.category ||
+                                      item.reviewer ||
+                                      item.street ||
+                                      ""}
+                                  </h5>
+                                  <p className="text-sm text-gray-600 mt-1">
+                                    {item.description ||
+                                      item.hours ||
+                                      item.comment ||
+                                      item.price ||
+                                      ""}
+                                  </p>
+                                  {item.rating && (
+                                    <div className="flex items-center mt-1">
+                                      {Array.from({
+                                        length: parseInt(item.rating),
+                                      }).map((_, i) => (
+                                        <span
+                                          key={i}
+                                          className="text-yellow-400"
+                                        >
+                                          ⭐
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-gray-500 text-xs italic">
+                            No {component.title.toLowerCase()} added yet
+                          </p>
+                        )}
+                      </div>
+                    ))}
+
+                  {components.filter((c) => c.enabled).length === 0 && (
+                    <div className="text-center p-6 border-2 border-dashed border-gray-300 rounded-lg">
+                      <p className="text-gray-500 text-sm">
+                        Select components to display on your profile
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="h-screen overflow-auto w-full bg-gradient-to-br from-blue-50 via-secondary/20 to-blue-100">
+      <AnimatePresence>
+        {showWelcome && (
+          <motion.div
+            className="flex items-center justify-center min-h-screen absolute inset-0 z-10 bg-grid-gray-300/[0.2]"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.5 }}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.8 }}
+              className="text-center px-6"
+            >
+              <motion.h1
+                className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-hoverAccent bg-clip-text text-transparent"
+                animate={{
+                  y: [0, -10, 0],
+                }}
+                transition={{
+                  repeat: 1,
+                  duration: 1.5,
+                }}
+              >
+                Welcome aboard!
+              </motion.h1>
+              <motion.p
+                className="mt-3 text-sm text-gray-700"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1, duration: 0.8 }}
+              >
+                Let's make your business profile
+              </motion.p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="container mx-auto py-8 px-4 max-w-5xl">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: showWelcome ? 5 : 0, duration: 1 }}
+          className="space-y-8"
+        >
+          {/* Header */}
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-800">
+              Business Profile Setup
+            </h1>
+            <p className="text-sm text-primary/40 mt-2">
+              Customize how customers see your business
+            </p>
+          </div>
+
+          {/* Stepper */}
+          <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
+            <div className="flex justify-between items-center">
+              {steps.map((step, index) => (
+                <div
+                  key={step.id}
+                  className="relative flex-1 flex flex-col items-center"
+                >
+                  {/* Connector line */}
+                  {index > 0 && (
+                    <div
+                      className={`absolute top-4 w-full h-1 -left-1/2 ${
+                        index <= currentStep ? "bg-primary" : "bg-gray-200"
+                      }`}
+                    ></div>
+                  )}
+
+                  {/* Step circle */}
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center relative z-10 ${
+                      index < currentStep
+                        ? "bg-primary text-white text-sm"
+                        : index === currentStep
+                        ? "bg-primary text-white text-sm"
+                        : "bg-gray-200 text-gray-600 text-xs"
+                    }`}
+                  >
+                    {index < currentStep ? "✓" : index + 1}
+                  </div>
+
+                  {/* Step title */}
+                  <div className="text-[10px] font-medium mt-1 text-center">
+                    {step.title}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Step content */}
+          <AnimatePresence mode="wait">{renderStepContent()}</AnimatePresence>
+
+          {/* Navigation buttons */}
+          <div className="flex justify-between items-center mt-8 w-full">
+            {currentStep > 0 ? (
+              <CustomButton
+                text="Back"
+                color="accent"
+                hover_color="hoverAccent"
+                variant="outlined"
+                width="w-20"
+                height="h-9"
+                type="submit"
+                onClick={prevStep}
+              />
+            ) : (
+              <div className="w-20" /> // Placeholder to maintain alignment
+            )}
+
+            <CustomButton
+              text={
+                currentStep === steps.length - 1
+                  ? "Save and Complete Setup"
+                  : "Continue"
+              }
+              color="primary"
+              hover_color="hoverAccent"
+              variant="filled"
+              width="w-1/3"
+              height="h-9"
+              type="submit"
+              onClick={nextStep}
+            />
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+};
+
+export default BusinessProfileSetup;

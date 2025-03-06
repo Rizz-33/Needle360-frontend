@@ -10,6 +10,7 @@ import Signup from "./pages/auth/Signup";
 import Design from "./pages/Design";
 import Home from "./pages/Home";
 import OurServices from "./pages/Service";
+import BusinessProfileSetup from "./pages/tailorshop/BusinessProfileSetup";
 import PendingApproval from "./pages/tailorshop/PendingApproval";
 import { useAuthStore } from "./store/Auth.store";
 
@@ -141,6 +142,7 @@ function App() {
         <Route path="/services" element={<OurServices />} />
         <Route path="/design-tool" element={<FashionDesignTool />} />
         <Route path="/pending-approval" element={<PendingApproval />} />
+        <Route path="/profile-setup" element={<BusinessProfileSetup />} />
       </Routes>
       <Toaster />
     </div>
