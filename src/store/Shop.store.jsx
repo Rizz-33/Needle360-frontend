@@ -20,6 +20,7 @@ axios.interceptors.response.use(
 
 export const useShopStore = create((set) => ({
   tailors: [],
+  tailor: null,
   isLoading: false,
   error: null,
 
@@ -46,6 +47,32 @@ export const useShopStore = create((set) => ({
     } catch (error) {
       console.error("Error fetching tailors:", error);
       set({ error: error.response?.data?.message || "Failed to load tailors" });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  // Function to fetch a tailor by ID
+  fetchTailorById: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.get(`${BASE_API_URL}/tailors/${id}`);
+      console.log("API Response:", response.data);
+
+      const tailor = {
+        email: response.data.email,
+        name: response.data.name,
+        shopName: response.data.shopName,
+        contactNumber: response.data.contactNumber,
+        logoUrl: response.data.logoUrl,
+        shopAddress: response.data.shopAddress,
+      };
+
+      // Update the state
+      set({ tailor });
+    } catch (error) {
+      console.error("Error fetching tailor by ID:", error);
+      set({ error: error.response?.data?.message || "Failed to load tailor" });
     } finally {
       set({ isLoading: false });
     }
