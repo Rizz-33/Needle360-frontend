@@ -18,7 +18,7 @@ axios.interceptors.response.use(
   }
 );
 
-export const useShopStore = create((set) => ({
+export const useShopStore = create((set, get) => ({
   tailors: [],
   tailor: null,
   isLoading: false,
@@ -84,6 +84,42 @@ export const useShopStore = create((set) => ({
     } catch (error) {
       console.error("Error fetching tailor by ID:", error);
       set({ error: error.response?.data?.message || "Failed to load tailor" });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  // Function to update a tailor by ID
+  updateTailor: async (id, updateData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.put(
+        `${BASE_API_URL}/tailors/${id}`,
+        updateData
+      );
+      console.log("Update Response:", response.data);
+
+      const currentState = get(); // Properly use get() to access current state
+
+      // Update the current tailor if it's the one being edited
+      if (currentState.tailor && id === currentState.tailor._id) {
+        set({ tailor: response.data });
+      }
+
+      // Update the tailor in the tailors list if present
+      const updatedTailors = currentState.tailors.map((tailor) =>
+        tailor._id === id ? { ...tailor, ...updateData } : tailor
+      );
+
+      set({ tailors: updatedTailors });
+
+      return response.data;
+    } catch (error) {
+      console.error("Error updating tailor:", error);
+      set({
+        error: error.response?.data?.message || "Failed to update tailor",
+      });
+      throw error; // Rethrow to allow handling in the component
     } finally {
       set({ isLoading: false });
     }

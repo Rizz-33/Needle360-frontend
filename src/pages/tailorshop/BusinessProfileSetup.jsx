@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { FaPortrait, FaUpload } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 import { CustomButton } from "../../components/ui/Button";
 import { useAuthStore } from "../../store/Auth.store";
 import { useShopStore } from "../../store/Shop.store";
@@ -80,8 +81,10 @@ const profileComponents = [
 ];
 
 const BusinessProfileSetup = () => {
-  const { tailor, fetchTailorById, isLoading } = useShopStore();
-  const { user } = useAuthStore();
+  const { tailor, fetchTailorById, updateTailor } = useShopStore();
+  const { user, isLoading } = useAuthStore();
+
+  const navigate = useNavigate();
 
   const [showWelcome, setShowWelcome] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
@@ -91,6 +94,9 @@ const BusinessProfileSetup = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [newItemData, setNewItemData] = useState({});
   const [editingComponent, setEditingComponent] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Fetch tailor data on component mount
   useEffect(() => {
@@ -298,6 +304,10 @@ const BusinessProfileSetup = () => {
   const nextStep = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
+    } else {
+      // On the last step, save the profile
+      handleSaveProfile();
+      navigate("/tailorshop");
     }
   };
 
@@ -336,6 +346,100 @@ const BusinessProfileSetup = () => {
         )
       );
       setNewItemData({});
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user || !user._id) {
+      setSaveError("User information not available");
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+
+    try {
+      // Prepare data for update
+      const updateData = {
+        shopName: businessName,
+        logoUrl: profileImage,
+        bio: bio,
+      };
+
+      // Format the components data for the API
+      const enabledComponents = components.filter((comp) => comp.enabled);
+
+      // Add each component's items to the update data
+      enabledComponents.forEach((component) => {
+        switch (component.id) {
+          case "offers":
+            updateData.offers = component.items.map((item) => ({
+              id: item.id,
+              title: item.title,
+              description: item.description,
+              image: item.image,
+            }));
+            break;
+          case "designs":
+            updateData.designs = component.items.map((item) => ({
+              id: item.id,
+              title: item.title,
+              description: item.description,
+              image: item.image,
+            }));
+            break;
+          case "availability":
+            updateData.availability = component.items.map((item) => ({
+              id: item.id,
+              day: item.day,
+              hours: item.hours,
+            }));
+            break;
+          case "services":
+            updateData.services = component.items.map((item) => ({
+              id: item.id,
+              title: item.title,
+              description: item.description,
+              price: item.price,
+            }));
+            break;
+          case "address":
+            // For address, we're converting the component structure to match the API expectations
+            // Depending on your API, you might need to adjust this format
+            if (component.items.length > 0) {
+              // If the address is stored as a string in your API
+              updateData.shopAddress = component.items[0].street;
+
+              // If the address is stored as an object, uncomment this instead
+              // updateData.shopAddress = {
+              //   street: component.items[0].street,
+              //   city: component.items[0].city,
+              //   state: component.items[0].state,
+              //   zip: component.items[0].zip,
+              //   country: component.items[0].country
+              // };
+            }
+            break;
+          // Reviews are client-generated, so we don't include them in the update
+        }
+      });
+
+      console.log("Updating tailor profile with data:", updateData);
+
+      // Call the updateTailor function from the store
+      const result = await updateTailor(user._id, updateData);
+
+      console.log("Update result:", result);
+      setSaveSuccess(true);
+
+      // Optionally redirect or show success message
+      // You could navigate to a different page after successful save
+    } catch (error) {
+      console.error("Failed to save profile:", error);
+      setSaveError(error.message || "Failed to save profile");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -730,6 +834,19 @@ const BusinessProfileSetup = () => {
               <h2 className="text-lg font-semibold text-gray-800">
                 Profile Preview
               </h2>
+
+              {/* Save status messages */}
+              {saveSuccess && (
+                <div className="text-green-500 text-sm font-medium bg-green-50 px-3 py-1 rounded-full">
+                  Profile saved successfully!
+                </div>
+              )}
+
+              {saveError && (
+                <div className="text-red-500 text-sm font-medium bg-red-50 px-3 py-1 rounded-full">
+                  Error: {saveError}
+                </div>
+              )}
             </div>
 
             <div className="bg-gray-100 rounded-lg p-6 relative overflow-hidden">
@@ -998,7 +1115,11 @@ const BusinessProfileSetup = () => {
             <CustomButton
               text={
                 currentStep === steps.length - 1
-                  ? "Save and Complete Setup"
+                  ? isSaving
+                    ? "Saving..."
+                    : saveSuccess
+                    ? "Saved!"
+                    : "Save and Complete Setup"
                   : "Continue"
               }
               color="primary"
@@ -1006,7 +1127,8 @@ const BusinessProfileSetup = () => {
               variant="filled"
               width="w-1/3"
               height="h-9"
-              type="submit"
+              type="button"
+              disabled={isSaving}
               onClick={nextStep}
             />
           </div>
