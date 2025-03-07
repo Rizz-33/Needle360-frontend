@@ -322,7 +322,7 @@ const BusinessProfileSetup = () => {
                       <h3 className="font-medium text-gray-800 text-sm">
                         {component.title}
                       </h3>
-                      <p className="text-sm text-gray-500 text-xs">
+                      <p className="text-gray-500 text-xs">
                         Show {component.title.toLowerCase()} on your profile
                       </p>
                     </div>
