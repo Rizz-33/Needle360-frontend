@@ -479,7 +479,8 @@ const BusinessProfileSetup = () => {
                     )}
 
                     {/* Form for adding new item */}
-                    {editingComponent === component.id && (
+                    {editingComponent === component.id &&
+                      !component.isClientGenerated && (
                       <div className="bg-blue-50 p-4 rounded-lg mt-3">
                         <h4 className="font-medium text-gray-800 mb-3">
                           Add New {component.title.slice(0, -1)}
@@ -488,8 +489,10 @@ const BusinessProfileSetup = () => {
                           {component.contentFields.map((field) => (
                             <div
                               key={field.name}
-                              className={
-                                field.type === "textarea" ? "md:col-span-2" : ""
+                                className={
+                                  field.type === "textarea"
+                                    ? "md:col-span-2"
+                                    : ""
                               }
                             >
                               <label className="block text-sm font-medium text-gray-700 mb-1">
