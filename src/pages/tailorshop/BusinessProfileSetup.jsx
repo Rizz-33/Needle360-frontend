@@ -418,12 +418,14 @@ const BusinessProfileSetup = () => {
                         <span className="mr-2">{component.icon}</span>{" "}
                         {component.title}
                       </h3>
+                      {!component.isClientGenerated && (
                       <button
                         onClick={() => startEditing(component.id)}
                         className="px-3 py-1 border border-primary text-primary rounded-full hover:bg-secondary/60 text-xs font-medium transition"
                       >
                         Add {component.title}
                       </button>
+                      )}
                     </div>
 
                     {/* Show existing items for this component */}
