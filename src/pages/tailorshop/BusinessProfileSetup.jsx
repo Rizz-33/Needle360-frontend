@@ -645,24 +645,18 @@ const BusinessProfileSetup = () => {
                     <h3 className="text-xl font-bold text-gray-800">
                       {businessName || "Your Business Name"}
                     </h3>
-                    <div className="flex space-x-1 mt-1">
-                      {components
-                        .filter((c) => c.enabled)
-                        .slice(0, 3)
-                        .map((component) => (
-                          <span
-                            key={component.id}
-                            className="inline-flex items-center text-xs bg-secondary/20 text-blue-800 px-2 py-0.5 rounded-full"
-                          >
-                            {component.icon} {component.title}
+
+                        {/* Display average rating if reviews are enabled */}
+                        {components.find(
+                          (c) => c.id === "reviews" && c.enabled
+                        ) && (
+                          <div className="flex items-center bg-blue-50 px-3 py-1 rounded-full">
+                            <span className="text-yellow-500 mr-1">★</span>
+                            <span className="text-sm font-medium">
+                              No ratings yet
                           </span>
-                        ))}
-                      {components.filter((c) => c.enabled).length > 3 && (
-                        <span className="inline-flex items-center text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
-                          +{components.filter((c) => c.enabled).length - 3} more
-                        </span>
-                      )}
-                    </div>
+                  </div>
+                        )}
                   </div>
                 </div>
 
