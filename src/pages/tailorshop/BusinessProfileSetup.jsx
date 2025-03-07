@@ -102,37 +102,146 @@ const BusinessProfileSetup = () => {
   // Update state with tailor data when it's loaded
   useEffect(() => {
     if (tailor) {
+      // Set business name from tailor data
       setBusinessName(tailor.shopName || "");
+
+      // Set profile image from tailor data
       setProfileImage(tailor.logoUrl || null);
 
+      // Set bio from tailor data
+      setBio(tailor.bio || "");
+
+      // Create a copy of the components to update
+      const updatedComponents = [...components];
+
       // Update address component with tailor data
-      const updatedComponents = components.map((comp) => {
-        if (comp.id === "address" && tailor.shopAddress) {
-          // Handle address as a single string without assuming comma separation
-          const addressString = tailor.shopAddress;
+      if (tailor.shopAddress) {
+        const addressComp = updatedComponents.find(
+          (comp) => comp.id === "address"
+        );
+        if (addressComp) {
+          addressComp.enabled = true;
 
-          // Create a single address object
-          return {
-            ...comp,
-            enabled: true,
-            items: [
-              {
-                id: Date.now(),
-                street: addressString, // Store full address in street field
-                city: "", // Leave other fields empty or populate if needed
-                state: "",
-                zip: "",
-                country: "",
-              },
-            ],
-          };
+          // Use shopAddress as a string
+          const addressString = tailor.shopAddress || "";
+          addressComp.items = [
+            {
+              id: Date.now(),
+              street: addressString,
+              city: "",
+              state: "",
+              zip: "",
+              country: "",
+            },
+          ];
         }
-        return comp;
-      });
+      }
 
+      // Update offers component with tailor data
+      if (
+        tailor.offers &&
+        Array.isArray(tailor.offers) &&
+        tailor.offers.length > 0
+      ) {
+        const offersComp = updatedComponents.find(
+          (comp) => comp.id === "offers"
+        );
+        if (offersComp) {
+          offersComp.enabled = true;
+          offersComp.items = tailor.offers.map((offer) => ({
+            id: offer.id || Date.now(),
+            title: offer.title || "",
+            description: offer.description || "",
+            image: offer.image || null,
+          }));
+        }
+      }
+
+      // Update designs component with tailor data
+      if (
+        tailor.designs &&
+        Array.isArray(tailor.designs) &&
+        tailor.designs.length > 0
+      ) {
+        const designsComp = updatedComponents.find(
+          (comp) => comp.id === "designs"
+        );
+        if (designsComp) {
+          designsComp.enabled = true;
+          designsComp.items = tailor.designs.map((design) => ({
+            id: design.id || Date.now(),
+            title: design.title || "",
+            description: design.description || "",
+            image: design.image || null,
+          }));
+        }
+      }
+
+      // Update availability component with tailor data
+      if (
+        tailor.availability &&
+        Array.isArray(tailor.availability) &&
+        tailor.availability.length > 0
+      ) {
+        const availComp = updatedComponents.find(
+          (comp) => comp.id === "availability"
+        );
+        if (availComp) {
+          availComp.enabled = true;
+          availComp.items = tailor.availability.map((avail) => ({
+            id: avail.id || Date.now(),
+            day: avail.day || "",
+            hours: avail.hours || "",
+          }));
+        }
+      }
+
+      // Update services component with tailor data
+      if (
+        tailor.services &&
+        Array.isArray(tailor.services) &&
+        tailor.services.length > 0
+      ) {
+        const servicesComp = updatedComponents.find(
+          (comp) => comp.id === "services"
+        );
+        if (servicesComp) {
+          servicesComp.enabled = true;
+          servicesComp.items = tailor.services.map((service) => ({
+            id: service.id || Date.now(),
+            title: service.title || "",
+            description: service.description || "",
+            price: service.price || "",
+          }));
+        }
+      }
+
+      // Update reviews component with tailor data
+      if (
+        tailor.reviews &&
+        Array.isArray(tailor.reviews) &&
+        tailor.reviews.length > 0
+      ) {
+        const reviewsComp = updatedComponents.find(
+          (comp) => comp.id === "reviews"
+        );
+        if (reviewsComp) {
+          reviewsComp.enabled = true;
+          reviewsComp.items = tailor.reviews.map((review) => ({
+            id: review.id || Date.now(),
+            reviewer: review.reviewer || review.clientName || "",
+            comment: review.comment || review.text || "",
+            rating: review.rating || "5",
+          }));
+        }
+      }
+
+      // Update the components state
       setComponents(updatedComponents);
     }
   }, [tailor]);
+
+  console.log("tailor", tailor);
 
   // Steps for the stepper
   const steps = [
@@ -685,7 +794,8 @@ const BusinessProfileSetup = () => {
                           {component.title}
                         </h4>
 
-                        {component.id === "reviews" ? (
+                        {component.id === "reviews" &&
+                        component.items.length === 0 ? (
                           <div className="p-4 bg-blue-50 rounded-lg text-center">
                             <p className="text-gray-600 text-sm">
                               Customers will be able to leave reviews here
