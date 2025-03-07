@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { FaPortrait, FaUpload } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { CustomButton } from "../../components/ui/Button";
+import Loader from "../../components/ui/Loader";
 import { useAuthStore } from "../../store/Auth.store";
 import { useShopStore } from "../../store/Shop.store";
 
@@ -307,7 +308,7 @@ const BusinessProfileSetup = () => {
     } else {
       // On the last step, save the profile
       handleSaveProfile();
-      navigate("/tailorshop");
+      navigate("/tailor/" + user._id);
     }
   };
 
@@ -534,9 +535,7 @@ const BusinessProfileSetup = () => {
 
             {isLoading && (
               <div className="text-center py-2">
-                <p className="text-blue-500 text-sm">
-                  Loading business information...
-                </p>
+                <Loader />
               </div>
             )}
           </motion.div>
