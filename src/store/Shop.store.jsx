@@ -66,6 +66,17 @@ export const useShopStore = create((set) => ({
         contactNumber: response.data.contactNumber,
         logoUrl: response.data.logoUrl,
         shopAddress: response.data.shopAddress,
+        shopRegistrationNumber: response.data.shopRegistrationNumber,
+        bankAccountNumber: response.data.bankAccountNumber,
+        bankName: response.data.bankName,
+        privileges: response.data.privileges,
+        bio: response.data.bio,
+        offers: response.data.offers,
+        designs: response.data.designs,
+        availability: response.data.availability,
+        services: response.data.services,
+        reviews: response.data.reviews,
+        ratings: response.data.ratings,
       };
 
       // Update the state
