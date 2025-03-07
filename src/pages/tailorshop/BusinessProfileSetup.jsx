@@ -364,7 +364,9 @@ const BusinessProfileSetup = () => {
                         {component.title}
                       </h3>
                       <p className="text-gray-500 text-xs">
-                        Show {component.title.toLowerCase()} on your profile
+                        {component.isClientGenerated
+                          ? "Let customers leave reviews"
+                          : `Show ${component.title.toLowerCase()} on your profile`}
                       </p>
                     </div>
                     <div
