@@ -12,6 +12,7 @@ import Home from "./pages/Home";
 import OurServices from "./pages/Service";
 import BusinessProfileSetup from "./pages/tailorshop/BusinessProfileSetup";
 import PendingApproval from "./pages/tailorshop/PendingApproval";
+import TailorProfilePage from "./pages/tailorshop/Profile";
 import { useAuthStore } from "./store/Auth.store";
 
 // Component to protect routes that require authentication
@@ -143,6 +144,14 @@ function App() {
         <Route path="/design-tool" element={<FashionDesignTool />} />
         <Route path="/pending-approval" element={<PendingApproval />} />
         <Route path="/profile-setup" element={<BusinessProfileSetup />} />
+        <Route
+          path="/tailor/:id"
+          element={
+            <ProtectedRoute>
+              <TailorProfilePage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
       <Toaster />
     </div>
