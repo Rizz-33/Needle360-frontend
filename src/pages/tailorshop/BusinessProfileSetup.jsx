@@ -2,6 +2,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { FaPortrait, FaUpload } from "react-icons/fa";
 import { CustomButton } from "../../components/ui/Button";
+import { useAuthStore } from "../../store/Auth.store";
+import { useShopStore } from "../../store/Shop.store";
 
 // Mock data for the profile components with content fields
 const profileComponents = [
@@ -92,6 +94,9 @@ const profileComponents = [
 ];
 
 const BusinessProfileSetup = () => {
+  const { tailor, fetchTailorById, isLoading } = useShopStore();
+  const { user } = useAuthStore();
+
   const [showWelcome, setShowWelcome] = useState(true);
   const [profileImage, setProfileImage] = useState(null);
   const [businessName, setBusinessName] = useState("");
@@ -100,6 +105,48 @@ const BusinessProfileSetup = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [newItemData, setNewItemData] = useState({});
   const [editingComponent, setEditingComponent] = useState(null);
+
+  // Fetch tailor data on component mount
+  useEffect(() => {
+    if (user && user._id) {
+      fetchTailorById(user._id);
+    }
+  }, [fetchTailorById, user]);
+
+  // Update state with tailor data when it's loaded
+  useEffect(() => {
+    if (tailor) {
+      setBusinessName(tailor.shopName || "");
+      setProfileImage(tailor.logoUrl || null);
+
+      // Update address component with tailor data
+      const updatedComponents = components.map((comp) => {
+        if (comp.id === "address" && tailor.shopAddress) {
+          // Handle address as a single string without assuming comma separation
+          const addressString = tailor.shopAddress;
+
+          // Create a single address object
+          return {
+            ...comp,
+            enabled: true,
+            items: [
+              {
+                id: Date.now(),
+                street: addressString, // Store full address in street field
+                city: "", // Leave other fields empty or populate if needed
+                state: "",
+                zip: "",
+                country: "",
+              },
+            ],
+          };
+        }
+        return comp;
+      });
+
+      setComponents(updatedComponents);
+    }
+  }, [tailor]);
 
   // Steps for the stepper
   const steps = [
@@ -285,6 +332,14 @@ const BusinessProfileSetup = () => {
                 </div>
               </div>
             </div>
+
+            {isLoading && (
+              <div className="text-center py-2">
+                <p className="text-blue-500 text-sm">
+                  Loading business information...
+                </p>
+              </div>
+            )}
           </motion.div>
         );
       case "components":
