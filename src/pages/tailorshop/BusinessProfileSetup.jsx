@@ -665,20 +665,27 @@ const BusinessProfileSetup = () => {
                     "Your business bio will appear here. Add a compelling description to attract customers."}
                 </p>
 
-                <div className="space-y-4">
+                {/* Display enabled components in modern cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {components
                     .filter((c) => c.enabled)
                     .map((component) => (
                       <div
                         key={component.id}
-                        className="p-4 bg-white rounded-lg shadow-sm"
+                        className="p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow"
                       >
-                        <h4 className="font-medium flex items-center text-gray-800 mb-3">
+                        <h4 className="font-medium flex items-center text-gray-800 mb-3 border-b pb-2">
                           <span className="mr-2">{component.icon}</span>{" "}
                           {component.title}
                         </h4>
 
-                        {component.items.length > 0 ? (
+                        {component.id === "reviews" ? (
+                          <div className="p-4 bg-blue-50 rounded-lg text-center">
+                            <p className="text-gray-600 text-sm">
+                              Customers will be able to leave reviews here
+                            </p>
+                          </div>
+                        ) : component.items.length > 0 ? (
                           <div className="space-y-3">
                             {component.items.map((item) => (
                               <div
