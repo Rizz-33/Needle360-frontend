@@ -468,6 +468,10 @@ const BusinessProfileSetup = () => {
                           </div>
                         ))}
                       </div>
+                    ) : component.isClientGenerated ? (
+                      <p className="text-gray-500 italic text-xs mb-4">
+                        Customers will be able to leave reviews on your profile
+                      </p>
                     ) : (
                       <p className="text-gray-500 italic text-xs mb-4">
                         No {component.title.toLowerCase()} added yet
