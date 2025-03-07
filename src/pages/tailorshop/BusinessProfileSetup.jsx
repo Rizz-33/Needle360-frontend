@@ -419,12 +419,12 @@ const BusinessProfileSetup = () => {
                         {component.title}
                       </h3>
                       {!component.isClientGenerated && (
-                      <button
-                        onClick={() => startEditing(component.id)}
-                        className="px-3 py-1 border border-primary text-primary rounded-full hover:bg-secondary/60 text-xs font-medium transition"
-                      >
-                        Add {component.title}
-                      </button>
+                        <button
+                          onClick={() => startEditing(component.id)}
+                          className="px-3 py-1 border border-primary text-primary rounded-full hover:bg-secondary/60 text-xs font-medium transition"
+                        >
+                          Add {component.title}
+                        </button>
                       )}
                     </div>
 
@@ -437,7 +437,7 @@ const BusinessProfileSetup = () => {
                             className="bg-gray-50 p-3 rounded-lg"
                           >
                             <div className="flex justify-between items-center">
-                              <h4 className="font-medium text-gray-800">
+                              <h4 className="font-semibold text-gray-800 text-sm">
                                 {item.title ||
                                   item.name ||
                                   item.day ||
@@ -481,115 +481,115 @@ const BusinessProfileSetup = () => {
                     {/* Form for adding new item */}
                     {editingComponent === component.id &&
                       !component.isClientGenerated && (
-                      <div className="bg-blue-50 p-4 rounded-lg mt-3">
-                        <h4 className="font-medium text-gray-800 mb-3">
-                          Add New {component.title.slice(0, -1)}
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {component.contentFields.map((field) => (
-                            <div
-                              key={field.name}
+                        <div className="bg-blue-50 p-4 rounded-lg mt-3">
+                          <h4 className="font-medium text-gray-800 mb-3">
+                            Add New {component.title.slice(0, -1)}
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {component.contentFields.map((field) => (
+                              <div
+                                key={field.name}
                                 className={
                                   field.type === "textarea"
                                     ? "md:col-span-2"
                                     : ""
-                              }
-                            >
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                {field.label}
-                              </label>
-                              {field.type === "text" && (
-                                <input
-                                  type="text"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
-                                  value={newItemData[field.name] || ""}
-                                  onChange={(e) =>
-                                    handleNewItemChange(
-                                      field.name,
-                                      e.target.value
-                                    )
-                                  }
-                                />
-                              )}
-                              {field.type === "textarea" && (
-                                <textarea
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
-                                  rows="3"
-                                  value={newItemData[field.name] || ""}
-                                  onChange={(e) =>
-                                    handleNewItemChange(
-                                      field.name,
-                                      e.target.value
-                                    )
-                                  }
-                                ></textarea>
-                              )}
-                              {field.type === "image" && (
-                                <div>
-                                  <div className="flex items-center">
-                                    <input
-                                      type="file"
-                                      id={`${component.id}-${field.name}`}
-                                      accept="image/*"
-                                      className="hidden"
-                                      onChange={(e) =>
-                                        handleComponentImageUpload(
-                                          e,
-                                          field.name
-                                        )
-                                      }
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        document
-                                          .getElementById(
-                                            `${component.id}-${field.name}`
+                                }
+                              >
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  {field.label}
+                                </label>
+                                {field.type === "text" && (
+                                  <input
+                                    type="text"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                    value={newItemData[field.name] || ""}
+                                    onChange={(e) =>
+                                      handleNewItemChange(
+                                        field.name,
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                )}
+                                {field.type === "textarea" && (
+                                  <textarea
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                    rows="3"
+                                    value={newItemData[field.name] || ""}
+                                    onChange={(e) =>
+                                      handleNewItemChange(
+                                        field.name,
+                                        e.target.value
+                                      )
+                                    }
+                                  ></textarea>
+                                )}
+                                {field.type === "image" && (
+                                  <div>
+                                    <div className="flex items-center">
+                                      <input
+                                        type="file"
+                                        id={`${component.id}-${field.name}`}
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) =>
+                                          handleComponentImageUpload(
+                                            e,
+                                            field.name
                                           )
-                                          .click()
-                                      }
-                                      className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
-                                    >
-                                      Select Image
-                                    </button>
+                                        }
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          document
+                                            .getElementById(
+                                              `${component.id}-${field.name}`
+                                            )
+                                            .click()
+                                        }
+                                        className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
+                                      >
+                                        Select Image
+                                      </button>
+                                      {newItemData[field.name] && (
+                                        <span className="ml-2 text-green-600 text-sm">
+                                          Image selected
+                                        </span>
+                                      )}
+                                    </div>
                                     {newItemData[field.name] && (
-                                      <span className="ml-2 text-green-600 text-sm">
-                                        Image selected
-                                      </span>
+                                      <div className="mt-2 w-16 h-16 rounded overflow-hidden">
+                                        <img
+                                          src={newItemData[field.name]}
+                                          alt=""
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
                                     )}
                                   </div>
-                                  {newItemData[field.name] && (
-                                    <div className="mt-2 w-16 h-16 rounded overflow-hidden">
-                                      <img
-                                        src={newItemData[field.name]}
-                                        alt=""
-                                        className="w-full h-full object-cover"
-                                      />
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex justify-end mt-4 space-x-2">
+                            <button
+                              type="button"
+                              className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm"
+                              onClick={() => setEditingComponent(null)}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              className="px-3 py-1 bg-primary text-white rounded-lg hover:bg-blue-700 text-sm"
+                              onClick={addNewItem}
+                            >
+                              Add
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex justify-end mt-4 space-x-2">
-                          <button
-                            type="button"
-                            className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm"
-                            onClick={() => setEditingComponent(null)}
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            className="px-3 py-1 bg-primary text-white rounded-lg hover:bg-blue-700 text-sm"
-                            onClick={addNewItem}
-                          >
-                            Add
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                      )}
                   </div>
                 ))}
               </div>
@@ -628,6 +628,7 @@ const BusinessProfileSetup = () => {
 
               <div className="relative z-10">
                 <div className="flex items-center space-x-4 mb-6">
+                  {/* Profile Image */}
                   <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
                     {profileImage ? (
                       <img
@@ -641,29 +642,34 @@ const BusinessProfileSetup = () => {
                       </span>
                     )}
                   </div>
-                  <div>
+
+                  {/* Business Details */}
+                  <div className="flex-1">
                     <h3 className="text-xl font-bold text-gray-800">
                       {businessName || "Your Business Name"}
                     </h3>
 
-                        {/* Display average rating if reviews are enabled */}
-                        {components.find(
-                          (c) => c.id === "reviews" && c.enabled
-                        ) && (
-                          <div className="flex items-center bg-blue-50 px-3 py-1 rounded-full">
-                            <span className="text-yellow-500 mr-1">★</span>
-                            <span className="text-sm font-medium">
-                              No ratings yet
+                    <div className="flex justify-between items-start w-full">
+                      {/* Business Bio */}
+                      <p className="text-gray-600 text-xs max-w-xs break-words line-clamp-2">
+                        {bio ||
+                          "Your business bio will appear here. Add a compelling description to attract customers."}
+                      </p>
+
+                      {/* Rating Section */}
+                      {components.find(
+                        (c) => c.id === "reviews" && c.enabled
+                      ) && (
+                        <div className="flex items-center border border-primary px-4 py-1 rounded-full self-end">
+                          <span className="text-yellow-500 mr-1">★</span>
+                          <span className="text-xs font-medium">
+                            No ratings yet
                           </span>
-                  </div>
-                        )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-
-                <p className="text-gray-600 mb-6 text-xs">
-                  {bio ||
-                    "Your business bio will appear here. Add a compelling description to attract customers."}
-                </p>
 
                 {/* Display enabled components in modern cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -674,7 +680,7 @@ const BusinessProfileSetup = () => {
                         key={component.id}
                         className="p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow"
                       >
-                        <h4 className="font-medium flex items-center text-gray-800 mb-3 border-b pb-2">
+                        <h4 className="text-xs flex items-center text-gray-800 mb-3 border-b pb-2">
                           <span className="mr-2">{component.icon}</span>{" "}
                           {component.title}
                         </h4>
@@ -702,7 +708,7 @@ const BusinessProfileSetup = () => {
                                   </div>
                                 )}
                                 <div>
-                                  <h5 className="font-medium text-gray-800">
+                                  <h5 className="font-semibold text-sm text-gray-800">
                                     {item.title ||
                                       item.name ||
                                       item.day ||
