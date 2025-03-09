@@ -93,8 +93,24 @@ export const useAuthStore = create((set, get) => ({
         email,
         password,
       });
-      set({ user: response.data.user, isAuthenticated: true, error: null });
-      return response.data;
+
+      const userData = response.data.user;
+      const normalizedUser = {
+        ...userData,
+        id: userData._id || userData.id,
+      };
+
+      set({
+        user: normalizedUser,
+        isAuthenticated: true,
+        error: null,
+        isApproved: normalizedUser.isApproved || false,
+      });
+
+      return {
+        ...response.data,
+        user: normalizedUser,
+      };
     } catch (error) {
       const errorMessage =
         error.response?.data?.message || "An error occurred during login";
@@ -126,7 +142,19 @@ export const useAuthStore = create((set, get) => ({
       const response = await axios.post(`${BASE_API_URL}/verify-email`, {
         code,
       });
-      set({ user: response.data.user, isAuthenticated: true });
+
+      const userData = response.data.user;
+      const normalizedUser = {
+        ...userData,
+        id: userData._id || userData.id,
+      };
+
+      set({
+        user: normalizedUser,
+        isAuthenticated: true,
+        isApproved: normalizedUser.isApproved || false,
+      });
+
       return response.data;
     } catch (error) {
       const errorMessage =
