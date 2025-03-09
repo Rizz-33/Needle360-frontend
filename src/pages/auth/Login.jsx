@@ -9,11 +9,9 @@ const Login = () => {
     email: "",
     password: "",
   });
-
-  const [errors] = useState({});
+  const [errors, setErrors] = useState({});
   const [disabled] = useState({});
   const [roleType, setRoleType] = useState(1);
-
   const { login, error } = useAuthStore();
   const navigate = useNavigate();
 
@@ -35,7 +33,19 @@ const Login = () => {
   const handleSubmit = async (formValues) => {
     console.log("Form submitted with values:", formValues);
     try {
-      await login(formValues.email, formValues.password);
+      // Pass the roleType to the login function
+      const result = await login(formValues.email, formValues.password);
+
+      // Check if the logged-in user's role matches the selected roleType
+      if (result.user.role !== roleType) {
+        setErrors({
+          auth: `Invalid credentials for ${
+            roleType === 1 ? "Customer" : "Tailor"
+          } account.`,
+        });
+        return;
+      }
+
       navigate("/");
     } catch (error) {
       console.error("Login failed:", error);
@@ -57,7 +67,7 @@ const Login = () => {
           values={values}
           onChange={handleChange}
           onSubmit={handleSubmit}
-          errors={errors}
+          errors={{ ...errors, ...(error ? { auth: error } : {}) }}
           disabled={disabled}
           button="Get Started"
           heading1={
@@ -77,8 +87,8 @@ const Login = () => {
           }
           onRoleTypeChange={handleRoleTypeChange}
         />
-        {error && (
-          <p className="text-red-500 text-sm mt-2 text-center">{error}</p>
+        {errors.auth && (
+          <p className="text-red-500 text-sm mt-2 text-center">{errors.auth}</p>
         )}
       </div>
     </div>
