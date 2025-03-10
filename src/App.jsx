@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import FashionDesignTool from "./components/design/Tool";
+import { SidebarProvider } from "./components/ui/SideBarMenu";
+import Dashboard from "./pages/admin/Dashboard";
 import EmailVerification from "./pages/auth/EmailVerification";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import Login from "./pages/auth/Login";
@@ -150,6 +152,14 @@ function App() {
             <ProtectedRoute>
               <TailorProfilePage />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <SidebarProvider>
+              <Dashboard />
+            </SidebarProvider>
           }
         />
       </Routes>
