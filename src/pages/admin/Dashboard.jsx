@@ -32,7 +32,7 @@ const Dashboard = () => {
         }}
       >
         {/* Main content with padding to account for the header */}
-        <main className="pt-24 pb-8 w-full px-12">
+        <main className="pt-24 pb-8 w-full px-12 overflow-auto h-screen">
           {/* Welcome section */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-800">Welcome back</h1>

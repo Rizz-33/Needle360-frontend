@@ -47,7 +47,7 @@ const SideBarMenu = () => {
     <div className="flex">
       {/* Floating Sidebar */}
       <motion.div
-        className="bg-white text-primary rounded-r-2xl h-auto max-h-screen py-6 px-2 fixed inset-y-0 left-0 z-40 transition-all duration-75 ease-in-out border-r border-gray-100 m-4 overflow-y-auto"
+        className="bg-white text-primary rounded-r-2xl h-auto max-h-screen py-6 px-2 fixed inset-y-0 left-0 z-40 transition-all duration-75 ease-in-out border-r border-gray-100 m-4 overflow-y-auto overflow-x-hidden" // Added overflow-x-hidden
         initial="expanded"
         animate={isExpanded ? "expanded" : "collapsed"}
         variants={sidebarVariants}
