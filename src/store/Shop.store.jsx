@@ -20,11 +20,12 @@ axios.interceptors.response.use(
 
 export const useShopStore = create((set, get) => ({
   tailors: [],
+  unapprovedTailors: [],
   tailor: null,
   isLoading: false,
   error: null,
 
-  // Single function to fetch tailor data (including logos)
+  // Fetch all tailors
   fetchTailors: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -52,7 +53,7 @@ export const useShopStore = create((set, get) => ({
     }
   },
 
-  // Function to fetch a tailor by ID
+  // Fetch a tailor by ID
   fetchTailorById: async (id) => {
     set({ isLoading: true, error: null });
     try {
@@ -89,7 +90,38 @@ export const useShopStore = create((set, get) => ({
     }
   },
 
-  // Function to update a tailor by ID
+  // Fetch unapproved tailors
+  fetchUnapprovedTailors: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.get(`${BASE_API_URL}/unapproved-tailors`);
+      console.log("API Response (Unapproved Tailors):", response.data);
+
+      const unapprovedTailors = response.data.map((tailor) => ({
+        id: tailor._id,
+        registrationNumber: tailor.registrationNumber,
+        name: tailor.name,
+        email: tailor.email,
+        shopName: tailor.shopName,
+        contactNumber: tailor.contactNumber,
+        logoUrl: tailor.logoUrl,
+        shopAddress: tailor.shopAddress,
+      }));
+
+      // Update the state with unapproved tailors
+      set({ unapprovedTailors });
+    } catch (error) {
+      console.error("Error fetching unapproved tailors:", error);
+      set({
+        error:
+          error.response?.data?.message || "Failed to load unapproved tailors",
+      });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  // Update a tailor by ID
   updateTailor: async (id, updateData) => {
     set({ isLoading: true, error: null });
     try {

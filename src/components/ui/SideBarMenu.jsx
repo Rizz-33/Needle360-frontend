@@ -81,7 +81,7 @@ const SideBarMenu = () => {
         <nav className="mt-6 space-y-1">
           {/* Dashboard */}
           <motion.a
-            href="#"
+            href="/dashboard"
             className="flex items-center py-3 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-sm"
             whileHover={{
               backgroundColor: "rgba(59, 130, 246, 0.1)",
@@ -103,7 +103,7 @@ const SideBarMenu = () => {
 
           {/* New Requests */}
           <motion.a
-            href="#"
+            href="/pending-tailors"
             className="flex items-center py-3 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-sm"
             whileHover={{
               backgroundColor: "rgba(59, 130, 246, 0.1)",
