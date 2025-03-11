@@ -46,8 +46,6 @@ export const useAuthStore = create((set, get) => ({
       ...(roleType === 4 && {
         shopName: values.shopName,
         shopAddress: values.address,
-        shopRegistrationNumber: values.shopRegistrationNumber,
-        taxId: values.taxId,
         logoUrl: values.logoUrl || null,
       }),
     };
@@ -61,6 +59,7 @@ export const useAuthStore = create((set, get) => ({
       const normalizedUser = {
         ...userData,
         id: userData._id || userData.id,
+        registrationNumber: userData.registrationNumber,
       };
 
       set({
@@ -98,6 +97,7 @@ export const useAuthStore = create((set, get) => ({
       const normalizedUser = {
         ...userData,
         id: userData._id || userData.id,
+        registrationNumber: userData.registrationNumber, // Make sure registrationNumber is included
       };
 
       set({
@@ -148,6 +148,7 @@ export const useAuthStore = create((set, get) => ({
       const normalizedUser = {
         ...userData,
         id: userData._id || userData.id,
+        registrationNumber: userData.registrationNumber,
       };
 
       set({
@@ -217,6 +218,7 @@ export const useAuthStore = create((set, get) => ({
       const normalizedUser = {
         ...userData,
         id: userData._id || userData.id,
+        registrationNumber: userData.registrationNumber,
       };
 
       set({
