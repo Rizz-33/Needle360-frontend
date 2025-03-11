@@ -300,9 +300,6 @@ const Form = ({
         newErrors.accountNumber = "Account number is required";
       if (!formValues.accountName)
         newErrors.accountName = "Account name is required";
-
-      if (roleType === 4 && !formValues.shopRegistrationNumber)
-        newErrors.shopRegistrationNumber = "Registration number is required";
     }
 
     setFormErrors(newErrors);
@@ -657,24 +654,6 @@ const Form = ({
               },
             ],
           },
-          {
-            name: "businessDetails-group",
-            gridCols: 2,
-            fields: [
-              {
-                name: "shopRegistrationNumber",
-                type: "text",
-                placeholder: "Business registration number",
-                required: true,
-              },
-              {
-                name: "taxId",
-                type: "text",
-                placeholder: "Tax ID",
-                required: false,
-              },
-            ],
-          },
         ],
       },
     ],
@@ -761,10 +740,6 @@ const Form = ({
 
   // Render field group
   const renderFieldGroup = (fieldGroup) => {
-    if (roleType === 1 && fieldGroup.name === "businessDetails-group") {
-      return null;
-    }
-
     if (!fieldGroup.fields) {
       return <div key={fieldGroup.name}>{renderField(fieldGroup)}</div>;
     }
@@ -779,13 +754,11 @@ const Form = ({
     const isLocationGroup = fieldGroup.name === "location-group";
     const isAddressGroup = fieldGroup.name === "address-group";
     const isBankDetailsGroup = fieldGroup.name === "bankDetails-group";
-    const isBusinessDetailsGroup = fieldGroup.name === "businessDetails-group";
 
     if (
       (isPasswordGroup ||
         isLocationGroup ||
         isBankDetailsGroup ||
-        isBusinessDetailsGroup ||
         isAddressGroup) &&
       visibleFields.length === fieldGroup.gridCols
     ) {

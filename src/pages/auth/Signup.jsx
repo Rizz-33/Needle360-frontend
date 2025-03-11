@@ -21,8 +21,6 @@ const Signup = () => {
     accountNumber: "",
     accountName: "",
     bankName: "",
-    shopRegistrationNumber: "", // for tailor shop owner
-    taxId: "", // for tailor shop owner
     logoUrl: "", // for tailor shop owner
   });
 
@@ -50,8 +48,6 @@ const Signup = () => {
       ...prev,
       name: "",
       shopName: "",
-      shopRegistrationNumber: "",
-      taxId: "",
       logo: null,
     }));
   };
@@ -59,33 +55,12 @@ const Signup = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    // Email validation
-    if (!values.email) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(values.email)) {
-      newErrors.email = "Please enter a valid email";
-    }
-
-    // Password validation
-    if (!values.password) {
-      newErrors.password = "Password is required";
-    } else if (values.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters";
-    }
-
-    if (!values.confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password";
-    } else if (values.password !== values.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
-
     // Role-specific validation
     if (roleType === 1) {
       if (!values.name) newErrors.name = "Name is required";
     } else {
       if (!values.shopName) newErrors.shopName = "Business name is required";
-      if (!values.shopRegistrationNumber)
-        newErrors.shopRegistrationNumber = "Registration number is required";
+      if (!values.logoUrl) newErrors.logoUrl = "Shop logo is required";
     }
 
     // Common validation for both roles
@@ -122,34 +97,19 @@ const Signup = () => {
       role: roleType === 1 ? "user" : "tailor-shop-owner",
       ...(roleType === 4 && {
         shopName: values.shopName,
-        shopRegistrationNumber: values.shopRegistrationNumber,
-        taxId: values.taxId,
         logoUrl: values.logoUrl || null,
       }),
     };
 
     try {
-      await signup(payload, roleType);
-      navigate("/verify-email");
+      await signup(values, roleType);
+      navigate("/");
     } catch (error) {
       console.error("Signup error details:", error);
-      // Handle different error scenarios
-      if (error.code === "ERR_CONNECTION_REFUSED") {
-        setErrors((prev) => ({
-          ...prev,
-          submit: "Unable to connect to server. Please try again later.",
-        }));
-      } else if (error.response?.status === 409) {
-        setErrors((prev) => ({
-          ...prev,
-          email: "This email is already registered",
-        }));
-      } else {
-        setErrors((prev) => ({
-          ...prev,
-          submit: error.message || "An error occurred during signup",
-        }));
-      }
+      setErrors((prev) => ({
+        ...prev,
+        submit: error.message || "An error occurred during signup",
+      }));
     }
   };
 
