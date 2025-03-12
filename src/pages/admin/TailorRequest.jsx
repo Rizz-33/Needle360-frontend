@@ -90,7 +90,7 @@ const TailorRequest = () => {
   };
 
   return (
-    <div className="flex w-full bg-gradient-to-t from-white to-blue-50">
+    <div className="flex w-full bg-blue-50">
       {/* Sidebar component */}
       <SideBarMenu />
 
@@ -169,7 +169,7 @@ const TailorRequest = () => {
                     <tr>
                       <td
                         colSpan="6"
-                        className="px-6 py-4 text-center text-gray-500"
+                        className="px-6 py-4 text-center text-sm text-gray-500"
                       >
                         No pending tailor requests found
                       </td>
