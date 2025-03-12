@@ -54,6 +54,12 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace={false} />;
   }
 
+  if (!user.isVerified && !isApproved) {
+    return (
+      <Navigate to="/verify-email" state={{ from: location }} replace={false} />
+    );
+  }
+
   if (!isApproved) {
     console.warn("User not approved, redirecting to pending approval");
     return (
@@ -62,12 +68,6 @@ const ProtectedRoute = ({ children }) => {
         state={{ from: location }}
         replace={false}
       />
-    );
-  }
-
-  if (!user.isVerified) {
-    return (
-      <Navigate to="/verify-email" state={{ from: location }} replace={false} />
     );
   }
 
