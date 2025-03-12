@@ -1,9 +1,29 @@
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Loader from "../../components/ui/Loader";
+import { useAuthStore } from "../../store/Auth.store";
 
 const PendingApproval = () => {
   const [isHelpPopupOpen, setIsHelpPopupOpen] = useState(false);
+  const navigate = useNavigate();
+  const { isApproved, checkApproval } = useAuthStore();
+
+  // Check approval status periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkApproval(); // Check if the user is approved
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [checkApproval]);
+
+  // Redirect to home if approved
+  useEffect(() => {
+    if (isApproved) {
+      navigate("/"); // Redirect to the home page
+    }
+  }, [isApproved, navigate]);
 
   const openHelpPopup = () => {
     setIsHelpPopupOpen(true);
