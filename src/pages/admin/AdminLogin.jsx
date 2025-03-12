@@ -49,6 +49,10 @@ const AdminLogin = () => {
       navigate("/dashboard");
     } catch (error) {
       console.error("Admin login failed:", error);
+      setErrors({
+        auth:
+          error.message || "An error occurred during login. Please try again.",
+      });
     }
   };
 
