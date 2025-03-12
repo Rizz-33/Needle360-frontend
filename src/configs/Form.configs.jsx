@@ -83,6 +83,48 @@ export const footerConfigs = {
       linkText: "Sign up as a Customer",
     },
   },
+  adminLogin: {
+    loginSignupRedirect: {
+      text: null,
+      link: null,
+      linkText: null,
+    },
+    terms: {
+      text: null,
+      link: null,
+      linkText: null,
+    },
+    privacy: {
+      link: null,
+      linkText: null,
+    },
+    alternateSignup: {
+      text: null,
+      link: null,
+      linkText: null,
+    },
+  },
+  adminSignup: {
+    loginSignupRedirect: {
+      text: null,
+      link: null,
+      linkText: null,
+    },
+    terms: {
+      text: null,
+      link: null,
+      linkText: null,
+    },
+    privacy: {
+      link: null,
+      linkText: null,
+    },
+    alternateSignup: {
+      text: null,
+      link: null,
+      linkText: null,
+    },
+  },
   forgotPassword: {
     loginSignupRedirect: {
       text: "Remembered your password?",
@@ -127,6 +169,14 @@ export const headingConfigs = {
     heading1: "Welcome Back to our platform!",
     heading2:
       "Log in to your account to manage your tailor shop or connect with customers.",
+  },
+  adminLogin: {
+    heading1: "Welcome Back Admin!",
+    heading2: "Log in to your account to manage the platform.",
+  },
+  adminSignup: {
+    heading1: "Welcome Admin!",
+    heading2: "Sign up to create your admin account.",
   },
   forgotPassword: {
     heading1: "Forgot your password?",

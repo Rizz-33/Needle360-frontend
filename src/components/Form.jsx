@@ -211,7 +211,7 @@ const Form = ({
   showAlternateSignup = true,
   multiStep = false,
 }) => {
-  const [roleType, setRoleType] = useState(1); // 1 for user, 4 for tailor shop
+  const [roleType, setRoleType] = useState(1); // 1 for user, 4 for tailor shop, 9 for admin
   const [currentStep, setCurrentStep] = useState(0);
   const [formValues, setFormValues] = useState({ ...values });
   const [formErrors, setFormErrors] = useState({ ...errors });
@@ -248,12 +248,13 @@ const Form = ({
     }
   };
 
-  // Toggle role type between 1 and 4
-  const toggleRoleType = () => {
-    const newRoleType = roleType === 1 ? 4 : 1;
-    setRoleType(newRoleType);
+  // Toggle role type between user, tailor shop, and admin
+  const toggleRoleType = (newRoleType) => {
+    const nextRoleType =
+      newRoleType || (roleType === 1 ? 4 : roleType === 4 ? 9 : 1);
+    setRoleType(nextRoleType);
     if (onRoleTypeChange) {
-      onRoleTypeChange(newRoleType);
+      onRoleTypeChange(nextRoleType);
     }
   };
 
@@ -277,6 +278,10 @@ const Form = ({
         newErrors.confirmPassword = "Please confirm your password";
       else if (formValues.password !== formValues.confirmPassword)
         newErrors.confirmPassword = "Passwords do not match";
+
+      // For admin, validate registration number
+      if (roleType === 9 && !formValues.registrationNumber)
+        newErrors.registrationNumber = "Registration number is required";
     } else if (step === 1) {
       // Validate business details
       if (roleType === 4) {
@@ -509,6 +514,45 @@ const Form = ({
         ],
       },
     ],
+    // Admin signup form fields
+    adminSignup: [
+      {
+        name: "name",
+        type: "text",
+        placeholder: "Enter your name",
+        required: true,
+      },
+      {
+        name: "email",
+        type: "email",
+        placeholder: "Enter your email address",
+        required: true,
+      },
+      {
+        name: "password-group",
+        gridCols: 2,
+        fields: [
+          {
+            name: "password",
+            type: "password",
+            placeholder: "Set a password",
+            required: true,
+          },
+          {
+            name: "confirmPassword",
+            type: "password",
+            placeholder: "Confirm the password",
+            required: true,
+          },
+        ],
+      },
+      {
+        name: "registrationNumber",
+        type: "text",
+        placeholder: "Enter admin registration number",
+        required: true,
+      },
+    ],
     // Multi-step form fields for tailor shop signup
     tailorSignup: [
       // Step 1: Account Information
@@ -659,7 +703,10 @@ const Form = ({
     ],
   };
 
-  const fields = customFields || defaultFields[formType] || [];
+  const fields =
+    customFields ||
+    (roleType === 9 ? defaultFields.adminSignup : defaultFields[formType]) ||
+    [];
 
   // Handle form submission
   const handleSubmit = (e) => {
@@ -820,6 +867,33 @@ const Form = ({
     }
   }, [currentStep, formValues, formErrors]);
 
+  // Generate role options based on configured roles
+  const getRoleOptions = () => {
+    const options = [];
+    if (roleType === 1 || roleType === 4) {
+      options.push({
+        text: "Sign up as a Tailor Shop",
+        value: 4,
+        linkText: "Sign up as a Tailor Shop",
+      });
+    }
+    if (roleType === 1 || roleType === 9) {
+      options.push({
+        text: "Sign up as an Admin",
+        value: 9,
+        linkText: "Sign up as an Admin",
+      });
+    }
+    if (roleType === 4 || roleType === 9) {
+      options.push({
+        text: "Sign up as a User",
+        value: 1,
+        linkText: "Sign up as a User",
+      });
+    }
+    return options;
+  };
+
   return (
     <div className={className}>
       {heading1 && (
@@ -833,6 +907,47 @@ const Form = ({
 
       {multiStep && (
         <FormStepper currentStep={currentStep} totalSteps={totalSteps} />
+      )}
+
+      {/* Display role type selector */}
+      {formType === "signup" && (
+        <div className="mb-4">
+          <div className="flex justify-center items-center space-x-4">
+            <button
+              type="button"
+              onClick={() => toggleRoleType(1)}
+              className={`px-3 py-1 rounded-full text-xs ${
+                roleType === 1
+                  ? "bg-primary text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
+            >
+              User
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleRoleType(4)}
+              className={`px-3 py-1 rounded-full text-xs ${
+                roleType === 4
+                  ? "bg-primary text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
+            >
+              Tailor Shop
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleRoleType(9)}
+              className={`px-3 py-1 rounded-full text-xs ${
+                roleType === 9
+                  ? "bg-primary text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
+            >
+              Admin
+            </button>
+          </div>
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-3">
@@ -960,20 +1075,20 @@ const Form = ({
       )}
 
       {showAlternateSignup &&
-        footerConfig?.alternateSignup &&
-        !disabled.alternateSignup && (
+        footerConfig?.alternateAdminSignup &&
+        !disabled.alternateAdminSignup && (
           <div className="text-center mt-2">
             <p className="text-xs">
-              {footerConfig.alternateSignup.text}{" "}
+              {footerConfig.alternateAdminSignup.text}{" "}
               <a
-                href={footerConfig.alternateSignup.link}
+                href={footerConfig.alternateAdminSignup.link}
                 className={"text-primary hover:underline cursor-pointer"}
                 onClick={(e) => {
                   e.preventDefault();
-                  toggleRoleType();
+                  toggleRoleType(ROLES.ADMIN);
                 }}
               >
-                {footerConfig.alternateSignup.linkText}
+                {footerConfig.alternateAdminSignup.linkText}
               </a>
             </p>
           </div>
