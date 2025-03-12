@@ -22,6 +22,7 @@ export const useShopStore = create((set, get) => ({
   tailors: [],
   unapprovedTailors: [],
   tailor: null,
+  unapprovedTailor: null, // Add state for selected unapproved tailor
   isLoading: false,
   error: null,
 
@@ -85,6 +86,30 @@ export const useShopStore = create((set, get) => ({
     } catch (error) {
       console.error("Error fetching tailor by ID:", error);
       set({ error: error.response?.data?.message || "Failed to load tailor" });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  // New function: Fetch an unapproved tailor by ID
+  fetchUnapprovedTailorById: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.get(
+        `${BASE_API_URL}/unapproved-tailors/${id}`
+      );
+      console.log("API Response (Unapproved Tailor):", response.data);
+
+      // Update the state with the fetched unapproved tailor
+      set({ unapprovedTailor: response.data });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching unapproved tailor by ID:", error);
+      set({
+        error:
+          error.response?.data?.message || "Failed to load unapproved tailor",
+      });
+      throw error; // Rethrow to allow handling in the component
     } finally {
       set({ isLoading: false });
     }
