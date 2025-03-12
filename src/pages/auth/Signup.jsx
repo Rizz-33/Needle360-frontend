@@ -103,7 +103,7 @@ const Signup = () => {
 
     try {
       await signup(values, roleType);
-      navigate("/");
+      navigate("/verify-email");
     } catch (error) {
       console.error("Signup error details:", error);
       setErrors((prev) => ({
