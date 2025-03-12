@@ -3,6 +3,7 @@ import { Toaster } from "react-hot-toast";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import FashionDesignTool from "./components/design/Tool";
 import { SidebarProvider } from "./components/ui/SideBarMenu";
+import AdminLogin from "./pages/admin/AdminLogin";
 import Dashboard from "./pages/admin/Dashboard";
 import TailorRequest from "./pages/admin/TailorRequest";
 import EmailVerification from "./pages/auth/EmailVerification";
@@ -171,6 +172,7 @@ function App() {
             </SidebarProvider>
           }
         />
+        <Route path="/admin-login" element={<AdminLogin />} />
       </Routes>
       <Toaster />
     </div>
