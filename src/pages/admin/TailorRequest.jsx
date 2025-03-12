@@ -11,15 +11,17 @@ const TailorRequest = () => {
   const {
     unapprovedTailors,
     fetchUnapprovedTailors,
+    fetchUnapprovedTailorById,
+    unapprovedTailor,
     isLoading,
     error,
-    updateTailor, // Use updateTailor from shop store
-    fetchTailors, // Use fetchTailors to refresh the list after approval
+    updateTailor,
+    fetchTailors,
   } = useShopStore();
 
   const [selectedTailor, setSelectedTailor] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [approving, setApproving] = useState(false); // Track approval loading state
+  const [approving, setApproving] = useState(false);
 
   // Fetch unapproved tailors on component mount
   useEffect(() => {
@@ -38,13 +40,13 @@ const TailorRequest = () => {
   }, []);
 
   const handleViewTailor = async (tailor) => {
-    setSelectedTailor(tailor); // Set the initial tailor data
-    setShowModal(true);
+    setShowModal(true); // Open the modal immediately
 
     try {
-      // Fetch detailed tailor information
-      await useShopStore.getState().fetchTailorById(tailor.id);
-      const detailedTailor = useShopStore.getState().tailor;
+      // Fetch detailed unapproved tailor information
+      const detailedTailor = await useShopStore
+        .getState()
+        .fetchUnapprovedTailorById(tailor.id);
 
       // Merge the detailed data with the initial tailor data
       setSelectedTailor((prev) => ({
@@ -52,7 +54,7 @@ const TailorRequest = () => {
         ...detailedTailor,
       }));
     } catch (error) {
-      console.error("Error fetching tailor details:", error);
+      console.error("Error fetching unapproved tailor details:", error);
       alert("Failed to fetch tailor details");
     }
   };
@@ -205,10 +207,7 @@ const TailorRequest = () => {
                             </button>
                             <button
                               className="text-green-600 hover:text-green-900 p-1 hover:bg-green-100 rounded-full transition-colors"
-                              onClick={() => {
-                                setSelectedTailor(tailor);
-                                setShowModal(true);
-                              }}
+                              onClick={() => handleViewTailor(tailor)} // Call handleViewTailor instead
                               title="Approve"
                             >
                               <CheckCircle size={18} />
@@ -245,7 +244,7 @@ const TailorRequest = () => {
         </main>
       </div>
 
-      {/* Modal for detailed tailor view - Reduced height */}
+      {/* Modal for detailed tailor view - Modified to remove bio and services */}
       <AnimatePresence>
         {showModal && selectedTailor && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -276,11 +275,9 @@ const TailorRequest = () => {
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <p className="text-xs font-medium text-gray-500">
-                          Registration Number
-                        </p>
+                        <p className="text-xs font-medium text-gray-500">ID</p>
                         <p className="text-sm text-gray-800">
-                          #{selectedTailor.registrationNumber}
+                          {selectedTailor._id || "N/A"}
                         </p>
                       </div>
                       <div>
@@ -288,7 +285,7 @@ const TailorRequest = () => {
                           Full Name
                         </p>
                         <p className="text-sm text-gray-800">
-                          {selectedTailor.name}
+                          {selectedTailor.name || "N/A"}
                         </p>
                       </div>
                       <div>
@@ -296,7 +293,7 @@ const TailorRequest = () => {
                           Email Address
                         </p>
                         <p className="text-sm text-gray-800">
-                          {selectedTailor.email}
+                          {selectedTailor.email || "N/A"}
                         </p>
                       </div>
                       <div>
@@ -305,6 +302,36 @@ const TailorRequest = () => {
                         </p>
                         <p className="text-sm text-gray-800">
                           {selectedTailor.contactNumber || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-gray-500">
+                          Role
+                        </p>
+                        <p className="text-sm text-gray-800">
+                          {selectedTailor.role || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-gray-500">
+                          Created At
+                        </p>
+                        <p className="text-sm text-gray-800">
+                          {selectedTailor.createdAt
+                            ? new Date(
+                                selectedTailor.createdAt
+                              ).toLocaleString()
+                            : "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-gray-500">
+                          Verification Status
+                        </p>
+                        <p className="text-sm text-gray-800">
+                          {selectedTailor.isVerified
+                            ? "Verified"
+                            : "Not Verified"}
                         </p>
                       </div>
                     </div>
@@ -321,7 +348,7 @@ const TailorRequest = () => {
                           Shop Name
                         </p>
                         <p className="text-sm text-gray-800">
-                          {selectedTailor.shopName}
+                          {selectedTailor.shopName || "N/A"}
                         </p>
                       </div>
                       <div>
@@ -330,6 +357,14 @@ const TailorRequest = () => {
                         </p>
                         <p className="text-sm text-gray-800">
                           {selectedTailor.shopAddress || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-gray-500">
+                          Shop Registration Number
+                        </p>
+                        <p className="text-sm text-gray-800">
+                          {selectedTailor.shopRegistrationNumber || "N/A"}
                         </p>
                       </div>
                       <div>
@@ -343,16 +378,18 @@ const TailorRequest = () => {
                             className="w-20 h-20 object-cover rounded-md"
                           />
                         ) : (
-                          <p className="text-sm text-gray-800">Not available</p>
+                          <p className="text-sm text-gray-800">
+                            {selectedTailor.logoUrl || "Not available"}
+                          </p>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Additional Information */}
+                  {/* Banking Information */}
                   <div>
                     <h3 className="text-md font-semibold mb-1 text-gray-700 border-b pb-1">
-                      Additional Information
+                      Banking Information
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -369,20 +406,6 @@ const TailorRequest = () => {
                         </p>
                         <p className="text-sm text-gray-800">
                           {selectedTailor.bankName || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-gray-500">Bio</p>
-                        <p className="text-sm text-gray-800">
-                          {selectedTailor.bio || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-gray-500">
-                          Services
-                        </p>
-                        <p className="text-sm text-gray-800">
-                          {selectedTailor.services?.join(", ") || "N/A"}
                         </p>
                       </div>
                     </div>
