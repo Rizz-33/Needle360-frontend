@@ -3,30 +3,41 @@ import { CheckCircle, Eye, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { CustomButton } from "../../components/ui/Button";
 import SideBarMenu, { useSidebar } from "../../components/ui/SideBarMenu";
-import { useShopStore } from "../../store/Shop.store";
+import { useAdminStore } from "../../store/Admin.store";
+import { useAuthStore } from "../../store/Auth.store"; // Import the useAuthStore
 
 const TailorRequest = () => {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const { isExpanded } = useSidebar();
   const {
-    unapprovedTailors,
+    unapprovedTailors = [],
     fetchUnapprovedTailors,
     fetchUnapprovedTailorById,
-    unapprovedTailor,
     isLoading,
     error,
-    updateTailor,
-    fetchTailors,
-  } = useShopStore();
+    approveTailorById,
+  } = useAdminStore();
+
+  const { checkAuth } = useAuthStore(); // Destructure checkAuth from useAuthStore
 
   const [selectedTailor, setSelectedTailor] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [approving, setApproving] = useState(false);
 
-  // Fetch unapproved tailors on component mount
+  // Check authentication and fetch unapproved tailors on component mount
   useEffect(() => {
-    fetchUnapprovedTailors();
-  }, [fetchUnapprovedTailors]);
+    const initialize = async () => {
+      try {
+        await checkAuth(); // Ensure the user is authenticated
+        await fetchUnapprovedTailors(); // Fetch unapproved tailors
+      } catch (error) {
+        console.error("Error during initialization:", error);
+        // Handle error (e.g., redirect to login)
+      }
+    };
+
+    initialize();
+  }, [checkAuth, fetchUnapprovedTailors]);
 
   // Listen for sidebar expansion state changes
   useEffect(() => {
@@ -40,15 +51,10 @@ const TailorRequest = () => {
   }, []);
 
   const handleViewTailor = async (tailor) => {
-    setShowModal(true); // Open the modal immediately
+    setShowModal(true);
 
     try {
-      // Fetch detailed unapproved tailor information
-      const detailedTailor = await useShopStore
-        .getState()
-        .fetchUnapprovedTailorById(tailor.id);
-
-      // Merge the detailed data with the initial tailor data
+      const detailedTailor = await fetchUnapprovedTailorById(tailor.id);
       setSelectedTailor((prev) => ({
         ...prev,
         ...detailedTailor,
@@ -61,27 +67,15 @@ const TailorRequest = () => {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setSelectedTailor(null); // Clear selected tailor when closing
+    setSelectedTailor(null);
   };
 
   const handleApproveTailor = async (tailorId) => {
     try {
       setApproving(true);
-
-      // Call the update API with approval status
-      await updateTailor(tailorId, {
-        status: "approved",
-        approved: true,
-      });
-
-      // Refresh both approved and unapproved tailor lists
-      await fetchTailors();
+      await approveTailorById(tailorId);
       await fetchUnapprovedTailors();
-
-      // Success message
       alert("Tailor approved successfully");
-
-      // Close modal
       setShowModal(false);
     } catch (error) {
       console.error("Error approving tailor:", error);
@@ -91,21 +85,31 @@ const TailorRequest = () => {
     }
   };
 
+  const handleApproveButtonClick = async (tailor) => {
+    setShowModal(true);
+
+    try {
+      const detailedTailor = await fetchUnapprovedTailorById(tailor.id);
+      setSelectedTailor((prev) => ({
+        ...prev,
+        ...detailedTailor,
+      }));
+    } catch (error) {
+      console.error("Error fetching unapproved tailor details:", error);
+      alert("Failed to fetch tailor details");
+    }
+  };
+
   return (
     <div className="flex w-full bg-blue-50">
-      {/* Sidebar component */}
       <SideBarMenu />
-
-      {/* Main content area that responds to sidebar state */}
       <div
         className={`flex-1 transition-all duration-300 ease-in-out`}
         style={{
           marginLeft: isExpanded ? "calc(240px + 8px)" : "calc(60px + 8px)",
         }}
       >
-        {/* Main content with padding to account for the header */}
         <main className="pt-16 pb-8 w-full px-12 overflow-auto h-screen">
-          {/* Welcome section */}
           <div className="mb-8">
             <h1 className="text-xl font-bold text-gray-800">
               Pending Tailor Registrations
@@ -118,11 +122,9 @@ const TailorRequest = () => {
             </p>
           </div>
 
-          {/* Loading and error handling */}
           {isLoading && <p>Loading...</p>}
           {error && <p className="text-red-500">{error}</p>}
 
-          {/* Table Section */}
           <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -207,7 +209,7 @@ const TailorRequest = () => {
                             </button>
                             <button
                               className="text-green-600 hover:text-green-900 p-1 hover:bg-green-100 rounded-full transition-colors"
-                              onClick={() => handleViewTailor(tailor)} // Call handleViewTailor instead
+                              onClick={() => handleApproveButtonClick(tailor)}
                               title="Approve"
                             >
                               <CheckCircle size={18} />
@@ -244,7 +246,6 @@ const TailorRequest = () => {
         </main>
       </div>
 
-      {/* Modal for detailed tailor view - Modified to remove bio and services */}
       <AnimatePresence>
         {showModal && selectedTailor && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -268,7 +269,6 @@ const TailorRequest = () => {
                   </button>
                 </div>
                 <div className="space-y-8">
-                  {/* Basic Information */}
                   <div>
                     <h3 className="text-md font-semibold mb-1 text-gray-700 border-b pb-1">
                       Basic Information
@@ -337,7 +337,6 @@ const TailorRequest = () => {
                     </div>
                   </div>
 
-                  {/* Business Information */}
                   <div>
                     <h3 className="text-md font-semibold mb-1 text-gray-700 border-b pb-1">
                       Business Information
@@ -378,15 +377,12 @@ const TailorRequest = () => {
                             className="w-20 h-20 object-cover rounded-md"
                           />
                         ) : (
-                          <p className="text-sm text-gray-800">
-                            {selectedTailor.logoUrl || "Not available"}
-                          </p>
+                          <p className="text-sm text-gray-800">Not available</p>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Banking Information */}
                   <div>
                     <h3 className="text-md font-semibold mb-1 text-gray-700 border-b pb-1">
                       Banking Information
@@ -411,7 +407,6 @@ const TailorRequest = () => {
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
                   <div className="flex justify-end space-x-4 pt-3 border-t">
                     <CustomButton
                       onClick={handleCloseModal}
@@ -424,7 +419,7 @@ const TailorRequest = () => {
                       type="submit"
                     />
                     <CustomButton
-                      onClick={() => handleApproveTailor(selectedTailor.id)}
+                      onClick={() => handleApproveTailor(selectedTailor._id)}
                       disabled={approving}
                       text={approving ? "Processing..." : "Approve Tailor"}
                       color="primary"

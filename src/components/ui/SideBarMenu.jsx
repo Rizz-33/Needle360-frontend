@@ -4,16 +4,26 @@ import {
   FaCog,
   FaHome,
   FaList,
+  FaSignInAlt,
   FaSignOutAlt,
   FaUser,
   FaUsers,
 } from "react-icons/fa";
+import { useAuthStore } from "../../store/Auth.store";
 
 const SideBarMenu = () => {
   const { isExpanded, setIsExpanded } = useSidebar();
   const [isUserManagementOpen, setIsUserManagementOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSidebarFullyExpanded, setIsSidebarFullyExpanded] = useState(true);
+
+  // Get authentication state from the auth store
+  const { isAuthenticated, user, checkAuth } = useAuthStore();
+
+  // Check authentication status when component mounts
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   // Emit an event when the sidebar state changes
   useEffect(() => {
@@ -47,7 +57,7 @@ const SideBarMenu = () => {
     <div className="flex">
       {/* Floating Sidebar */}
       <motion.div
-        className="bg-white text-primary rounded-r-2xl h-auto max-h-screen py-6 px-2 fixed inset-y-0 left-0 z-40 transition-all duration-75 ease-in-out border-r border-gray-100 m-4 overflow-y-auto overflow-x-hidden" // Added overflow-x-hidden
+        className="bg-white text-primary rounded-r-2xl h-auto max-h-screen py-6 px-2 fixed inset-y-0 left-0 z-40 transition-all duration-75 ease-in-out border-r border-gray-100 m-4 overflow-y-auto overflow-x-hidden"
         initial="expanded"
         animate={isExpanded ? "expanded" : "collapsed"}
         variants={sidebarVariants}
@@ -79,7 +89,7 @@ const SideBarMenu = () => {
 
         {/* Navigation */}
         <nav className="mt-6 space-y-1">
-          {/* Dashboard */}
+          {/* Dashboard - Always show */}
           <motion.a
             href="/dashboard"
             className="flex items-center py-3 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-sm"
@@ -101,7 +111,7 @@ const SideBarMenu = () => {
             )}
           </motion.a>
 
-          {/* New Requests */}
+          {/* New Requests - Always show */}
           <motion.a
             href="/pending-tailors"
             className="flex items-center py-3 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-sm"
@@ -123,7 +133,7 @@ const SideBarMenu = () => {
             )}
           </motion.a>
 
-          {/* User Management */}
+          {/* User Management - Always show, but functionality restricted by auth */}
           <div>
             <motion.button
               onClick={() =>
@@ -148,7 +158,7 @@ const SideBarMenu = () => {
               )}
             </motion.button>
 
-            {/* Sub-items for User Management */}
+            {/* Sub-items for User Management - Only expand if authenticated */}
             {isExpanded && isUserManagementOpen && (
               <motion.div
                 className="ml-6 mt-2 space-y-2"
@@ -183,63 +193,88 @@ const SideBarMenu = () => {
           </div>
         </nav>
 
-        {/* Bottom Section - Profile */}
+        {/* Bottom Section - Profile or Login depending on authentication status */}
         <div className="absolute bottom-6 left-0 w-full px-2">
-          <div>
-            <motion.button
-              onClick={() => isExpanded && setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center w-full py-3 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-sm"
+          {isAuthenticated ? (
+            // Show Profile section for authenticated users
+            <div>
+              <motion.button
+                onClick={() => isExpanded && setIsProfileOpen(!isProfileOpen)}
+                className="flex items-center w-full py-3 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-sm"
+                whileHover={{
+                  backgroundColor: "rgba(59, 130, 246, 0.1)",
+                  x: 3,
+                }}
+              >
+                <FaUser className="w-4 h-4" />
+                {isExpanded && (
+                  <motion.span
+                    className="ml-4 flex-grow text-left"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    Profile
+                  </motion.span>
+                )}
+              </motion.button>
+
+              {/* Sub-items for Profile */}
+              {isExpanded && isProfileOpen && (
+                <motion.div
+                  className="ml-6 mt-2 space-y-2"
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <motion.a
+                    href="#"
+                    className="flex items-center py-2 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-sm"
+                    whileHover={{
+                      backgroundColor: "rgba(59, 130, 246, 0.1)",
+                      x: 3,
+                    }}
+                  >
+                    <FaCog className="w-3 h-3" />
+                    <span className="ml-3">Settings</span>
+                  </motion.a>
+                  <motion.a
+                    href="#"
+                    className="flex items-center py-2 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-sm"
+                    whileHover={{
+                      backgroundColor: "rgba(59, 130, 246, 0.1)",
+                      x: 3,
+                    }}
+                  >
+                    <FaSignOutAlt className="w-3 h-3" />
+                    <span className="ml-3">Logout</span>
+                  </motion.a>
+                </motion.div>
+              )}
+            </div>
+          ) : (
+            // Show Login link for unauthenticated users
+            <motion.a
+              href="/admin-login"
+              className="flex items-center py-3 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-sm"
               whileHover={{
                 backgroundColor: "rgba(59, 130, 246, 0.1)",
                 x: 3,
               }}
             >
-              <FaUser className="w-4 h-4" />
+              <FaSignInAlt className="w-4 h-4" />
               {isExpanded && (
                 <motion.span
-                  className="ml-4 flex-grow text-left"
+                  className="ml-4"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.2 }}
                 >
-                  Profile
+                  Login
                 </motion.span>
               )}
-            </motion.button>
-
-            {/* Sub-items for Profile */}
-            {isExpanded && isProfileOpen && (
-              <motion.div
-                className="ml-6 mt-2 space-y-2"
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <motion.a
-                  href="#"
-                  className="flex items-center py-2 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-sm"
-                  whileHover={{
-                    backgroundColor: "rgba(59, 130, 246, 0.1)",
-                    x: 3,
-                  }}
-                >
-                  <FaCog className="w-3 h-3" />
-                  <span className="ml-3">Settings</span>
-                </motion.a>
-                <motion.a
-                  href="#"
-                  className="flex items-center py-2 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-sm"
-                  whileHover={{
-                    backgroundColor: "rgba(59, 130, 246, 0.1)",
-                    x: 3,
-                  }}
-                >
-                  <FaSignOutAlt className="w-3 h-3" />
-                  <span className="ml-3">Logout</span>
-                </motion.a>
-              </motion.div>
-            )}
-          </div>
+            </motion.a>
+          )}
         </div>
       </motion.div>
     </div>
