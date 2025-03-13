@@ -6,6 +6,7 @@ import { SidebarProvider } from "./components/ui/SideBarMenu";
 import AdminLogin from "./pages/admin/AdminLogin";
 import Dashboard from "./pages/admin/Dashboard";
 import TailorRequest from "./pages/admin/TailorRequest";
+import UnauthorizedAccess from "./pages/admin/UnauthorizedPage";
 import EmailVerification from "./pages/auth/EmailVerification";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import Login from "./pages/auth/Login";
@@ -69,6 +70,48 @@ const ProtectedRoute = ({ children }) => {
         state={{ from: location }}
         replace={false}
       />
+    );
+  }
+
+  return children;
+};
+
+// Component to protect admin routes that require authentication and admin role
+const AdminProtectedRoute = ({ children }) => {
+  const [isInitialized, setIsInitialized] = useState(false);
+  const { isAuthenticated, user, checkAuth } = useAuthStore();
+  const location = useLocation();
+
+  useEffect(() => {
+    const verifyAuth = async () => {
+      try {
+        await checkAuth();
+      } catch (error) {
+        console.error("Admin Auth Verification Error:", error);
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+
+    verifyAuth();
+  }, []);
+
+  // Wait for initialization before rendering
+  if (!isInitialized) {
+    return null; // Or a loading spinner
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <Navigate to="/admin-login" state={{ from: location }} replace={false} />
+    );
+  }
+
+  if (!user || user.role !== 9) {
+    return (
+      <div className="min-h-screen w-full to-violet-50 flex flex-col items-center justify-center p-4">
+        <UnauthorizedAccess />
+      </div>
     );
   }
 
@@ -159,20 +202,31 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <SidebarProvider>
-              <Dashboard />
-            </SidebarProvider>
+            <AdminProtectedRoute>
+              <SidebarProvider>
+                <Dashboard />
+              </SidebarProvider>
+            </AdminProtectedRoute>
           }
         />
         <Route
           path="/pending-tailors"
           element={
-            <SidebarProvider>
-              <TailorRequest />
-            </SidebarProvider>
+            <AdminProtectedRoute>
+              <SidebarProvider>
+                <TailorRequest />
+              </SidebarProvider>
+            </AdminProtectedRoute>
           }
         />
-        <Route path="/admin-login" element={<AdminLogin />} />
+        <Route
+          path="/admin-login"
+          element={
+            <AdminProtectedRoute>
+              <AdminLogin />
+            </AdminProtectedRoute>
+          }
+        />
       </Routes>
       <Toaster />
     </div>
