@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Form from "../../components/Form";
 import { footerConfigs, headingConfigs } from "../../configs/Form.configs";
 import { useAuthStore } from "../../store/Auth.store";
 
+// AdminLogin.jsx
 const AdminLogin = () => {
   const [values, setValues] = useState({
     email: "",
@@ -14,10 +15,8 @@ const AdminLogin = () => {
   const { login, error } = useAuthStore();
   const navigate = useNavigate();
 
-  // The admin role type is fixed at 9
   const roleType = 9;
 
-  // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setValues((prevValues) => ({
@@ -26,18 +25,15 @@ const AdminLogin = () => {
     }));
   };
 
-  // Handle form submission
   const handleSubmit = async (formValues) => {
     console.log("Admin login form submitted with values:", formValues);
     try {
-      // Pass roleType 9 for admin login
       const result = await login(
         formValues.email,
         formValues.password,
         roleType
       );
 
-      // Check if the logged-in user's role is admin (9)
       if (result.user.role !== roleType) {
         setErrors({
           auth: "Invalid admin credentials. Please try again.",
@@ -45,7 +41,7 @@ const AdminLogin = () => {
         return;
       }
 
-      // Redirect to admin dashboard instead of homepage
+      localStorage.setItem("token", result.token);
       navigate("/dashboard");
     } catch (error) {
       console.error("Admin login failed:", error);
@@ -55,6 +51,12 @@ const AdminLogin = () => {
       });
     }
   };
+
+  useEffect(() => {
+    return () => {
+      setErrors({});
+    };
+  }, []);
 
   return (
     <div className="flex w-full h-screen overflow-auto bg-gradient-to-tr from-white to-blue-50 justify-center items-center">

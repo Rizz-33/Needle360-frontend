@@ -94,7 +94,7 @@ const AdminProtectedRoute = ({ children }) => {
     };
 
     verifyAuth();
-  }, []);
+  }, [checkAuth]); // Add checkAuth as a dependency
 
   // Wait for initialization before rendering
   if (!isInitialized) {
@@ -135,8 +135,9 @@ const RedirectAuthenticatedUser = ({ children }) => {
   return children;
 };
 
+// App.jsx
 function App() {
-  const { checkAuth, isAuthenticated, user } = useAuthStore();
+  const { checkAuth } = useAuthStore();
 
   useEffect(() => {
     checkAuth();
@@ -219,14 +220,7 @@ function App() {
             </AdminProtectedRoute>
           }
         />
-        <Route
-          path="/admin-login"
-          element={
-            <AdminProtectedRoute>
-              <AdminLogin />
-            </AdminProtectedRoute>
-          }
-        />
+        <Route path="/admin-login" element={<AdminLogin />} />
       </Routes>
       <Toaster />
     </div>
