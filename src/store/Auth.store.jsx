@@ -11,13 +11,13 @@ axios.defaults.withCredentials = true;
 axios.defaults.headers.common["Content-Type"] = "application/json";
 
 // Add axios interceptors for error handling
-axios.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    console.error("API Error:", error);
-    return Promise.reject(error);
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+});
 
 export const useAuthStore = create((set, get) => ({
   user: null,
@@ -97,8 +97,11 @@ export const useAuthStore = create((set, get) => ({
       const normalizedUser = {
         ...userData,
         id: userData._id || userData.id,
-        registrationNumber: userData.registrationNumber, // Make sure registrationNumber is included
+        registrationNumber: userData.registrationNumber,
       };
+
+      // Store the token in localStorage
+      localStorage.setItem("token", response.data.token);
 
       set({
         user: normalizedUser,
@@ -126,6 +129,7 @@ export const useAuthStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await axios.post(`${BASE_API_URL}/logout`);
+      localStorage.removeItem("token"); // Clear the token
       set({ user: null, isAuthenticated: false, error: null });
     } catch (error) {
       const errorMessage =
@@ -211,10 +215,18 @@ export const useAuthStore = create((set, get) => ({
   checkAuth: async () => {
     set({ isCheckingAuth: true, error: null });
     try {
-      const response = await axios.get(`${BASE_API_URL}/check-auth`);
-      const userData = response.data.user;
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No token found. Please log in.");
+      }
 
-      // Normalize the user object to have a consistent 'id' property
+      const response = await axios.get(`${BASE_API_URL}/check-auth`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const userData = response.data.user;
       const normalizedUser = {
         ...userData,
         id: userData._id || userData.id,
