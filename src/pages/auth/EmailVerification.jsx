@@ -10,6 +10,7 @@ export default function EmailVerification() {
   const { error, verifyEmail, isApproved } = useAuthStore();
   const navigate = useNavigate();
 
+  // Handle input change and move focus to the next input
   const handleChange = (index, value) => {
     if (!/^\d*$/.test(value)) return; // Allow only numeric values
 
@@ -17,12 +18,12 @@ export default function EmailVerification() {
     newCode[index] = value;
     setCode(newCode);
 
-    // Move to next input if a number is entered
     if (value && index < 5) {
       inputsRef.current[index + 1]?.focus();
     }
   };
 
+  // Handle backspace key to move focus to the previous input
   const handleKeyDown = (index, e) => {
     if (e.key === "Backspace") {
       const newCode = [...code];
@@ -34,6 +35,7 @@ export default function EmailVerification() {
     }
   };
 
+  // Handle paste event to fill the inputs with pasted text
   const handlePaste = (e) => {
     e.preventDefault();
     const pastedText = e.clipboardData.getData("text").slice(0, 6); // Take only the first 6 digits
@@ -50,6 +52,7 @@ export default function EmailVerification() {
     inputsRef.current[Math.min(pastedText.length, 5)]?.focus();
   };
 
+  // Handle form submission to verify the email
   const handleSubmit = async (e) => {
     e.preventDefault();
     const verificationCode = code.join("");
