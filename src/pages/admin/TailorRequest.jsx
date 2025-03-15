@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { CustomButton } from "../../components/ui/Button";
 import SideBarMenu, { useSidebar } from "../../components/ui/SideBarMenu";
 import { useAdminStore } from "../../store/Admin.store";
-import { useAuthStore } from "../../store/Auth.store"; // Import the useAuthStore
+import { useAuthStore } from "../../store/Auth.store";
 
 const TailorRequest = () => {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
@@ -18,7 +18,7 @@ const TailorRequest = () => {
     approveTailorById,
   } = useAdminStore();
 
-  const { checkAuth } = useAuthStore(); // Destructure checkAuth from useAuthStore
+  const { checkAuth } = useAuthStore();
 
   const [selectedTailor, setSelectedTailor] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -28,8 +28,8 @@ const TailorRequest = () => {
   useEffect(() => {
     const initialize = async () => {
       try {
-        await checkAuth(); // Ensure the user is authenticated
-        await fetchUnapprovedTailors(); // Fetch unapproved tailors
+        await checkAuth();
+        await fetchUnapprovedTailors();
       } catch (error) {
         console.error("Error during initialization:", error);
         // Handle error (e.g., redirect to login)
@@ -50,6 +50,7 @@ const TailorRequest = () => {
       window.removeEventListener("sidebarStateChange", handleSidebarChange);
   }, []);
 
+  // Handle viewing tailor details
   const handleViewTailor = async (tailor) => {
     setShowModal(true);
 
@@ -65,11 +66,13 @@ const TailorRequest = () => {
     }
   };
 
+  // Handle closing the modal
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedTailor(null);
   };
 
+  // Handle approving a tailor
   const handleApproveTailor = async (tailorId) => {
     try {
       setApproving(true);
@@ -85,6 +88,7 @@ const TailorRequest = () => {
     }
   };
 
+  // Handle approve button click
   const handleApproveButtonClick = async (tailor) => {
     setShowModal(true);
 
