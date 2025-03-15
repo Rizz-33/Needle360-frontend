@@ -8,7 +8,7 @@ const Signup = () => {
   const [roleType, setRoleType] = useState(1); // 1 for user, 4 for tailor shop
   const [values, setValues] = useState({
     name: "",
-    shopName: "", // for tailor shop owner
+    shopName: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -21,7 +21,7 @@ const Signup = () => {
     accountNumber: "",
     accountName: "",
     bankName: "",
-    logoUrl: "", // for tailor shop owner
+    logoUrl: "",
   });
 
   const { signup, error, isLoading } = useAuthStore();
