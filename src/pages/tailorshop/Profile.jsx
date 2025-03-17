@@ -27,10 +27,8 @@ const TailorProfilePage = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [showAllBio, setShowAllBio] = useState(false);
 
-  // Determine if this is the user's own profile
   const isOwnProfile = !id || (user && (user._id === id || user.id === id));
 
-  // Fetch tailor data on component mount
   useEffect(() => {
     const tailorId = id || (user && (user._id || user.id));
     if (tailorId) {
@@ -46,7 +44,6 @@ const TailorProfilePage = () => {
     );
   }
 
-  // Calculate average rating
   const avgRating =
     tailor.reviews && tailor.reviews.length > 0
       ? tailor.reviews.reduce(
@@ -55,10 +52,8 @@ const TailorProfilePage = () => {
         ) / tailor.reviews.length
       : 0;
 
-  // Format rating to one decimal place
   const formattedRating = avgRating.toFixed(1);
 
-  // Truncate bio for display
   const truncatedBio =
     tailor.bio && tailor.bio.length > 100 && !showAllBio
       ? tailor.bio.substring(0, 100) + "..."
@@ -81,7 +76,6 @@ const TailorProfilePage = () => {
   };
 
   const handleEditProfile = () => {
-    // Navigate to edit profile page
     navigate("/profile-setup");
   };
 
@@ -90,192 +84,199 @@ const TailorProfilePage = () => {
   };
 
   const getTabContent = () => {
-    switch (activeTab) {
-      case "designs":
-        return (
-          <div className="grid grid-cols-3 gap-1">
-            {tailor.designs && tailor.designs.length > 0 ? (
-              tailor.designs.map((design, index) => (
-                <motion.div
-                  key={design.id || index}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="aspect-square bg-gray-100 relative overflow-hidden group"
-                >
-                  {design.image ? (
-                    <img
-                      src={design.image}
-                      alt={design.title}
-                      className="object-cover w-full h-full"
-                    />
+    return (
+      <div className="max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-hide">
+        {(() => {
+          switch (activeTab) {
+            case "designs":
+              return (
+                <div className="grid grid-cols-4 gap-1">
+                  {tailor.designs && tailor.designs.length > 0 ? (
+                    tailor.designs.map((design, index) => (
+                      <motion.div
+                        key={design.id || index}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="aspect-square bg-gray-100 relative overflow-hidden group"
+                      >
+                        {design.image ? (
+                          <img
+                            src={design.image}
+                            alt={design.title}
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                            <FaPalette className="text-gray-400 text-2xl" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                          <div className="text-white font-medium text-sm">
+                            {design.title}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                      <FaPalette className="text-gray-400 text-2xl" />
+                    <div className="col-span-4 py-10 text-center text-gray-500">
+                      <FaPalette className="text-3xl mx-auto mb-2 text-gray-300" />
+                      <p>No designs to display</p>
+                      {isOwnProfile && (
+                        <button className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium">
+                          Add Your First Design
+                        </button>
+                      )}
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <div className="text-white font-medium text-sm">
-                      {design.title}
+                </div>
+              );
+            case "services":
+              return (
+                <div className="space-y-3">
+                  {tailor.services && tailor.services.length > 0 ? (
+                    tailor.services.map((service, index) => (
+                      <motion.div
+                        key={service.id || index}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="bg-white p-4 rounded-xl shadow-sm"
+                      >
+                        <div className="flex justify-between">
+                          <h3 className="font-medium text-gray-800">
+                            {service.title}
+                          </h3>
+                          <span className="font-bold text-primary">
+                            {service.price}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {service.description}
+                        </p>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="py-10 text-center text-gray-500">
+                      <FaTools className="text-3xl mx-auto mb-2 text-gray-300" />
+                      <p>No services to display</p>
+                      {isOwnProfile && (
+                        <button className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium">
+                          Add Your Services
+                        </button>
+                      )}
                     </div>
-                  </div>
-                </motion.div>
-              ))
-            ) : (
-              <div className="col-span-3 py-10 text-center text-gray-500">
-                <FaPalette className="text-3xl mx-auto mb-2 text-gray-300" />
-                <p>No designs to display</p>
-                {isOwnProfile && (
-                  <button className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium">
-                    Add Your First Design
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      case "services":
-        return (
-          <div className="space-y-3">
-            {tailor.services && tailor.services.length > 0 ? (
-              tailor.services.map((service, index) => (
-                <motion.div
-                  key={service.id || index}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="bg-white p-4 rounded-xl shadow-sm"
-                >
-                  <div className="flex justify-between">
-                    <h3 className="font-medium text-gray-800">
-                      {service.title}
-                    </h3>
-                    <span className="font-bold text-primary">
-                      {service.price}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {service.description}
-                  </p>
-                </motion.div>
-              ))
-            ) : (
-              <div className="py-10 text-center text-gray-500">
-                <FaTools className="text-3xl mx-auto mb-2 text-gray-300" />
-                <p>No services to display</p>
-                {isOwnProfile && (
-                  <button className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium">
-                    Add Your Services
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      case "offers":
-        return (
-          <div className="space-y-3">
-            {tailor.offers && tailor.offers.length > 0 ? (
-              tailor.offers.map((offer, index) => (
-                <motion.div
-                  key={offer.id || index}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl shadow-sm border border-primary/10"
-                >
-                  <div className="flex">
-                    {offer.image && (
-                      <div className="w-16 h-16 rounded-lg overflow-hidden mr-3 flex-shrink-0">
-                        <img
-                          src={offer.image}
-                          alt={offer.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                    <div>
-                      <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium mb-2 inline-block">
-                        Special Offer
-                      </span>
-                      <h3 className="font-medium text-gray-800">
-                        {offer.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {offer.description}
-                      </p>
+                  )}
+                </div>
+              );
+            case "offers":
+              return (
+                <div className="space-y-3">
+                  {tailor.offers && tailor.offers.length > 0 ? (
+                    tailor.offers.map((offer, index) => (
+                      <motion.div
+                        key={offer.id || index}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl shadow-sm border border-primary/10"
+                      >
+                        <div className="flex">
+                          {offer.image && (
+                            <div className="w-16 h-16 rounded-lg overflow-hidden mr-3 flex-shrink-0">
+                              <img
+                                src={offer.image}
+                                alt={offer.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <div>
+                            <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium mb-2 inline-block">
+                              Special Offer
+                            </span>
+                            <h3 className="font-medium text-gray-800">
+                              {offer.title}
+                            </h3>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {offer.description}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="py-10 text-center text-gray-500">
+                      <FaTag className="text-3xl mx-auto mb-2 text-gray-300" />
+                      <p>No offers currently available</p>
+                      {isOwnProfile && (
+                        <button className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium">
+                          Create Special Offer
+                        </button>
+                      )}
                     </div>
-                  </div>
-                </motion.div>
-              ))
-            ) : (
-              <div className="py-10 text-center text-gray-500">
-                <FaTag className="text-3xl mx-auto mb-2 text-gray-300" />
-                <p>No offers currently available</p>
-                {isOwnProfile && (
-                  <button className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium">
-                    Create Special Offer
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      case "reviews":
-        return (
-          <div className="space-y-3">
-            {tailor.reviews && tailor.reviews.length > 0 ? (
-              tailor.reviews.map((review, index) => (
-                <motion.div
-                  key={review.id || index}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="bg-white p-4 rounded-xl shadow-sm"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium text-gray-800">
-                        {review.reviewer || review.clientName}
-                      </h3>
-                      <div className="flex text-yellow-400 mt-1">
-                        {Array.from({
-                          length: parseInt(review.rating) || 5,
-                        }).map((_, i) => (
-                          <FaStar key={i} className="text-sm" />
-                        ))}
-                      </div>
+                  )}
+                </div>
+              );
+            case "reviews":
+              return (
+                <div className="space-y-3">
+                  {tailor.reviews && tailor.reviews.length > 0 ? (
+                    tailor.reviews.map((review, index) => (
+                      <motion.div
+                        key={review.id || index}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="bg-white p-4 rounded-xl shadow-sm"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-medium text-gray-800">
+                              {review.reviewer || review.clientName}
+                            </h3>
+                            <div className="flex text-yellow-400 mt-1">
+                              {Array.from({
+                                length: parseInt(review.rating) || 5,
+                              }).map((_, i) => (
+                                <FaStar key={i} className="text-sm" />
+                              ))}
+                            </div>
+                          </div>
+                          <span className="text-xs text-gray-400">
+                            2 days ago
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-2">
+                          {review.comment || review.text}
+                        </p>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="py-10 text-center text-gray-500">
+                      <FaStar className="text-3xl mx-auto mb-2 text-gray-300" />
+                      <p>No reviews yet</p>
+                      {!isOwnProfile && (
+                        <button className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium">
+                          Leave a Review
+                        </button>
+                      )}
                     </div>
-                    <span className="text-xs text-gray-400">2 days ago</span>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-2">
-                    {review.comment || review.text}
-                  </p>
-                </motion.div>
-              ))
-            ) : (
-              <div className="py-10 text-center text-gray-500">
-                <FaStar className="text-3xl mx-auto mb-2 text-gray-300" />
-                <p>No reviews yet</p>
-                {!isOwnProfile && (
-                  <button className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium">
-                    Leave a Review
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      default:
-        return null;
-    }
+                  )}
+                </div>
+              );
+            default:
+              return null;
+          }
+        })()}
+      </div>
+    );
   };
 
   return (
     <div className="flex flex-col h-screen w-full bg-white">
       {/* Fixed header */}
       <div className="fixed top-0 left-0 right-0 bg-white z-50 px-4 py-3 flex items-center justify-between border-b">
-        {/* Back Button with Zoom Effect */}
         <motion.button
           onClick={goBack}
           whileHover={{ scale: 1.2 }}
@@ -287,7 +288,6 @@ const TailorProfilePage = () => {
 
         <h1 className="font-semibold">{tailor.shopName}</h1>
 
-        {/* Edit Button with Zoom Effect */}
         {isOwnProfile && (
           <motion.button
             onClick={handleEditProfile}
@@ -308,7 +308,7 @@ const TailorProfilePage = () => {
         </div>
 
         {/* Profile section */}
-        <div className="px-16 relative">
+        <div className="px-4 relative">
           {/* Profile image */}
           <div className="relative -mt-16 mb-4 flex justify-between">
             <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden bg-white shadow-lg">
@@ -447,7 +447,7 @@ const TailorProfilePage = () => {
         </div>
 
         {/* Tabs */}
-        <div className="px-16 border-t sticky top-14 bg-white z-10">
+        <div className="px-4 border-t sticky top-14 bg-white z-10">
           <div className="flex">
             {[
               { id: "designs", label: "Designs", icon: <FaPalette /> },
@@ -472,7 +472,7 @@ const TailorProfilePage = () => {
         </div>
 
         {/* Tab content */}
-        <div className="py-4 px-16">{getTabContent()}</div>
+        <div className="py-4 px-4">{getTabContent()}</div>
       </div>
 
       {/* Fixed message button - only show when viewing someone else's profile */}
