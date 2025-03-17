@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
 import { MessageCircleMore } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { toast } from "react-hot-toast";
 import {
-  FaBookmark,
   FaCalendarAlt,
   FaChevronLeft,
   FaEdit,
@@ -16,25 +16,70 @@ import { useNavigate, useParams } from "react-router-dom";
 import Loader from "../../components/ui/Loader";
 import { useAuthStore } from "../../store/Auth.store";
 import { useShopStore } from "../../store/Shop.store";
+import { useUserInteractionStore } from "../../store/UserInteraction.store";
 
 const TailorProfilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { tailor, fetchTailorById } = useShopStore();
   const { user } = useAuthStore();
+  const {
+    followers,
+    following,
+    isFollowing,
+    isLoading: isInteractionLoading,
+    followUser,
+    unfollowUser,
+    getFollowers,
+    getFollowing,
+    checkIfFollowing,
+    resetState,
+  } = useUserInteractionStore();
+
   const [activeTab, setActiveTab] = useState("designs");
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
   const [showAllBio, setShowAllBio] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   const isOwnProfile = !id || (user && (user._id === id || user.id === id));
+  const currentUserId = user?._id || user?.id;
+  const tailorId = id || currentUserId;
 
+  // Close menu when clicking outside
   useEffect(() => {
-    const tailorId = id || (user && (user._id || user.id));
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Fetch tailor profile and following status
+  useEffect(() => {
     if (tailorId) {
       fetchTailorById(tailorId);
+
+      // Reset interaction state when component mounts or profile changes
+      resetState();
+
+      // Load followers and following
+      getFollowers(tailorId);
+      getFollowing(tailorId);
+
+      // Check if current user is following this tailor (only if not own profile)
+      if (!isOwnProfile && currentUserId) {
+        checkIfFollowing(currentUserId, tailorId);
+      }
     }
-  }, [fetchTailorById, id, user]);
+
+    return () => {
+      // Reset state when component unmounts
+      resetState();
+    };
+  }, [fetchTailorById, tailorId, currentUserId, isOwnProfile]);
 
   if (!tailor) {
     return (
@@ -63,15 +108,21 @@ const TailorProfilePage = () => {
     navigate(-1);
   };
 
-  const handleFollow = () => {
-    if (!isOwnProfile) {
-      setIsFollowing(!isFollowing);
-    }
-  };
-
-  const handleSave = () => {
-    if (!isOwnProfile) {
-      setIsSaved(!isSaved);
+  const handleFollow = async () => {
+    if (!isOwnProfile && currentUserId) {
+      try {
+        if (isFollowing) {
+          await unfollowUser(currentUserId, tailorId);
+          toast.success("Unfollowed successfully");
+        } else {
+          await followUser(currentUserId, tailorId);
+          toast.success("Now following");
+        }
+        // Refresh followers count after follow/unfollow
+        getFollowers(tailorId);
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Action failed");
+      }
     }
   };
 
@@ -81,6 +132,18 @@ const TailorProfilePage = () => {
 
   const toggleBio = () => {
     setShowAllBio(!showAllBio);
+  };
+
+  const handleBlock = () => {
+    toast.success("User blocked");
+    setMenuOpen(false);
+    // In a real app, you would implement actual user blocking logic here
+  };
+
+  const handleReport = () => {
+    toast.success("Thank you for your report. We'll review this account.");
+    setMenuOpen(false);
+    // In a real app, you would implement actual reporting logic here
   };
 
   const getTabContent = () => {
@@ -275,36 +338,19 @@ const TailorProfilePage = () => {
 
   return (
     <div className="flex flex-col h-screen w-full bg-white">
-      {/* Fixed header */}
-      <div className="fixed top-0 left-0 right-0 bg-white z-50 px-4 py-3 flex items-center justify-between border-b">
-        <motion.button
-          onClick={goBack}
-          whileHover={{ scale: 1.2 }}
-          whileTap={{ scale: 0.9 }}
-          className="text-gray-800 hover:text-primary transition-colors duration-200"
-        >
-          <FaChevronLeft />
-        </motion.button>
-
-        <h1 className="font-semibold">{tailor.shopName}</h1>
-
-        {isOwnProfile && (
-          <motion.button
-            onClick={handleEditProfile}
-            whileHover={{ scale: 1.2 }}
-            whileTap={{ scale: 0.9 }}
-            className="px-4 py-1.5 rounded-full text-sm font-medium text-gray-800 flex items-center gap-1 hover:text-primary transition-colors duration-200"
-          >
-            <FaEdit size={14} />
-          </motion.button>
-        )}
-      </div>
-
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto pt-14 pb-16 bg-grid-gray-200/[0.2]">
-        {/* Cover image */}
+      <div className="flex-1 overflow-y-auto pb-16 bg-grid-gray-200/[0.2]">
+        {/* Cover image with back button */}
         <div className="h-32 bg-gradient-to-r from-blue-100 to-orange-50 relative overflow-hidden">
           <div className="absolute inset-0 bg-pattern opacity-10"></div>
+          <motion.button
+            onClick={goBack}
+            whileHover={{ scale: 1.2 }}
+            whileTap={{ scale: 0.9 }}
+            className="absolute top-4 left-4 text-gray-800 bg-white/70 p-2 rounded-full shadow-sm hover:text-primary transition-colors duration-200"
+          >
+            <FaChevronLeft />
+          </motion.button>
         </div>
 
         {/* Profile section */}
@@ -326,9 +372,17 @@ const TailorProfilePage = () => {
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-end gap-2">
+            <div className="flex items-end gap-2 pt-4">
               {isOwnProfile ? (
-                ""
+                <motion.button
+                  onClick={handleEditProfile}
+                  whileHover={{ scale: 1.2 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="px-4 py-1.5 rounded-full text-sm font-medium bg-primary text-white flex items-center gap-1"
+                >
+                  <FaEdit size={14} />
+                  <span>Edit Profile</span>
+                </motion.button>
               ) : (
                 <>
                   <button
@@ -348,8 +402,13 @@ const TailorProfilePage = () => {
                         ? "bg-gray-200 text-gray-800"
                         : "bg-primary text-white"
                     }`}
+                    disabled={isInteractionLoading}
                   >
-                    {isFollowing ? "Following" : "Follow"}
+                    {isInteractionLoading
+                      ? "Loading..."
+                      : isFollowing
+                      ? "Following"
+                      : "Follow"}
                   </button>
                 </>
               )}
@@ -365,8 +424,16 @@ const TailorProfilePage = () => {
             {/* Stats */}
             <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
               <div className="flex items-center">
-                <span className="font-semibold text-gray-900 mr-1">1.2k</span>{" "}
+                <span className="font-semibold text-gray-900 mr-1">
+                  {followers?.length || 0}
+                </span>{" "}
                 followers
+              </div>
+              <div className="flex items-center">
+                <span className="font-semibold text-gray-900 mr-1">
+                  {following?.length || 0}
+                </span>{" "}
+                following
               </div>
               <div className="flex items-center">
                 <span className="font-semibold text-gray-900 mr-1">
@@ -447,7 +514,7 @@ const TailorProfilePage = () => {
         </div>
 
         {/* Tabs */}
-        <div className="px-4 border-t sticky top-14 bg-white z-10">
+        <div className="px-4 border-t sticky top-0 bg-white z-10">
           <div className="flex">
             {[
               { id: "designs", label: "Designs", icon: <FaPalette /> },
@@ -485,7 +552,7 @@ const TailorProfilePage = () => {
             className="relative group"
           >
             <motion.button
-              className="p-3 bg-orange-600 text-white rounded-full shadow-lg"
+              className="p-3 bg-primary text-white rounded-full shadow-lg"
               whileHover={{ boxShadow: "0 8px 15px rgba(0, 0, 0, 0.2)" }}
             >
               <MessageCircleMore />
