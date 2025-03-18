@@ -372,7 +372,7 @@ const TailorProfilePage = () => {
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-end gap-2 pt-4">
+            <div className="flex items-end gap-2 pt-28">
               {isOwnProfile ? (
                 <motion.button
                   onClick={handleEditProfile}
@@ -384,39 +384,27 @@ const TailorProfilePage = () => {
                   <span>Edit Profile</span>
                 </motion.button>
               ) : (
-                <>
-                  <button
-                    onClick={handleSave}
-                    className={`p-2 rounded-full ${
-                      isSaved ? "bg-gray-100 text-primary" : "text-gray-500"
-                    }`}
-                  >
-                    <FaBookmark
-                      className={isSaved ? "fill-current" : "fill-current"}
-                    />
-                  </button>
-                  <button
-                    onClick={handleFollow}
-                    className={`px-4 py-1.5 rounded-full text-sm font-medium ${
-                      isFollowing
-                        ? "bg-gray-200 text-gray-800"
-                        : "bg-primary text-white"
-                    }`}
-                    disabled={isInteractionLoading}
-                  >
-                    {isInteractionLoading
-                      ? "Loading..."
-                      : isFollowing
-                      ? "Following"
-                      : "Follow"}
-                  </button>
-                </>
+                <button
+                  onClick={handleFollow}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium ${
+                    isFollowing
+                      ? "bg-gray-200 text-gray-800"
+                      : "bg-primary text-white"
+                  }`}
+                  disabled={isInteractionLoading}
+                >
+                  {isInteractionLoading
+                    ? "Loading..."
+                    : isFollowing
+                    ? "Following"
+                    : "Follow"}
+                </button>
               )}
             </div>
           </div>
 
           {/* Profile info */}
-          <div className="mb-6">
+          <div className="mb-6 -mt-12">
             <h1 className="text-xl font-bold text-gray-900">
               {tailor.shopName}
             </h1>
