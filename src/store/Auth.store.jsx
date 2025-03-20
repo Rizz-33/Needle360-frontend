@@ -216,9 +216,14 @@ export const useAuthStore = create((set, get) => ({
     set({ isCheckingAuth: true, error: null });
     try {
       const token = localStorage.getItem("token");
+
+      // Check if the token exists
       if (!token) {
         throw new Error("No token found. Please log in.");
       }
+
+      // Log the token for debugging
+      console.log("Token:", token);
 
       const response = await axios.get(`${BASE_API_URL}/check-auth`, {
         headers: {
@@ -246,7 +251,7 @@ export const useAuthStore = create((set, get) => ({
         user: null,
         isAuthenticated: false,
         isApproved: false,
-        error: null,
+        error: error.message, // Set the error message for debugging
       });
       return null;
     } finally {
