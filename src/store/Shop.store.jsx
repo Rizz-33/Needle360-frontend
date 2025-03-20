@@ -33,6 +33,7 @@ export const useShopStore = create((set, get) => ({
 
       const tailorData = response.data
         .map((tailor) => ({
+          _id: tailor._id, // Ensure _id is included
           email: tailor.email,
           name: tailor.name,
           shopName: tailor.shopName,
@@ -44,9 +45,11 @@ export const useShopStore = create((set, get) => ({
 
       // Update the state
       set({ tailors: tailorData });
+      return tailorData;
     } catch (error) {
       console.error("Error fetching tailors:", error);
       set({ error: error.response?.data?.message || "Failed to load tailors" });
+      throw error;
     } finally {
       set({ isLoading: false });
     }
@@ -54,36 +57,24 @@ export const useShopStore = create((set, get) => ({
 
   // Fetch a tailor by ID
   fetchTailorById: async (id) => {
+    // Don't proceed if id is undefined
+    if (!id || id === "undefined") {
+      set({ error: "Invalid tailor ID", tailor: null });
+      return null;
+    }
+
     set({ isLoading: true, error: null });
     try {
       const response = await axios.get(`${BASE_API_URL}/tailors/${id}`);
-      console.log("API Response:", response.data);
-
-      const tailor = {
-        email: response.data.email,
-        name: response.data.name,
-        shopName: response.data.shopName,
-        contactNumber: response.data.contactNumber,
-        logoUrl: response.data.logoUrl,
-        shopAddress: response.data.shopAddress,
-        shopRegistrationNumber: response.data.shopRegistrationNumber,
-        bankAccountNumber: response.data.bankAccountNumber,
-        bankName: response.data.bankName,
-        privileges: response.data.privileges,
-        bio: response.data.bio,
-        offers: response.data.offers,
-        designs: response.data.designs,
-        availability: response.data.availability,
-        services: response.data.services,
-        reviews: response.data.reviews,
-        ratings: response.data.ratings,
-      };
-
-      // Update the state
-      set({ tailor });
+      set({ tailor: response.data });
+      return response.data;
     } catch (error) {
-      console.error("Error fetching tailor by ID:", error);
-      set({ error: error.response?.data?.message || "Failed to load tailor" });
+      console.error("Error fetching tailor:", error);
+      set({
+        error: error.response?.data?.message || "Failed to load tailor",
+        tailor: null,
+      });
+      throw error;
     } finally {
       set({ isLoading: false });
     }
@@ -91,6 +82,11 @@ export const useShopStore = create((set, get) => ({
 
   // Update a tailor by ID
   updateTailor: async (id, updateData) => {
+    if (!id || id === "undefined") {
+      set({ error: "Invalid tailor ID" });
+      throw new Error("Invalid tailor ID");
+    }
+
     set({ isLoading: true, error: null });
     try {
       const response = await axios.put(
@@ -99,20 +95,17 @@ export const useShopStore = create((set, get) => ({
       );
       console.log("Update Response:", response.data);
 
-      const currentState = get(); // Properly use get() to access current state
-
       // Update the current tailor if it's the one being edited
-      if (currentState.tailor && id === currentState.tailor._id) {
+      if (get().tailor && get().tailor._id === id) {
         set({ tailor: response.data });
       }
 
       // Update the tailor in the tailors list if present
-      const updatedTailors = currentState.tailors.map((tailor) =>
+      const updatedTailors = get().tailors.map((tailor) =>
         tailor._id === id ? { ...tailor, ...updateData } : tailor
       );
 
       set({ tailors: updatedTailors });
-
       return response.data;
     } catch (error) {
       console.error("Error updating tailor:", error);
