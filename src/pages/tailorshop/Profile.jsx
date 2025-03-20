@@ -45,21 +45,17 @@ const TailorProfilePage = () => {
   const currentUserId = user?._id || user?.id;
   const tailorId = id || currentUserId;
 
-  // Close menu when clicking outside
+  // Update this useEffect in TailorProfilePage.jsx
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setMenuOpen(false);
-      }
-    };
+    if (!id) {
+      navigate("/");
+      return;
+    }
+  }, [id, navigate]);
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Fetch tailor profile and following status
+  // Then in a separate useEffect, fetch the tailor data only if id exists
   useEffect(() => {
-    if (tailorId) {
+    if (tailorId && tailorId !== "undefined") {
       fetchTailorById(tailorId);
 
       // Reset interaction state when component mounts or profile changes
