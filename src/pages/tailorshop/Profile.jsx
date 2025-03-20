@@ -5,9 +5,9 @@ import { toast } from "react-hot-toast";
 import {
   FaCalendarAlt,
   FaChevronLeft,
-  FaEdit,
   FaMapMarkerAlt,
   FaPalette,
+  FaPencilAlt,
   FaStar,
   FaTag,
   FaTools,
@@ -378,10 +378,9 @@ const TailorProfilePage = () => {
                   onClick={handleEditProfile}
                   whileHover={{ scale: 1.2 }}
                   whileTap={{ scale: 0.9 }}
-                  className="px-4 py-1.5 rounded-full text-sm font-medium bg-primary text-white flex items-center gap-1"
+                  className="px-3 py-3 rounded-full text-sm font-medium bg-primary text-white flex items-center gap-1"
                 >
-                  <FaEdit size={14} />
-                  <span>Edit Profile</span>
+                  <FaPencilAlt />
                 </motion.button>
               ) : (
                 <button
