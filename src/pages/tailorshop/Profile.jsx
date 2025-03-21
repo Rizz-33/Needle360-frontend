@@ -21,7 +21,14 @@ import { useUserInteractionStore } from "../../store/UserInteraction.store";
 const TailorProfilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { tailor, fetchTailorById } = useShopStore();
+  const {
+    tailor,
+    fetchTailorById,
+    tailorDesigns,
+    fetchTailorDesigns,
+    isLoading,
+    isLoadingDesigns,
+  } = useShopStore();
   const { user } = useAuthStore();
   const {
     followers,
@@ -77,10 +84,33 @@ const TailorProfilePage = () => {
     };
   }, [fetchTailorById, tailorId, currentUserId, isOwnProfile]);
 
-  if (!tailor) {
+  // Add this new useEffect to load designs when the designs tab is active
+  useEffect(() => {
+    if (activeTab === "designs" && tailorId && tailorId !== "undefined") {
+      fetchTailorDesigns(tailorId);
+    }
+  }, [activeTab, fetchTailorDesigns, tailorId]);
+
+  if (isLoading) {
     return (
       <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-secondary/20 to-blue-100 flex items-center justify-center">
         <Loader />
+      </div>
+    );
+  }
+
+  if (!tailor) {
+    return (
+      <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-secondary/20 to-blue-100 flex items-center justify-center">
+        <div className="text-center text-gray-600">
+          <p>Tailor not found</p>
+          <button
+            onClick={() => navigate("/")}
+            className="mt-4 px-4 py-2 bg-primary text-white rounded-lg"
+          >
+            Back to Home
+          </button>
+        </div>
       </div>
     );
   }
@@ -150,8 +180,12 @@ const TailorProfilePage = () => {
             case "designs":
               return (
                 <div className="grid grid-cols-4 gap-1">
-                  {tailor.designs && tailor.designs.length > 0 ? (
-                    tailor.designs.map((design, index) => (
+                  {isLoadingDesigns ? (
+                    <div className="col-span-4 py-10 flex justify-center">
+                      <Loader />
+                    </div>
+                  ) : tailorDesigns && tailorDesigns.length > 0 ? (
+                    tailorDesigns.map((design, index) => (
                       <motion.div
                         key={design.id || index}
                         initial={{ opacity: 0, y: 10 }}
@@ -420,7 +454,7 @@ const TailorProfilePage = () => {
               </div>
               <div className="flex items-center">
                 <span className="font-semibold text-gray-900 mr-1">
-                  {tailor.designs?.length || 0}
+                  {tailorDesigns?.length || 0}
                 </span>{" "}
                 designs
               </div>
