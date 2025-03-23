@@ -1020,7 +1020,7 @@ const BusinessProfileSetup = () => {
                   duration: 1.5,
                 }}
               >
-                Welcome aboard!
+                Let’s Get Started!
               </motion.h1>
               <motion.p
                 className="mt-3 text-sm text-gray-700"
