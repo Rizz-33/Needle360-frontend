@@ -21,15 +21,8 @@ axios.interceptors.response.use(
 export const useShopStore = create((set, get) => ({
   tailors: [],
   tailor: null,
-  tailorDesigns: [],
   isLoading: false,
-  isLoadingDesigns: false,
   error: null,
-
-  // Reset designs state
-  resetDesigns: () => {
-    set({ tailorDesigns: [], isLoadingDesigns: false });
-  },
 
   // Fetch all tailors
   fetchTailors: async () => {
@@ -62,7 +55,7 @@ export const useShopStore = create((set, get) => ({
     }
   },
 
-  // Fetch a tailor by ID (without designs)
+  // Fetch a tailor by ID
   fetchTailorById: async (id) => {
     // Don't proceed if id is undefined
     if (!id || id === "undefined") {
@@ -86,30 +79,6 @@ export const useShopStore = create((set, get) => ({
       throw error;
     } finally {
       set({ isLoading: false });
-    }
-  },
-
-  // Fetch designs for a tailor separately
-  fetchTailorDesigns: async (id) => {
-    if (!id || id === "undefined") {
-      set({ error: "Invalid tailor ID", tailorDesigns: [] });
-      return [];
-    }
-
-    set({ isLoadingDesigns: true, error: null });
-    try {
-      const response = await axios.get(`${BASE_API_URL}/tailors/${id}/designs`);
-      set({ tailorDesigns: response.data });
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching tailor designs:", error);
-      set({
-        error: error.response?.data?.message || "Failed to load tailor designs",
-        tailorDesigns: [],
-      });
-      throw error;
-    } finally {
-      set({ isLoadingDesigns: false });
     }
   },
 
