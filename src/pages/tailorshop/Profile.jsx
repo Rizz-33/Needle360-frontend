@@ -15,20 +15,14 @@ import {
 import { useNavigate, useParams } from "react-router-dom";
 import Loader from "../../components/ui/Loader";
 import { useAuthStore } from "../../store/Auth.store";
+import { useDesignStore } from "../../store/Design.store";
 import { useShopStore } from "../../store/Shop.store";
 import { useUserInteractionStore } from "../../store/UserInteraction.store";
 
 const TailorProfilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const {
-    tailor,
-    fetchTailorById,
-    tailorDesigns,
-    fetchTailorDesigns,
-    isLoading,
-    isLoadingDesigns,
-  } = useShopStore();
+  const { tailor, fetchTailorById, isLoading } = useShopStore();
   const { user } = useAuthStore();
   const {
     followers,
@@ -43,6 +37,13 @@ const TailorProfilePage = () => {
     resetState,
   } = useUserInteractionStore();
 
+  // Use the design store
+  const {
+    designs,
+    isLoading: isLoadingDesigns,
+    fetchDesignsById,
+  } = useDesignStore();
+
   const [activeTab, setActiveTab] = useState("designs");
   const [showAllBio, setShowAllBio] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -52,7 +53,6 @@ const TailorProfilePage = () => {
   const currentUserId = user?._id || user?.id;
   const tailorId = id || currentUserId;
 
-  // Update this useEffect in TailorProfilePage.jsx
   useEffect(() => {
     if (!id) {
       navigate("/");
@@ -60,36 +60,29 @@ const TailorProfilePage = () => {
     }
   }, [id, navigate]);
 
-  // Then in a separate useEffect, fetch the tailor data only if id exists
   useEffect(() => {
     if (tailorId && tailorId !== "undefined") {
       fetchTailorById(tailorId);
-
-      // Reset interaction state when component mounts or profile changes
       resetState();
-
-      // Load followers and following
       getFollowers(tailorId);
       getFollowing(tailorId);
 
-      // Check if current user is following this tailor (only if not own profile)
       if (!isOwnProfile && currentUserId) {
         checkIfFollowing(currentUserId, tailorId);
       }
     }
 
     return () => {
-      // Reset state when component unmounts
       resetState();
     };
   }, [fetchTailorById, tailorId, currentUserId, isOwnProfile]);
 
-  // Add this new useEffect to load designs when the designs tab is active
+  // Fetch designs when the designs tab is active
   useEffect(() => {
     if (activeTab === "designs" && tailorId && tailorId !== "undefined") {
-      fetchTailorDesigns(tailorId);
+      fetchDesignsById(tailorId);
     }
-  }, [activeTab, fetchTailorDesigns, tailorId]);
+  }, [activeTab, fetchDesignsById, tailorId]);
 
   if (isLoading) {
     return (
@@ -179,24 +172,25 @@ const TailorProfilePage = () => {
           switch (activeTab) {
             case "designs":
               return (
-                <div className="grid grid-cols-4 gap-1">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1">
                   {isLoadingDesigns ? (
                     <div className="col-span-4 py-10 flex justify-center">
                       <Loader />
                     </div>
-                  ) : tailorDesigns && tailorDesigns.length > 0 ? (
-                    tailorDesigns.map((design, index) => (
+                  ) : designs && designs.length > 0 ? (
+                    designs.map((design, index) => (
                       <motion.div
                         key={design.id || index}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
                         className="aspect-square bg-gray-100 relative overflow-hidden group"
+                        onClick={() => navigate(`/design/${design.id}`)}
                       >
-                        {design.image ? (
+                        {design.imageURLs && design.imageURLs.length > 0 ? (
                           <img
-                            src={design.image}
-                            alt={design.title}
+                            src={design.imageURLs[0]}
+                            alt={design.itemName}
                             className="object-cover w-full h-full"
                           />
                         ) : (
@@ -205,8 +199,13 @@ const TailorProfilePage = () => {
                           </div>
                         )}
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <div className="text-white font-medium text-sm">
-                            {design.title}
+                          <div className="text-white font-medium text-sm p-2 text-center">
+                            <div>{design.itemName}</div>
+                            {design.price && (
+                              <div className="mt-1 font-bold">
+                                ${design.price}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </motion.div>
@@ -216,7 +215,10 @@ const TailorProfilePage = () => {
                       <FaPalette className="text-3xl mx-auto mb-2 text-gray-300" />
                       <p>No designs to display</p>
                       {isOwnProfile && (
-                        <button className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium">
+                        <button
+                          onClick={() => navigate("/add-design")}
+                          className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium"
+                        >
                           Add Your First Design
                         </button>
                       )}
@@ -241,7 +243,9 @@ const TailorProfilePage = () => {
                             {service.title}
                           </h3>
                           <span className="font-bold text-primary">
-                            {service.price}
+                            {typeof service.price === "number"
+                              ? `$${service.price}`
+                              : service.price}
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 mt-1">
@@ -254,7 +258,10 @@ const TailorProfilePage = () => {
                       <FaTools className="text-3xl mx-auto mb-2 text-gray-300" />
                       <p>No services to display</p>
                       {isOwnProfile && (
-                        <button className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium">
+                        <button
+                          onClick={() => navigate("/add-service")}
+                          className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium"
+                        >
                           Add Your Services
                         </button>
                       )}
@@ -303,7 +310,10 @@ const TailorProfilePage = () => {
                       <FaTag className="text-3xl mx-auto mb-2 text-gray-300" />
                       <p>No offers currently available</p>
                       {isOwnProfile && (
-                        <button className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium">
+                        <button
+                          onClick={() => navigate("/add-offer")}
+                          className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium"
+                        >
                           Create Special Offer
                         </button>
                       )}
@@ -337,7 +347,9 @@ const TailorProfilePage = () => {
                             </div>
                           </div>
                           <span className="text-xs text-gray-400">
-                            2 days ago
+                            {review.createdAt
+                              ? new Date(review.createdAt).toLocaleDateString()
+                              : "2 days ago"}
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 mt-2">
@@ -350,7 +362,10 @@ const TailorProfilePage = () => {
                       <FaStar className="text-3xl mx-auto mb-2 text-gray-300" />
                       <p>No reviews yet</p>
                       {!isOwnProfile && (
-                        <button className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium">
+                        <button
+                          onClick={() => navigate(`/leave-review/${tailorId}`)}
+                          className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium"
+                        >
                           Leave a Review
                         </button>
                       )}
@@ -454,7 +469,7 @@ const TailorProfilePage = () => {
               </div>
               <div className="flex items-center">
                 <span className="font-semibold text-gray-900 mr-1">
-                  {tailorDesigns?.length || 0}
+                  {designs?.length || 0}
                 </span>{" "}
                 designs
               </div>
@@ -571,6 +586,7 @@ const TailorProfilePage = () => {
             <motion.button
               className="p-3 bg-primary text-white rounded-full shadow-lg"
               whileHover={{ boxShadow: "0 8px 15px rgba(0, 0, 0, 0.2)" }}
+              onClick={() => navigate(`/chat/${tailorId}`)}
             >
               <MessageCircleMore />
             </motion.button>
