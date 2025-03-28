@@ -2,7 +2,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { FaPortrait, FaUpload } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-
 import { CustomButton } from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
 import { useAuthStore } from "../../store/Auth.store";
@@ -120,135 +119,132 @@ const BusinessProfileSetup = () => {
       setBio(tailor.bio || "");
 
       // Create a copy of the components to update
-      const updatedComponents = [...components]; // Keep this line for reference
-      setComponents((prevComponents) => {
-        const updatedComponents = [...prevComponents];
+      const updatedComponents = [...components];
 
-        // Update address component with tailor data
-        if (tailor.shopAddress) {
-          const addressComp = updatedComponents.find(
-            (comp) => comp.id === "address"
-          );
-          if (addressComp) {
-            addressComp.enabled = true;
+      // Update address component with tailor data
+      if (tailor.shopAddress) {
+        const addressComp = updatedComponents.find(
+          (comp) => comp.id === "address"
+        );
+        if (addressComp) {
+          addressComp.enabled = true;
 
-            // Use shopAddress as a string
-            const addressString = tailor.shopAddress || "";
-            addressComp.items = [
-              {
-                id: Date.now(),
-                street: addressString,
-                city: "",
-                state: "",
-                zip: "",
-                country: "",
-              },
-            ];
-          }
+          // Use shopAddress as a string
+          const addressString = tailor.shopAddress || "";
+          addressComp.items = [
+            {
+              id: Date.now(),
+              street: addressString,
+              city: "",
+              state: "",
+              zip: "",
+              country: "",
+            },
+          ];
         }
+      }
 
-        // Update offers component with tailor data
-        if (
-          tailor.offers &&
-          Array.isArray(tailor.offers) &&
-          tailor.offers.length > 0
-        ) {
-          const offersComp = updatedComponents.find(
-            (comp) => comp.id === "offers"
-          );
-          if (offersComp) {
-            offersComp.enabled = true;
-            offersComp.items = tailor.offers.map((offer) => ({
-              id: offer.id || Date.now(),
-              title: offer.title || "",
-              description: offer.description || "",
-              image: offer.image || null,
-            }));
-          }
+      // Update offers component with tailor data
+      if (
+        tailor.offers &&
+        Array.isArray(tailor.offers) &&
+        tailor.offers.length > 0
+      ) {
+        const offersComp = updatedComponents.find(
+          (comp) => comp.id === "offers"
+        );
+        if (offersComp) {
+          offersComp.enabled = true;
+          offersComp.items = tailor.offers.map((offer) => ({
+            id: offer.id || Date.now(),
+            title: offer.title || "",
+            description: offer.description || "",
+            image: offer.image || null,
+          }));
         }
+      }
 
-        // Update designs component with tailor data
-        if (
-          tailor.designs &&
-          Array.isArray(tailor.designs) &&
-          tailor.designs.length > 0
-        ) {
-          const designsComp = updatedComponents.find(
-            (comp) => comp.id === "designs"
-          );
-          if (designsComp) {
-            designsComp.enabled = true;
-            designsComp.items = tailor.designs.map((design) => ({
-              id: design.id || Date.now(),
-              title: design.title || "",
-              description: design.description || "",
-              image: design.image || null,
-            }));
-          }
+      // Update designs component with tailor data
+      if (
+        tailor.designs &&
+        Array.isArray(tailor.designs) &&
+        tailor.designs.length > 0
+      ) {
+        const designsComp = updatedComponents.find(
+          (comp) => comp.id === "designs"
+        );
+        if (designsComp) {
+          designsComp.enabled = true;
+          designsComp.items = tailor.designs.map((design) => ({
+            id: design.id || Date.now(),
+            title: design.title || "",
+            description: design.description || "",
+            image: design.image || null,
+          }));
         }
+      }
 
-        // Update availability component with tailor data
-        if (
-          tailor.availability &&
-          Array.isArray(tailor.availability) &&
-          tailor.availability.length > 0
-        ) {
-          const availComp = updatedComponents.find(
-            (comp) => comp.id === "availability"
-          );
-          if (availComp) {
-            availComp.enabled = true;
-            availComp.items = tailor.availability.map((avail) => ({
-              id: avail.id || Date.now(),
-              day: avail.day || "",
-              hours: avail.hours || "",
-            }));
-          }
+      // Update availability component with tailor data
+      if (
+        tailor.availability &&
+        Array.isArray(tailor.availability) &&
+        tailor.availability.length > 0
+      ) {
+        const availComp = updatedComponents.find(
+          (comp) => comp.id === "availability"
+        );
+        if (availComp) {
+          availComp.enabled = true;
+          availComp.items = tailor.availability.map((avail) => ({
+            id: avail.id || Date.now(),
+            day: avail.day || "",
+            hours: avail.hours || "",
+          }));
         }
+      }
 
-        // Update services component with tailor data
-        if (
-          tailor.services &&
-          Array.isArray(tailor.services) &&
-          tailor.services.length > 0
-        ) {
-          const servicesComp = updatedComponents.find(
-            (comp) => comp.id === "services"
-          );
-          if (servicesComp) {
-            servicesComp.enabled = true;
-            servicesComp.items = tailor.services.map((service) => ({
-              id: service.id || Date.now(),
-              title: service.title || "",
-              description: service.description || "",
-              price: service.price || "",
-            }));
-          }
+      // Update services component with tailor data
+      if (
+        tailor.services &&
+        Array.isArray(tailor.services) &&
+        tailor.services.length > 0
+      ) {
+        const servicesComp = updatedComponents.find(
+          (comp) => comp.id === "services"
+        );
+        if (servicesComp) {
+          servicesComp.enabled = true;
+          servicesComp.items = tailor.services.map((service) => ({
+            id: service.id || Date.now(),
+            title: service.title || "",
+            description: service.description || "",
+            price: service.price || "",
+          }));
         }
+      }
 
-        // Update reviews component with tailor data
-        if (
-          tailor.reviews &&
-          Array.isArray(tailor.reviews) &&
-          tailor.reviews.length > 0
-        ) {
-          const reviewsComp = updatedComponents.find(
-            (comp) => comp.id === "reviews"
-          );
-          if (reviewsComp) {
-            reviewsComp.enabled = true;
-            reviewsComp.items = tailor.reviews.map((review) => ({
-              id: review.id || Date.now(),
-              reviewer: review.reviewer || review.clientName || "",
-              comment: review.comment || review.text || "",
-              rating: review.rating || "5",
-            }));
-          }
+      // Update reviews component with tailor data
+      if (
+        tailor.reviews &&
+        Array.isArray(tailor.reviews) &&
+        tailor.reviews.length > 0
+      ) {
+        const reviewsComp = updatedComponents.find(
+          (comp) => comp.id === "reviews"
+        );
+        if (reviewsComp) {
+          reviewsComp.enabled = true;
+          reviewsComp.items = tailor.reviews.map((review) => ({
+            id: review.id || Date.now(),
+            reviewer: review.reviewer || review.clientName || "",
+            comment: review.comment || review.text || "",
+            rating: review.rating || "5",
+          }));
         }
+      }
 
-        // Update the components state
-        return updatedComponents;
-      });
+      // Update the components state
+      setComponents(updatedComponents);
     }
   }, [tailor]);
 
@@ -306,19 +302,13 @@ const BusinessProfileSetup = () => {
   };
 
   // Navigate to next step
-  const nextStep = async () => {
+  const nextStep = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      setSaveSuccess(true);
-      return true;
-      const saveResult = await handleSaveProfile();
-      if (saveResult) {
-        setSaveSuccess(true);
-
-        // Navigate only after successful save
-        navigate("/tailor/" + user._id);
-      }
+      // On the last step, save the profile
+      handleSaveProfile();
+      navigate("/tailor/" + user._id);
     }
   };
 
@@ -445,8 +435,7 @@ const BusinessProfileSetup = () => {
       setSaveSuccess(true);
 
       // Optionally redirect or show success message
-      setSaveError(error.message || "Failed to save profile");
-      return false;
+      // You could navigate to a different page after successful save
     } catch (error) {
       console.error("Failed to save profile:", error);
       setSaveError(error.message || "Failed to save profile");
@@ -456,7 +445,6 @@ const BusinessProfileSetup = () => {
   };
 
   // Render content for each step
-
   const renderStepContent = () => {
     switch (steps[currentStep].id) {
       case "basics":
