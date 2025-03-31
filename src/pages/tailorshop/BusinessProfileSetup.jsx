@@ -6,11 +6,19 @@ import { CustomButton } from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
 import { initialProfileComponents } from "../../configs/Profile.configs";
 import { useAuthStore } from "../../store/Auth.store";
+import { useDesignStore } from "../../store/Design.store"; // Import the design store
 import { useShopStore } from "../../store/Shop.store";
 
 const BusinessProfileSetup = () => {
   const { tailor, fetchTailorById, updateTailor } = useShopStore();
   const { user, isLoading } = useAuthStore();
+  const {
+    designs: designItems,
+    fetchDesignsById,
+    createDesign,
+    updateDesign,
+    deleteDesign,
+  } = useDesignStore(); // Destructure design store methods
 
   const navigate = useNavigate();
 
@@ -22,16 +30,20 @@ const BusinessProfileSetup = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [newItemData, setNewItemData] = useState({});
   const [editingComponent, setEditingComponent] = useState(null);
+  const [editingDesign, setEditingDesign] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [designToDelete, setDesignToDelete] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Fetch tailor data on component mount
+  // Fetch tailor and designs data on component mount
   useEffect(() => {
     if (user && user._id) {
       fetchTailorById(user._id);
+      fetchDesignsById(user._id); // Fetch designs for this tailor
     }
-  }, [fetchTailorById, user]);
+  }, [fetchTailorById, fetchDesignsById, user]);
 
   // Update state with tailor data when it's loaded
   useEffect(() => {
@@ -55,8 +67,6 @@ const BusinessProfileSetup = () => {
         );
         if (addressComp) {
           addressComp.enabled = true;
-
-          // Use shopAddress as a string
           const addressString = tailor.shopAddress || "";
           addressComp.items = [
             {
@@ -91,24 +101,18 @@ const BusinessProfileSetup = () => {
         }
       }
 
-      // Update designs component with tailor data
-      if (
-        tailor.designs &&
-        Array.isArray(tailor.designs) &&
-        tailor.designs.length > 0
-      ) {
-        const designsComp = updatedComponents.find(
-          (comp) => comp.id === "designs"
-        );
-        if (designsComp) {
-          designsComp.enabled = true;
-          designsComp.items = tailor.designs.map((design) => ({
-            id: design.id || Date.now(),
-            title: design.title || "",
-            description: design.description || "",
-            image: design.image || null,
-          }));
-        }
+      // Update designs component with data from design store
+      const designsComp = updatedComponents.find(
+        (comp) => comp.id === "designs"
+      );
+      if (designsComp) {
+        designsComp.enabled = designItems.length > 0;
+        designsComp.items = designItems.map((design) => ({
+          id: design._id || Date.now(),
+          title: design.title || "",
+          description: design.description || "",
+          image: design.imageUrl || null,
+        }));
       }
 
       // Update availability component with tailor data
@@ -173,9 +177,7 @@ const BusinessProfileSetup = () => {
       // Update the components state
       setComponents(updatedComponents);
     }
-  }, [tailor]);
-
-  console.log("tailor", tailor);
+  }, [tailor, designItems]); // Add designItems to dependencies
 
   // Steps for the stepper
   const steps = [
@@ -185,11 +187,11 @@ const BusinessProfileSetup = () => {
     { id: "preview", title: "Preview" },
   ];
 
-  // Handle welcome message timer - reduced to 5 seconds
+  // Handle welcome message timer
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowWelcome(false);
-    }, 5000); // 5 seconds instead of 10
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -216,6 +218,29 @@ const BusinessProfileSetup = () => {
         });
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleEditDesign = (design) => {
+    setEditingDesign(design);
+    setEditingComponent("designs");
+    setNewItemData({
+      title: design.title,
+      description: design.description,
+      image: design.image,
+    });
+  };
+
+  const handleDeleteDesign = (designId) => {
+    setDesignToDelete(designId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteDesign = async () => {
+    if (designToDelete) {
+      await deleteDesign(designToDelete);
+      setShowDeleteConfirm(false);
+      setDesignToDelete(null);
     }
   };
 
@@ -261,19 +286,50 @@ const BusinessProfileSetup = () => {
   };
 
   // Add new item to component
-  const addNewItem = () => {
-    if (editingComponent) {
-      setComponents(
-        components.map((comp) =>
+  const addNewItem = async () => {
+    if (!editingComponent) return;
+
+    try {
+      if (editingComponent === "designs") {
+        // Handle design creation separately using design store
+        const newDesign = {
+          title: newItemData.title || "",
+          description: newItemData.description || "",
+          imageUrl: newItemData.image || null,
+          tailorId: user._id,
+        };
+
+        await createDesign(newDesign);
+
+        // Update local state to reflect the change immediately
+        const updatedComponents = components.map((comp) =>
           comp.id === editingComponent
             ? {
                 ...comp,
                 items: [...comp.items, { id: Date.now(), ...newItemData }],
               }
             : comp
-        )
-      );
+        );
+        setComponents(updatedComponents);
+      } else {
+        // Handle other components as before
+        setComponents(
+          components.map((comp) =>
+            comp.id === editingComponent
+              ? {
+                  ...comp,
+                  items: [...comp.items, { id: Date.now(), ...newItemData }],
+                }
+              : comp
+          )
+        );
+      }
+
       setNewItemData({});
+      setEditingComponent(null);
+    } catch (error) {
+      console.error("Error adding new item:", error);
+      setSaveError("Failed to add new item");
     }
   };
 
@@ -288,29 +344,23 @@ const BusinessProfileSetup = () => {
     setSaveSuccess(false);
 
     try {
-      // Prepare data for update
+      // Prepare data for update (excluding designs since they're handled separately)
       const updateData = {
         shopName: businessName,
         logoUrl: profileImage,
         bio: bio,
       };
 
-      // Format the components data for the API
-      const enabledComponents = components.filter((comp) => comp.enabled);
+      // Format the components data for the API (excluding designs)
+      const enabledComponents = components.filter(
+        (comp) => comp.enabled && comp.id !== "designs"
+      );
 
       // Add each component's items to the update data
       enabledComponents.forEach((component) => {
         switch (component.id) {
           case "offers":
             updateData.offers = component.items.map((item) => ({
-              id: item.id,
-              title: item.title,
-              description: item.description,
-              image: item.image,
-            }));
-            break;
-          case "designs":
-            updateData.designs = component.items.map((item) => ({
               id: item.id,
               title: item.title,
               description: item.description,
@@ -333,36 +383,18 @@ const BusinessProfileSetup = () => {
             }));
             break;
           case "address":
-            // For address, we're converting the component structure to match the API expectations
-            // Depending on your API, you might need to adjust this format
             if (component.items.length > 0) {
-              // If the address is stored as a string in your API
               updateData.shopAddress = component.items[0].street;
-
-              // If the address is stored as an object, uncomment this instead
-              // updateData.shopAddress = {
-              //   street: component.items[0].street,
-              //   city: component.items[0].city,
-              //   state: component.items[0].state,
-              //   zip: component.items[0].zip,
-              //   country: component.items[0].country
-              // };
             }
             break;
-          // Reviews are client-generated, so we don't include them in the update
+          // Reviews and designs are handled separately
         }
       });
 
-      console.log("Updating tailor profile with data:", updateData);
+      // Call the updateTailor function from the store (for non-design data)
+      await updateTailor(user._id, updateData);
 
-      // Call the updateTailor function from the store
-      const result = await updateTailor(user._id, updateData);
-
-      console.log("Update result:", result);
       setSaveSuccess(true);
-
-      // Optionally redirect or show success message
-      // You could navigate to a different page after successful save
     } catch (error) {
       console.error("Failed to save profile:", error);
       setSaveError(error.message || "Failed to save profile");
@@ -585,13 +617,29 @@ const BusinessProfileSetup = () => {
                                   item.street ||
                                   `Item ${index + 1}`}
                               </h4>
+                              {component.id === "designs" && (
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => handleEditDesign(item)}
+                                    className="text-xs text-primary hover:text-hoverAccent"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteDesign(item.id)}
+                                    className="text-xs text-red-600 hover:text-red-800"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
                             </div>
                             <div className="flex mt-2">
                               {item.image && (
                                 <div className="w-16 h-16 rounded overflow-hidden mr-3">
                                   <img
                                     src={item.image}
-                                    alt=""
+                                    alt={item.title || "Design"}
                                     className="w-full h-full object-cover"
                                   />
                                 </div>
@@ -743,6 +791,150 @@ const BusinessProfileSetup = () => {
                 >
                   Go back to select components
                 </button>
+              </div>
+            )}
+            {editingDesign && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-2xl p-8 max-w-md w-full">
+                  <h3 className="text-sm text-primary font-semibold mb-4">
+                    Edit Design
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Title
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        value={newItemData.title || ""}
+                        onChange={(e) =>
+                          handleNewItemChange("title", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Description
+                      </label>
+                      <textarea
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        rows="3"
+                        value={newItemData.description || ""}
+                        onChange={(e) =>
+                          handleNewItemChange("description", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Image
+                      </label>
+                      <div className="flex items-center">
+                        <input
+                          type="file"
+                          id="design-image-edit"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) =>
+                            handleComponentImageUpload(e, "image")
+                          }
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            document.getElementById("design-image-edit").click()
+                          }
+                          className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
+                        >
+                          Change Image
+                        </button>
+                        {newItemData.image && (
+                          <span className="ml-2 text-green-600 text-sm">
+                            Image selected
+                          </span>
+                        )}
+                      </div>
+                      {newItemData.image && (
+                        <div className="mt-2 w-full h-48 rounded overflow-hidden">
+                          <img
+                            src={newItemData.image}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex justify-end space-x-2 mt-4">
+                    <CustomButton
+                      text="Cancel"
+                      color="accent"
+                      hover_color="hoverAccent"
+                      variant="outlined"
+                      width="w-20"
+                      height="h-9"
+                      type="submit"
+                      onClick={() => {
+                        setEditingDesign(null);
+                        setEditingComponent(null);
+                        setNewItemData({});
+                      }}
+                    />
+                    <CustomButton
+                      text="Save Changes"
+                      color="primary"
+                      hover_color="hoverAccent"
+                      variant="filled"
+                      width="w-28"
+                      height="h-9"
+                      type="submit"
+                      onClick={async () => {
+                        await updateDesign(editingDesign.id, {
+                          title: newItemData.title,
+                          description: newItemData.description,
+                          imageUrl: newItemData.image || editingDesign.imageUrl,
+                        });
+                        setEditingDesign(null);
+                        setEditingComponent(null);
+                        setNewItemData({});
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+            {showDeleteConfirm && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                  <h3 className="text-lg font-semibold mb-4">Confirm Delete</h3>
+                  <p className="text-gray-600 mb-6">
+                    Are you sure you want to delete this design? This action
+                    cannot be undone.
+                  </p>
+                  <div className="flex justify-end space-x-2">
+                    <CustomButton
+                      text="Cancel"
+                      color="accent"
+                      hover_color="hoverAccent"
+                      variant="outlined"
+                      width="w-20"
+                      height="h-9"
+                      type="submit"
+                      onClick={() => setShowDeleteConfirm(false)}
+                    />
+                    <CustomButton
+                      text="Delete"
+                      color="danger"
+                      hover_color="#8B0000"
+                      variant="filled"
+                      width="w-20"
+                      height="h-9"
+                      type="submit"
+                      onClick={confirmDeleteDesign}
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </motion.div>
@@ -947,7 +1139,7 @@ const BusinessProfileSetup = () => {
                   duration: 1.5,
                 }}
               >
-                Let’s Get Started!
+                Let's Get Started!
               </motion.h1>
               <motion.p
                 className="mt-3 text-sm text-gray-700"
