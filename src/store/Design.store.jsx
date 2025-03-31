@@ -32,7 +32,9 @@ export const useDesignStore = create((set, get) => ({
   fetchDesignsById: async (tailorId) => {
     set({ isLoading: true, error: null });
     try {
-      const url = tailorId ? `${BASE_API_URL}/${tailorId}` : `${BASE_API_URL}`;
+      const url = tailorId
+        ? `${BASE_API_URL}?tailorId=${tailorId}`
+        : `${BASE_API_URL}`;
       const response = await axios.get(url);
       set({ designs: response.data, isLoading: false });
     } catch (error) {
