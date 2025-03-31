@@ -12,6 +12,7 @@ const CustomButton = ({
   height = "h-auto",
   type = "button",
   onClick = () => {},
+  hover_color = null,
 }) => {
   const baseStyles =
     "flex items-center justify-center gap-2 transition-all text-xs rounded-full font-medium group";
@@ -35,6 +36,30 @@ const CustomButton = ({
       text: "text-accent",
       border: "border-accent",
       light: "bg-accent-light",
+    },
+    success: {
+      bg: "bg-[#28a745]",
+      text: "text-[#28a745]",
+      border: "border-[#28a745]",
+      light: "bg-[#28a74533]",
+    },
+    danger: {
+      bg: "bg-[#dc3545]",
+      text: "text-[#dc3545]",
+      border: "border-[#dc3545]",
+      light: "bg-[#dc354533]",
+    },
+    warning: {
+      bg: "bg-[#ffc107]",
+      text: "text-[#ffc107]",
+      border: "border-[#ffc107]",
+      light: "bg-[#ffc10733]",
+    },
+    info: {
+      bg: "bg-[#17a2b8]",
+      text: "text-[#17a2b8]",
+      border: "border-[#17a2b8]",
+      light: "bg-[#17a2b833]",
     },
   };
 
