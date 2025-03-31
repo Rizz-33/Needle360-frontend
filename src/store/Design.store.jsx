@@ -28,7 +28,6 @@ export const useDesignStore = create((set, get) => ({
     }
   },
 
-  // Fetch designs by user id
   // Fetch designs by tailor ID
   fetchDesignsById: async (tailorId) => {
     set({ isLoading: true, error: null });
