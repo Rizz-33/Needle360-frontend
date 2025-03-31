@@ -187,10 +187,10 @@ const TailorProfilePage = () => {
                         className="aspect-square bg-gray-100 relative overflow-hidden group"
                         onClick={() => navigate(`/design/${design.id}`)}
                       >
-                        {design.imageURLs && design.imageURLs.length > 0 ? (
+                        {design.image ? (
                           <img
-                            src={design.imageURLs[0]}
-                            alt={design.itemName}
+                            src={design.image}
+                            alt={design.title || design.itemName}
                             className="object-cover w-full h-full"
                           />
                         ) : (
@@ -200,7 +200,7 @@ const TailorProfilePage = () => {
                         )}
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
                           <div className="text-white font-medium text-sm p-2 text-center">
-                            <div>{design.itemName}</div>
+                            <div>{design.title || design.itemName}</div>
                             {design.price && (
                               <div className="mt-1 font-bold">
                                 ${design.price}
