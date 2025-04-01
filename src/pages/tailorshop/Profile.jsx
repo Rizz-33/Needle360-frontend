@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
-import { MessageCircleMore } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { MessageCircleMore, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import {
@@ -47,6 +47,8 @@ const TailorProfilePage = () => {
   const [activeTab, setActiveTab] = useState("designs");
   const [showAllBio, setShowAllBio] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [selectedDesign, setSelectedDesign] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const menuRef = useRef(null);
 
   const isOwnProfile = !id || (user && (user._id === id || user.id === id));
@@ -83,6 +85,17 @@ const TailorProfilePage = () => {
       fetchDesignsById(tailorId);
     }
   }, [activeTab, fetchDesignsById, tailorId]);
+
+  const handleDesignClick = (design) => {
+    setSelectedDesign(design);
+    setIsModalOpen(true);
+    document.body.style.overflow = "hidden"; // Prevent scrolling when modal is open
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    document.body.style.overflow = "auto"; // Re-enable scrolling
+  };
 
   if (isLoading) {
     return (
@@ -156,13 +169,11 @@ const TailorProfilePage = () => {
   const handleBlock = () => {
     toast.success("User blocked");
     setMenuOpen(false);
-    // In a real app, you would implement actual user blocking logic here
   };
 
   const handleReport = () => {
     toast.success("Thank you for your report. We'll review this account.");
     setMenuOpen(false);
-    // In a real app, you would implement actual reporting logic here
   };
 
   const getTabContent = () => {
@@ -184,8 +195,8 @@ const TailorProfilePage = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className="aspect-square bg-gray-100 relative overflow-hidden group"
-                        onClick={() => navigate(`/design/${design.id}`)}
+                        className="aspect-square bg-gray-100 relative overflow-hidden group cursor-pointer"
+                        onClick={() => handleDesignClick(design)}
                       >
                         {design.imageUrl ? (
                           <img
@@ -617,6 +628,197 @@ const TailorProfilePage = () => {
           </motion.div>
         </div>
       )}
+
+      {/* Design Detail Modal */}
+      <AnimatePresence>
+        {isModalOpen && selectedDesign && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm"
+            onClick={closeModal}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 50 }}
+              transition={{ type: "spring", damping: 25 }}
+              className="bg-white rounded-2xl overflow-hidden w-full max-w-4xl max-h-[90vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal header */}
+              <div className="relative p-4 border-b">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100">
+                    {tailor.logoUrl ? (
+                      <img
+                        src={tailor.logoUrl}
+                        alt={tailor.shopName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary to-blue-400 flex items-center justify-center text-white text-sm font-bold">
+                        {tailor.shopName?.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm">{tailor.shopName}</h3>
+                    <p className="text-xs text-gray-500">
+                      {selectedDesign.category || "Fashion Design"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeModal}
+                  className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <X className="text-gray-500" size={20} />
+                </button>
+              </div>
+
+              {/* Modal content */}
+              <div className="overflow-y-auto flex-1 flex">
+                {/* Design details - Left side */}
+                <div className="w-1/2 p-6 overflow-y-auto">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h2 className="text-lg font-bold">
+                          {selectedDesign.title || selectedDesign.itemName}
+                        </h2>
+                        <p className="text-primary font-bold text-sm mt-1">
+                          LKR {selectedDesign.price}
+                        </p>
+                      </div>
+                      {!isOwnProfile && (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="px-3 py-1.5 bg-primary text-white rounded-full text-xs font-medium"
+                          onClick={() => {
+                            closeModal();
+                            navigate(`/chat/${tailorId}`);
+                          }}
+                        >
+                          Message Tailor
+                        </motion.button>
+                      )}
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <h4 className="text-xs font-medium text-gray-500 mb-1">
+                        Description
+                      </h4>
+                      <p className="text-gray-700 text-sm">
+                        {selectedDesign.description ||
+                          "No description provided for this design."}
+                      </p>
+                    </div>
+
+                    {/* Details */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <h4 className="text-xs font-medium text-gray-500 mb-1">
+                          Category
+                        </h4>
+                        <p className="text-gray-700 text-sm">
+                          {selectedDesign.category || "-"}
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-medium text-gray-500 mb-1">
+                          Fabric Type
+                        </h4>
+                        <p className="text-gray-700 text-sm">
+                          {selectedDesign.fabricType || "-"}
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-medium text-gray-500 mb-1">
+                          Colors
+                        </h4>
+                        <div className="flex gap-1">
+                          {selectedDesign.colors ? (
+                            selectedDesign.colors
+                              .split(",")
+                              .map((color, i) => (
+                                <div
+                                  key={i}
+                                  className="w-4 h-4 rounded-full border border-gray-200"
+                                  style={{ backgroundColor: color.trim() }}
+                                  title={color.trim()}
+                                />
+                              ))
+                          ) : (
+                            <p className="text-gray-700 text-sm">-</p>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-medium text-gray-500 mb-1">
+                          Size
+                        </h4>
+                        <p className="text-gray-700 text-sm">
+                          {selectedDesign.size || "One Size"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Additional info */}
+                    {selectedDesign.additionalInfo && (
+                      <div>
+                        <h4 className="text-xs font-medium text-gray-500 mb-1">
+                          Additional Information
+                        </h4>
+                        <p className="text-gray-700 text-sm">
+                          {selectedDesign.additionalInfo}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Modal footer - only for own profile */}
+                  {isOwnProfile && (
+                    <div className="mt-6 pt-4 border-t flex justify-end gap-2">
+                      <button
+                        onClick={() => {
+                          closeModal();
+                          navigate(`/edit-design/${selectedDesign.id}`);
+                        }}
+                        className="px-3 py-1.5 border border-gray-300 rounded-full text-xs font-medium hover:bg-gray-50 transition-colors"
+                      >
+                        Edit Design
+                      </button>
+                      <button className="px-3 py-1.5 bg-primary text-white rounded-full text-xs font-medium hover:bg-primary-dark transition-colors">
+                        Share Design
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Design image - Right side */}
+                <div className="w-2/3 bg-gray-100 flex items-center justify-center mx-12 my-6">
+                  {selectedDesign.imageUrl ? (
+                    <img
+                      src={selectedDesign.imageUrl}
+                      alt={selectedDesign.title || selectedDesign.itemName}
+                      className="object-contain w-full h-full"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                      <FaPalette className="text-gray-400 text-4xl" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
