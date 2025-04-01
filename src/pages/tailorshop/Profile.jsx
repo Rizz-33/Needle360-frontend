@@ -187,9 +187,9 @@ const TailorProfilePage = () => {
                         className="aspect-square bg-gray-100 relative overflow-hidden group"
                         onClick={() => navigate(`/design/${design.id}`)}
                       >
-                        {design.image ? (
+                        {design.imageUrl ? (
                           <img
-                            src={design.image}
+                            src={design.imageUrl}
                             alt={design.title || design.itemName}
                             className="object-cover w-full h-full"
                           />
@@ -203,7 +203,7 @@ const TailorProfilePage = () => {
                             <div>{design.title || design.itemName}</div>
                             {design.price && (
                               <div className="mt-1 font-bold">
-                                ${design.price}
+                                LKR {design.price}
                               </div>
                             )}
                           </div>
