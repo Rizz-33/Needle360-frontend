@@ -6,7 +6,7 @@ import { CustomButton } from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
 import { initialProfileComponents } from "../../configs/Profile.configs";
 import { useAuthStore } from "../../store/Auth.store";
-import { useDesignStore } from "../../store/Design.store"; // Import the design store
+import { useDesignStore } from "../../store/Design.store";
 import { useShopStore } from "../../store/Shop.store";
 
 const BusinessProfileSetup = () => {
@@ -18,7 +18,7 @@ const BusinessProfileSetup = () => {
     createDesign,
     updateDesign,
     deleteDesign,
-  } = useDesignStore(); // Destructure design store methods
+  } = useDesignStore();
 
   const navigate = useNavigate();
 
@@ -37,30 +37,21 @@ const BusinessProfileSetup = () => {
   const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Fetch tailor and designs data on component mount
   useEffect(() => {
     if (user && user._id) {
       fetchTailorById(user._id);
-      fetchDesignsById(user._id); // Fetch designs for this tailor
+      fetchDesignsById(user._id);
     }
   }, [fetchTailorById, fetchDesignsById, user]);
 
-  // Update state with tailor data when it's loaded
   useEffect(() => {
     if (tailor) {
-      // Set business name from tailor data
       setBusinessName(tailor.shopName || "");
-
-      // Set profile image from tailor data
       setProfileImage(tailor.logoUrl || null);
-
-      // Set bio from tailor data
       setBio(tailor.bio || "");
 
-      // Create a copy of the components to update
       const updatedComponents = [...components];
 
-      // Update address component with tailor data
       if (tailor.shopAddress) {
         const addressComp = updatedComponents.find(
           (comp) => comp.id === "address"
@@ -81,7 +72,6 @@ const BusinessProfileSetup = () => {
         }
       }
 
-      // Update offers component with tailor data
       if (
         tailor.offers &&
         Array.isArray(tailor.offers) &&
@@ -96,12 +86,12 @@ const BusinessProfileSetup = () => {
             id: offer.id || Date.now(),
             title: offer.title || "",
             description: offer.description || "",
+            price: offer.price || "",
             image: offer.image || null,
           }));
         }
       }
 
-      // Update designs component with data from design store
       const designsComp = updatedComponents.find(
         (comp) => comp.id === "designs"
       );
@@ -112,10 +102,13 @@ const BusinessProfileSetup = () => {
           title: design.title || "",
           description: design.description || "",
           image: design.imageUrl || null,
+          price: design.price || "",
+          createdAt: design.createdAt || "",
+          updatedAt: design.updatedAt || "",
+          tailorId: design.tailorId || "",
         }));
       }
 
-      // Update availability component with tailor data
       if (
         tailor.availability &&
         Array.isArray(tailor.availability) &&
@@ -134,7 +127,6 @@ const BusinessProfileSetup = () => {
         }
       }
 
-      // Update services component with tailor data
       if (
         tailor.services &&
         Array.isArray(tailor.services) &&
@@ -154,7 +146,6 @@ const BusinessProfileSetup = () => {
         }
       }
 
-      // Update reviews component with tailor data
       if (
         tailor.reviews &&
         Array.isArray(tailor.reviews) &&
@@ -174,12 +165,10 @@ const BusinessProfileSetup = () => {
         }
       }
 
-      // Update the components state
       setComponents(updatedComponents);
     }
-  }, [tailor, designItems]); // Add designItems to dependencies
+  }, [tailor, designItems]);
 
-  // Steps for the stepper
   const steps = [
     { id: "basics", title: "Basic Info" },
     { id: "components", title: "Components" },
@@ -187,7 +176,6 @@ const BusinessProfileSetup = () => {
     { id: "preview", title: "Preview" },
   ];
 
-  // Handle welcome message timer
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowWelcome(false);
@@ -196,7 +184,6 @@ const BusinessProfileSetup = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Handle profile image upload
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -206,7 +193,6 @@ const BusinessProfileSetup = () => {
     }
   };
 
-  // Handle component image upload
   const handleComponentImageUpload = (e, fieldName) => {
     const file = e.target.files[0];
     if (file) {
@@ -227,7 +213,8 @@ const BusinessProfileSetup = () => {
     setNewItemData({
       title: design.title,
       description: design.description,
-      image: design.image,
+      price: design.price,
+      image: design.imageUrl,
     });
   };
 
@@ -237,14 +224,18 @@ const BusinessProfileSetup = () => {
   };
 
   const confirmDeleteDesign = async () => {
-    if (designToDelete) {
-      await deleteDesign(designToDelete);
-      setShowDeleteConfirm(false);
-      setDesignToDelete(null);
+    if (designToDelete && user?._id) {
+      try {
+        await deleteDesign(user._id, designToDelete);
+        setShowDeleteConfirm(false);
+        setDesignToDelete(null);
+      } catch (error) {
+        console.error("Error deleting design:", error);
+        setSaveError("Failed to delete design");
+      }
     }
   };
 
-  // Toggle component selection
   const toggleComponent = (id) => {
     setComponents(
       components.map((comp) =>
@@ -253,31 +244,26 @@ const BusinessProfileSetup = () => {
     );
   };
 
-  // Navigate to next step
   const nextStep = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // On the last step, save the profile
       handleSaveProfile();
       navigate("/tailor/" + user._id);
     }
   };
 
-  // Navigate to previous step
   const prevStep = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
   };
 
-  // Set current component for editing
   const startEditing = (componentId) => {
     setEditingComponent(componentId);
     setNewItemData({});
   };
 
-  // Handle input change for new item
   const handleNewItemChange = (fieldName, value) => {
     setNewItemData({
       ...newItemData,
@@ -285,36 +271,48 @@ const BusinessProfileSetup = () => {
     });
   };
 
-  // Add new item to component
   const addNewItem = async () => {
     if (!editingComponent) return;
 
     try {
       if (editingComponent === "designs") {
-        // Handle design creation separately using design store
         const newDesign = {
           title: newItemData.title || "",
           description: newItemData.description || "",
-          imageUrl: newItemData.image || null,
-          tailorId: user._id,
+          price: newItemData.price || "",
+          imageURLs: newItemData.image ? [newItemData.image] : [],
         };
 
-        await createDesign(newDesign);
+        try {
+          const createdDesign = await createDesign(user._id, newDesign);
 
-        // Update local state to reflect the change immediately
-        const updatedComponents = components.map((comp) =>
-          comp.id === editingComponent
-            ? {
-                ...comp,
-                items: [...comp.items, { id: Date.now(), ...newItemData }],
-              }
-            : comp
-        );
-        setComponents(updatedComponents);
+          setComponents((prevComponents) =>
+            prevComponents.map((comp) =>
+              comp.id === "designs"
+                ? {
+                    ...comp,
+                    items: [
+                      ...comp.items,
+                      {
+                        id: createdDesign._id,
+                        _id: createdDesign._id,
+                        title: createdDesign.title,
+                        description: createdDesign.description,
+                        price: createdDesign.price,
+                        imageUrl: createdDesign.imageUrl,
+                      },
+                    ],
+                  }
+                : comp
+            )
+          );
+        } catch (error) {
+          console.error("Error creating design:", error);
+          setSaveError("Failed to create design");
+        }
       } else {
-        // Handle other components as before
-        setComponents(
-          components.map((comp) =>
+        setComponents((prevComponents) =>
+          prevComponents.map((comp) =>
             comp.id === editingComponent
               ? {
                   ...comp,
@@ -344,19 +342,16 @@ const BusinessProfileSetup = () => {
     setSaveSuccess(false);
 
     try {
-      // Prepare data for update (excluding designs since they're handled separately)
       const updateData = {
         shopName: businessName,
         logoUrl: profileImage,
         bio: bio,
       };
 
-      // Format the components data for the API (excluding designs)
       const enabledComponents = components.filter(
         (comp) => comp.enabled && comp.id !== "designs"
       );
 
-      // Add each component's items to the update data
       enabledComponents.forEach((component) => {
         switch (component.id) {
           case "offers":
@@ -364,6 +359,7 @@ const BusinessProfileSetup = () => {
               id: item.id,
               title: item.title,
               description: item.description,
+              price: item.price,
               image: item.image,
             }));
             break;
@@ -387,13 +383,10 @@ const BusinessProfileSetup = () => {
               updateData.shopAddress = component.items[0].street;
             }
             break;
-          // Reviews and designs are handled separately
         }
       });
 
-      // Call the updateTailor function from the store (for non-design data)
       await updateTailor(user._id, updateData);
-
       setSaveSuccess(true);
     } catch (error) {
       console.error("Failed to save profile:", error);
@@ -403,7 +396,6 @@ const BusinessProfileSetup = () => {
     }
   };
 
-  // Render content for each step
   const renderStepContent = () => {
     switch (steps[currentStep].id) {
       case "basics":
@@ -419,7 +411,6 @@ const BusinessProfileSetup = () => {
               Basic Information
             </h2>
 
-            {/* Profile Photo */}
             <div className="flex flex-col md:flex-row gap-8 items-center mb-8">
               <div className="flex-shrink-0">
                 <div
@@ -599,7 +590,6 @@ const BusinessProfileSetup = () => {
                       )}
                     </div>
 
-                    {/* Show existing items for this component */}
                     {component.items.length > 0 ? (
                       <div className="space-y-3 mb-4">
                         {component.items.map((item, index) => (
@@ -608,15 +598,26 @@ const BusinessProfileSetup = () => {
                             className="bg-gray-50 p-3 rounded-lg"
                           >
                             <div className="flex justify-between items-center">
-                              <h4 className="font-semibold text-gray-800 text-sm">
-                                {item.title ||
-                                  item.name ||
-                                  item.day ||
-                                  item.category ||
-                                  item.reviewer ||
-                                  item.street ||
-                                  `Item ${index + 1}`}
-                              </h4>
+                              <div>
+                                <h4 className="font-semibold text-gray-800 text-sm">
+                                  {item.title ||
+                                    item.name ||
+                                    item.day ||
+                                    item.category ||
+                                    item.reviewer ||
+                                    item.street ||
+                                    `Item ${index + 1}`}
+                                </h4>
+                                {/* Display price for offers and designs */}
+                                {(component.id === "offers" ||
+                                  component.id === "designs" ||
+                                  component.id === "services") &&
+                                  item.price && (
+                                    <p className="text-xs font-medium text-primary mt-1">
+                                      LKR {item.price}
+                                    </p>
+                                  )}
+                              </div>
                               {component.id === "designs" && (
                                 <div className="flex space-x-2">
                                   <button
@@ -648,7 +649,6 @@ const BusinessProfileSetup = () => {
                                 {item.description ||
                                   item.hours ||
                                   item.comment ||
-                                  item.price ||
                                   ""}
                               </div>
                             </div>
@@ -665,7 +665,6 @@ const BusinessProfileSetup = () => {
                       </p>
                     )}
 
-                    {/* Form for adding new item */}
                     {editingComponent === component.id &&
                       !component.isClientGenerated && (
                         <div className="bg-blue-50 p-4 rounded-lg mt-3">
@@ -688,6 +687,19 @@ const BusinessProfileSetup = () => {
                                 {field.type === "text" && (
                                   <input
                                     type="text"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                    value={newItemData[field.name] || ""}
+                                    onChange={(e) =>
+                                      handleNewItemChange(
+                                        field.name,
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                )}
+                                {field.type === "number" && (
+                                  <input
+                                    type="number"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
                                     value={newItemData[field.name] || ""}
                                     onChange={(e) =>
@@ -815,6 +827,19 @@ const BusinessProfileSetup = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Price
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        value={newItemData.price || ""}
+                        onChange={(e) =>
+                          handleNewItemChange("price", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
                         Description
                       </label>
                       <textarea
@@ -890,14 +915,21 @@ const BusinessProfileSetup = () => {
                       height="h-9"
                       type="submit"
                       onClick={async () => {
-                        await updateDesign(editingDesign.id, {
-                          title: newItemData.title,
-                          description: newItemData.description,
-                          imageUrl: newItemData.image || editingDesign.imageUrl,
-                        });
-                        setEditingDesign(null);
-                        setEditingComponent(null);
-                        setNewItemData({});
+                        try {
+                          await updateDesign(user._id, editingDesign.id, {
+                            title: newItemData.title,
+                            description: newItemData.description,
+                            price: newItemData.price,
+                            imageUrl:
+                              newItemData.image || editingDesign.imageUrl,
+                          });
+                          setEditingDesign(null);
+                          setEditingComponent(null);
+                          setNewItemData({});
+                        } catch (error) {
+                          console.error("Error updating design:", error);
+                          setSaveError("Failed to update design");
+                        }
                       }}
                     />
                   </div>
@@ -907,8 +939,10 @@ const BusinessProfileSetup = () => {
             {showDeleteConfirm && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                  <h3 className="text-lg font-semibold mb-4">Confirm Delete</h3>
-                  <p className="text-gray-600 mb-6">
+                  <h3 className="text-sm text-primary font-semibold mb-4">
+                    Confirm Delete
+                  </h3>
+                  <p className="text-gray-600 mb-6 text-sm">
                     Are you sure you want to delete this design? This action
                     cannot be undone.
                   </p>
@@ -953,7 +987,6 @@ const BusinessProfileSetup = () => {
                 Profile Preview
               </h2>
 
-              {/* Save status messages */}
               {saveSuccess && (
                 <div className="text-green-500 text-sm font-medium bg-green-50 px-3 py-1 rounded-full">
                   Profile saved successfully!
@@ -972,7 +1005,6 @@ const BusinessProfileSetup = () => {
 
               <div className="relative z-10">
                 <div className="flex items-center space-x-4 mb-6">
-                  {/* Profile Image */}
                   <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
                     {profileImage ? (
                       <img
@@ -987,20 +1019,17 @@ const BusinessProfileSetup = () => {
                     )}
                   </div>
 
-                  {/* Business Details */}
                   <div className="flex-1">
                     <h3 className="text-xl font-bold text-gray-800">
                       {businessName || "Your Business Name"}
                     </h3>
 
                     <div className="flex justify-between items-start w-full">
-                      {/* Business Bio */}
                       <p className="text-gray-600 text-xs max-w-xs break-words line-clamp-2">
                         {bio ||
                           "Your business bio will appear here. Add a compelling description to attract customers."}
                       </p>
 
-                      {/* Rating Section */}
                       {components.find(
                         (c) => c.id === "reviews" && c.enabled
                       ) && (
@@ -1015,7 +1044,6 @@ const BusinessProfileSetup = () => {
                   </div>
                 </div>
 
-                {/* Display enabled components in modern cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {components
                     .filter((c) => c.enabled)
@@ -1052,21 +1080,31 @@ const BusinessProfileSetup = () => {
                                     />
                                   </div>
                                 )}
-                                <div>
-                                  <h5 className="font-semibold text-sm text-gray-800">
-                                    {item.title ||
-                                      item.name ||
-                                      item.day ||
-                                      item.category ||
-                                      item.reviewer ||
-                                      item.street ||
-                                      ""}
-                                  </h5>
+                                <div className="flex-1">
+                                  <div className="flex justify-between items-start">
+                                    <h5 className="font-semibold text-sm text-gray-800">
+                                      {item.title ||
+                                        item.name ||
+                                        item.day ||
+                                        item.category ||
+                                        item.reviewer ||
+                                        item.street ||
+                                        ""}
+                                    </h5>
+                                    {/* Display price for offers, designs, and services */}
+                                    {(component.id === "offers" ||
+                                      component.id === "designs" ||
+                                      component.id === "services") &&
+                                      item.price && (
+                                        <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded-full">
+                                          LKR {item.price}
+                                        </span>
+                                      )}
+                                  </div>
                                   <p className="text-sm text-gray-600 mt-1">
                                     {item.description ||
                                       item.hours ||
                                       item.comment ||
-                                      item.price ||
                                       ""}
                                   </p>
                                   {item.rating && (
