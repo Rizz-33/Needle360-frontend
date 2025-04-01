@@ -8,6 +8,7 @@ export const initialProfileComponents = [
     enabled: false,
     contentFields: [
       { name: "title", label: "Offer Title", type: "text" },
+      { name: "price", label: "Design Price", type: "number" },
       { name: "description", label: "Offer Description", type: "textarea" },
       { name: "image", label: "Offer Image", type: "image" },
     ],
@@ -20,6 +21,7 @@ export const initialProfileComponents = [
     enabled: false,
     contentFields: [
       { name: "title", label: "Design Title", type: "text" },
+      { name: "price", label: "Design Price", type: "number" },
       { name: "description", label: "Design Description", type: "textarea" },
       { name: "image", label: "Design Image", type: "image" },
     ],
