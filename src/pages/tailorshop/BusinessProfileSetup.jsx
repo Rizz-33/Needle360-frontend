@@ -7,6 +7,7 @@ import Loader from "../../components/ui/Loader";
 import { initialProfileComponents } from "../../configs/Profile.configs";
 import { useAuthStore } from "../../store/Auth.store";
 import { useDesignStore } from "../../store/Design.store";
+import { useOfferStore } from "../../store/Offer.store";
 import { useShopStore } from "../../store/Shop.store";
 
 const BusinessProfileSetup = () => {
@@ -19,6 +20,13 @@ const BusinessProfileSetup = () => {
     updateDesign,
     deleteDesign,
   } = useDesignStore();
+  const {
+    offers,
+    fetchOffersByTailorId,
+    createOffer,
+    updateOffer,
+    deleteOffer,
+  } = useOfferStore();
 
   const navigate = useNavigate();
 
@@ -28,11 +36,18 @@ const BusinessProfileSetup = () => {
   const [bio, setBio] = useState("");
   const [components, setComponents] = useState(initialProfileComponents);
   const [currentStep, setCurrentStep] = useState(0);
-  const [newItemData, setNewItemData] = useState({});
+  const [newItemData, setNewItemData] = useState({
+    title: "",
+    description: "",
+    percentage: 0,
+    startDate: "",
+    endDate: "",
+    image: null,
+  });
   const [editingComponent, setEditingComponent] = useState(null);
-  const [editingDesign, setEditingDesign] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [designToDelete, setDesignToDelete] = useState(null);
+  const [itemToDelete, setItemToDelete] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -41,8 +56,9 @@ const BusinessProfileSetup = () => {
     if (user && user._id) {
       fetchTailorById(user._id);
       fetchDesignsById(user._id);
+      fetchOffersByTailorId(user._id);
     }
-  }, [fetchTailorById, fetchDesignsById, user]);
+  }, [fetchTailorById, fetchDesignsById, fetchOffersByTailorId, user]);
 
   useEffect(() => {
     if (tailor) {
@@ -72,24 +88,22 @@ const BusinessProfileSetup = () => {
         }
       }
 
-      if (
-        tailor.offers &&
-        Array.isArray(tailor.offers) &&
-        tailor.offers.length > 0
-      ) {
-        const offersComp = updatedComponents.find(
-          (comp) => comp.id === "offers"
-        );
-        if (offersComp) {
-          offersComp.enabled = true;
-          offersComp.items = tailor.offers.map((offer) => ({
-            id: offer.id || Date.now(),
-            title: offer.title || "",
-            description: offer.description || "",
-            price: offer.price || "",
-            image: offer.image || null,
-          }));
-        }
+      const offersComp = updatedComponents.find((comp) => comp.id === "offers");
+      if (offersComp) {
+        offersComp.enabled = offers.length > 0;
+        offersComp.items = offers.map((offer) => ({
+          id: offer._id,
+          title: offer.title || "",
+          description: offer.description || "",
+          percentage: offer.percentage || 0,
+          startDate: offer.startDate
+            ? new Date(offer.startDate).toISOString().split("T")[0]
+            : "",
+          endDate: offer.endDate
+            ? new Date(offer.endDate).toISOString().split("T")[0]
+            : "",
+          image: offer.imageUrl || null,
+        }));
       }
 
       const designsComp = updatedComponents.find(
@@ -98,14 +112,11 @@ const BusinessProfileSetup = () => {
       if (designsComp) {
         designsComp.enabled = designItems.length > 0;
         designsComp.items = designItems.map((design) => ({
-          id: design._id || Date.now(),
+          id: design._id,
           title: design.title || "",
           description: design.description || "",
           image: design.imageUrl || null,
           price: design.price || "",
-          createdAt: design.createdAt || "",
-          updatedAt: design.updatedAt || "",
-          tailorId: design.tailorId || "",
         }));
       }
 
@@ -146,28 +157,9 @@ const BusinessProfileSetup = () => {
         }
       }
 
-      if (
-        tailor.reviews &&
-        Array.isArray(tailor.reviews) &&
-        tailor.reviews.length > 0
-      ) {
-        const reviewsComp = updatedComponents.find(
-          (comp) => comp.id === "reviews"
-        );
-        if (reviewsComp) {
-          reviewsComp.enabled = true;
-          reviewsComp.items = tailor.reviews.map((review) => ({
-            id: review.id || Date.now(),
-            reviewer: review.reviewer || review.clientName || "",
-            comment: review.comment || review.text || "",
-            rating: review.rating || "5",
-          }));
-        }
-      }
-
       setComponents(updatedComponents);
     }
-  }, [tailor, designItems]);
+  }, [tailor, designItems, offers]);
 
   const steps = [
     { id: "basics", title: "Basic Info" },
@@ -207,31 +199,47 @@ const BusinessProfileSetup = () => {
     }
   };
 
-  const handleEditDesign = (design) => {
-    setEditingDesign(design);
-    setEditingComponent("designs");
-    setNewItemData({
-      title: design.title,
-      description: design.description,
-      price: design.price,
-      image: design.imageUrl,
-    });
+  const handleEditItem = (item, componentId) => {
+    setEditingItem(item);
+    setEditingComponent(componentId);
+
+    if (componentId === "designs") {
+      setNewItemData({
+        title: item.title,
+        description: item.description,
+        price: item.price,
+        image: item.image,
+      });
+    } else if (componentId === "offers") {
+      setNewItemData({
+        title: item.title,
+        description: item.description,
+        percentage: item.percentage,
+        startDate: item.startDate,
+        endDate: item.endDate,
+        image: item.image,
+      });
+    }
   };
 
-  const handleDeleteDesign = (designId) => {
-    setDesignToDelete(designId);
+  const handleDeleteItem = (itemId, componentId) => {
+    setItemToDelete({ id: itemId, component: componentId });
     setShowDeleteConfirm(true);
   };
 
-  const confirmDeleteDesign = async () => {
-    if (designToDelete && user?._id) {
+  const confirmDeleteItem = async () => {
+    if (itemToDelete && user?._id) {
       try {
-        await deleteDesign(user._id, designToDelete);
+        if (itemToDelete.component === "designs") {
+          await deleteDesign(user._id, itemToDelete.id);
+        } else if (itemToDelete.component === "offers") {
+          await deleteOffer(user._id, itemToDelete.id);
+        }
         setShowDeleteConfirm(false);
-        setDesignToDelete(null);
+        setItemToDelete(null);
       } catch (error) {
-        console.error("Error deleting design:", error);
-        setSaveError("Failed to delete design");
+        console.error("Error deleting item:", error);
+        setSaveError("Failed to delete item");
       }
     }
   };
@@ -261,7 +269,14 @@ const BusinessProfileSetup = () => {
 
   const startEditing = (componentId) => {
     setEditingComponent(componentId);
-    setNewItemData({});
+    setNewItemData({
+      title: "",
+      description: "",
+      percentage: 0,
+      startDate: "",
+      endDate: "",
+      image: null,
+    });
   };
 
   const handleNewItemChange = (fieldName, value) => {
@@ -272,7 +287,7 @@ const BusinessProfileSetup = () => {
   };
 
   const addNewItem = async () => {
-    if (!editingComponent) return;
+    if (!editingComponent || !user?._id) return;
 
     try {
       if (editingComponent === "designs") {
@@ -283,33 +298,73 @@ const BusinessProfileSetup = () => {
           imageURLs: newItemData.image ? [newItemData.image] : [],
         };
 
-        try {
-          const createdDesign = await createDesign(user._id, newDesign);
+        const createdDesign = await createDesign(user._id, newDesign);
 
-          setComponents((prevComponents) =>
-            prevComponents.map((comp) =>
-              comp.id === "designs"
-                ? {
-                    ...comp,
-                    items: [
-                      ...comp.items,
-                      {
-                        id: createdDesign._id,
-                        _id: createdDesign._id,
-                        title: createdDesign.title,
-                        description: createdDesign.description,
-                        price: createdDesign.price,
-                        imageUrl: createdDesign.imageUrl,
-                      },
-                    ],
-                  }
-                : comp
-            )
-          );
-        } catch (error) {
-          console.error("Error creating design:", error);
-          setSaveError("Failed to create design");
-        }
+        setComponents((prevComponents) =>
+          prevComponents.map((comp) =>
+            comp.id === "designs"
+              ? {
+                  ...comp,
+                  items: [
+                    ...comp.items,
+                    {
+                      id: createdDesign._id,
+                      _id: createdDesign._id,
+                      title: createdDesign.title,
+                      description: createdDesign.description,
+                      price: createdDesign.price,
+                      imageUrl: createdDesign.imageUrl,
+                    },
+                  ],
+                }
+              : comp
+          )
+        );
+      } else if (editingComponent === "offers") {
+        const newOffer = {
+          title: newItemData.title || "",
+          description: newItemData.description || "",
+          percentage: Number(newItemData.percentage) || 0,
+          startDate: newItemData.startDate || new Date().toISOString(),
+          endDate: newItemData.endDate || new Date().toISOString(),
+          imageUrl: newItemData.image || null,
+        };
+
+        const createdOffer = await createOffer(user._id, newOffer);
+
+        // Update the offers component with the newly created offer
+        setComponents((prevComponents) =>
+          prevComponents.map((comp) =>
+            comp.id === "offers"
+              ? {
+                  ...comp,
+                  items: [
+                    ...comp.items.filter(
+                      (item) => item.id !== createdOffer._id
+                    ), // Remove duplicate if exists
+                    {
+                      id: createdOffer._id,
+                      _id: createdOffer._id,
+                      title: createdOffer.title,
+                      description: createdOffer.description,
+                      percentage: createdOffer.percentage,
+                      startDate: createdOffer.startDate
+                        ? new Date(createdOffer.startDate)
+                            .toISOString()
+                            .split("T")[0]
+                        : "",
+                      endDate: createdOffer.endDate
+                        ? new Date(createdOffer.endDate)
+                            .toISOString()
+                            .split("T")[0]
+                        : "",
+                      image: createdOffer.imageUrl,
+                    },
+                  ],
+                }
+              : comp
+          )
+        );
       } else {
         setComponents((prevComponents) =>
           prevComponents.map((comp) =>
@@ -323,7 +378,14 @@ const BusinessProfileSetup = () => {
         );
       }
 
-      setNewItemData({});
+      setNewItemData({
+        title: "",
+        description: "",
+        percentage: 0,
+        startDate: "",
+        endDate: "",
+        image: null,
+      });
       setEditingComponent(null);
     } catch (error) {
       console.error("Error adding new item:", error);
@@ -349,20 +411,11 @@ const BusinessProfileSetup = () => {
       };
 
       const enabledComponents = components.filter(
-        (comp) => comp.enabled && comp.id !== "designs"
+        (comp) => comp.enabled && !["designs", "offers"].includes(comp.id)
       );
 
       enabledComponents.forEach((component) => {
         switch (component.id) {
-          case "offers":
-            updateData.offers = component.items.map((item) => ({
-              id: item.id,
-              title: item.title,
-              description: item.description,
-              price: item.price,
-              image: item.image,
-            }));
-            break;
           case "availability":
             updateData.availability = component.items.map((item) => ({
               id: item.id,
@@ -608,26 +661,32 @@ const BusinessProfileSetup = () => {
                                     item.street ||
                                     `Item ${index + 1}`}
                                 </h4>
-                                {/* Display price for offers and designs */}
                                 {(component.id === "offers" ||
                                   component.id === "designs" ||
                                   component.id === "services") &&
-                                  item.price && (
+                                  (item.price || item.percentage) && (
                                     <p className="text-xs font-medium text-primary mt-1">
-                                      LKR {item.price}
+                                      {component.id === "offers"
+                                        ? `${item.percentage}% OFF`
+                                        : `LKR ${item.price}`}
                                     </p>
                                   )}
                               </div>
-                              {component.id === "designs" && (
+                              {(component.id === "designs" ||
+                                component.id === "offers") && (
                                 <div className="flex space-x-2">
                                   <button
-                                    onClick={() => handleEditDesign(item)}
+                                    onClick={() =>
+                                      handleEditItem(item, component.id)
+                                    }
                                     className="text-xs text-primary hover:text-hoverAccent"
                                   >
                                     Edit
                                   </button>
                                   <button
-                                    onClick={() => handleDeleteDesign(item.id)}
+                                    onClick={() =>
+                                      handleDeleteItem(item.id, component.id)
+                                    }
                                     className="text-xs text-red-600 hover:text-red-800"
                                   >
                                     Delete
@@ -640,7 +699,7 @@ const BusinessProfileSetup = () => {
                                 <div className="w-16 h-16 rounded overflow-hidden mr-3">
                                   <img
                                     src={item.image}
-                                    alt={item.title || "Design"}
+                                    alt={item.title || "Item"}
                                     className="w-full h-full object-cover"
                                   />
                                 </div>
@@ -650,6 +709,18 @@ const BusinessProfileSetup = () => {
                                   item.hours ||
                                   item.comment ||
                                   ""}
+                                {component.id === "offers" && (
+                                  <div className="mt-1 text-xs text-gray-500">
+                                    {item.startDate &&
+                                      `Starts: ${new Date(
+                                        item.startDate
+                                      ).toLocaleDateString()}`}
+                                    {item.endDate &&
+                                      ` | Ends: ${new Date(
+                                        item.endDate
+                                      ).toLocaleDateString()}`}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -708,6 +779,16 @@ const BusinessProfileSetup = () => {
                                         e.target.value
                                       )
                                     }
+                                    min={
+                                      field.name === "percentage"
+                                        ? 0
+                                        : undefined
+                                    }
+                                    max={
+                                      field.name === "percentage"
+                                        ? 100
+                                        : undefined
+                                    }
                                   />
                                 )}
                                 {field.type === "textarea" && (
@@ -722,6 +803,19 @@ const BusinessProfileSetup = () => {
                                       )
                                     }
                                   ></textarea>
+                                )}
+                                {field.type === "date" && (
+                                  <input
+                                    type="date"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                    value={newItemData[field.name] || ""}
+                                    onChange={(e) =>
+                                      handleNewItemChange(
+                                        field.name,
+                                        e.target.value
+                                      )
+                                    }
+                                  />
                                 )}
                                 {field.type === "image" && (
                                   <div>
@@ -775,7 +869,17 @@ const BusinessProfileSetup = () => {
                             <button
                               type="button"
                               className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm"
-                              onClick={() => setEditingComponent(null)}
+                              onClick={() => {
+                                setEditingComponent(null);
+                                setNewItemData({
+                                  title: "",
+                                  description: "",
+                                  percentage: 0,
+                                  startDate: "",
+                                  endDate: "",
+                                  image: null,
+                                });
+                              }}
                             >
                               Cancel
                             </button>
@@ -783,6 +887,13 @@ const BusinessProfileSetup = () => {
                               type="button"
                               className="px-3 py-1 bg-primary text-white rounded-lg hover:bg-blue-700 text-sm"
                               onClick={addNewItem}
+                              disabled={
+                                editingComponent === "offers" &&
+                                (!newItemData.title ||
+                                  !newItemData.description ||
+                                  !newItemData.startDate ||
+                                  !newItemData.endDate)
+                              }
                             >
                               Add
                             </button>
@@ -805,11 +916,11 @@ const BusinessProfileSetup = () => {
                 </button>
               </div>
             )}
-            {editingDesign && (
+            {editingItem && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-2xl p-8 max-w-md w-full">
+                <div className="bg-white rounded-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
                   <h3 className="text-sm text-primary font-semibold mb-4">
-                    Edit Design
+                    Edit {editingComponent === "designs" ? "Design" : "Offer"}
                   </h3>
                   <div className="space-y-4">
                     <div>
@@ -827,15 +938,30 @@ const BusinessProfileSetup = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Price
+                        {editingComponent === "designs"
+                          ? "Price"
+                          : "Percentage Off"}
                       </label>
                       <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        value={newItemData.price || ""}
-                        onChange={(e) =>
-                          handleNewItemChange("price", e.target.value)
+                        type={
+                          editingComponent === "designs" ? "text" : "number"
                         }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        value={
+                          editingComponent === "designs"
+                            ? newItemData.price || ""
+                            : newItemData.percentage || ""
+                        }
+                        onChange={(e) =>
+                          handleNewItemChange(
+                            editingComponent === "designs"
+                              ? "price"
+                              : "percentage",
+                            e.target.value
+                          )
+                        }
+                        min={editingComponent === "offers" ? "0" : undefined}
+                        max={editingComponent === "offers" ? "100" : undefined}
                       />
                     </div>
                     <div>
@@ -851,6 +977,105 @@ const BusinessProfileSetup = () => {
                         }
                       />
                     </div>
+                    {editingComponent === "offers" && (
+                      <>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Start Date
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="date"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-sm"
+                              value={newItemData.startDate || ""}
+                              onChange={(e) =>
+                                handleNewItemChange("startDate", e.target.value)
+                              }
+                              style={{
+                                colorScheme: "light",
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            End Date
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="date"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-sm"
+                              value={newItemData.endDate || ""}
+                              onChange={(e) =>
+                                handleNewItemChange("endDate", e.target.value)
+                              }
+                              style={{
+                                colorScheme: "light",
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2 my-2">
+                          <button
+                            type="button"
+                            className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
+                            onClick={() => {
+                              const today = new Date();
+                              const endDate = new Date();
+                              endDate.setDate(today.getDate() + 7);
+                              handleNewItemChange(
+                                "startDate",
+                                today.toISOString().split("T")[0]
+                              );
+                              handleNewItemChange(
+                                "endDate",
+                                endDate.toISOString().split("T")[0]
+                              );
+                            }}
+                          >
+                            7 Days
+                          </button>
+                          <button
+                            type="button"
+                            className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
+                            onClick={() => {
+                              const today = new Date();
+                              const endDate = new Date();
+                              endDate.setDate(today.getDate() + 30);
+                              handleNewItemChange(
+                                "startDate",
+                                today.toISOString().split("T")[0]
+                              );
+                              handleNewItemChange(
+                                "endDate",
+                                endDate.toISOString().split("T")[0]
+                              );
+                            }}
+                          >
+                            30 Days
+                          </button>
+                          <button
+                            type="button"
+                            className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
+                            onClick={() => {
+                              const today = new Date();
+                              const endDate = new Date();
+                              endDate.setDate(today.getDate() + 90);
+                              handleNewItemChange(
+                                "startDate",
+                                today.toISOString().split("T")[0]
+                              );
+                              handleNewItemChange(
+                                "endDate",
+                                endDate.toISOString().split("T")[0]
+                              );
+                            }}
+                          >
+                            90 Days
+                          </button>
+                        </div>
+                      </>
+                    )}
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">
                         Image
@@ -858,7 +1083,7 @@ const BusinessProfileSetup = () => {
                       <div className="flex items-center">
                         <input
                           type="file"
-                          id="design-image-edit"
+                          id="item-image-edit"
                           accept="image/*"
                           className="hidden"
                           onChange={(e) =>
@@ -868,7 +1093,7 @@ const BusinessProfileSetup = () => {
                         <button
                           type="button"
                           onClick={() =>
-                            document.getElementById("design-image-edit").click()
+                            document.getElementById("item-image-edit").click()
                           }
                           className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
                         >
@@ -901,9 +1126,16 @@ const BusinessProfileSetup = () => {
                       height="h-9"
                       type="submit"
                       onClick={() => {
-                        setEditingDesign(null);
+                        setEditingItem(null);
                         setEditingComponent(null);
-                        setNewItemData({});
+                        setNewItemData({
+                          title: "",
+                          description: "",
+                          percentage: 0,
+                          startDate: "",
+                          endDate: "",
+                          image: null,
+                        });
                       }}
                     />
                     <CustomButton
@@ -916,19 +1148,38 @@ const BusinessProfileSetup = () => {
                       type="submit"
                       onClick={async () => {
                         try {
-                          await updateDesign(user._id, editingDesign.id, {
-                            title: newItemData.title,
-                            description: newItemData.description,
-                            price: newItemData.price,
-                            imageUrl:
-                              newItemData.image || editingDesign.imageUrl,
-                          });
-                          setEditingDesign(null);
+                          if (editingComponent === "designs") {
+                            await updateDesign(user._id, editingItem.id, {
+                              title: newItemData.title,
+                              description: newItemData.description,
+                              price: newItemData.price,
+                              imageUrl:
+                                newItemData.image || editingItem.imageUrl,
+                            });
+                          } else if (editingComponent === "offers") {
+                            await updateOffer(user._id, editingItem.id, {
+                              title: newItemData.title,
+                              description: newItemData.description,
+                              percentage: Number(newItemData.percentage) || 0,
+                              startDate: newItemData.startDate,
+                              endDate: newItemData.endDate,
+                              imageUrl:
+                                newItemData.image || editingItem.imageUrl,
+                            });
+                          }
+                          setEditingItem(null);
                           setEditingComponent(null);
-                          setNewItemData({});
+                          setNewItemData({
+                            title: "",
+                            description: "",
+                            percentage: 0,
+                            startDate: "",
+                            endDate: "",
+                            image: null,
+                          });
                         } catch (error) {
-                          console.error("Error updating design:", error);
-                          setSaveError("Failed to update design");
+                          console.error("Error updating item:", error);
+                          setSaveError("Failed to update item");
                         }
                       }}
                     />
@@ -943,8 +1194,9 @@ const BusinessProfileSetup = () => {
                     Confirm Delete
                   </h3>
                   <p className="text-gray-600 mb-6 text-sm">
-                    Are you sure you want to delete this design? This action
-                    cannot be undone.
+                    Are you sure you want to delete this{" "}
+                    {itemToDelete?.component === "designs" ? "design" : "offer"}
+                    ? This action cannot be undone.
                   </p>
                   <div className="flex justify-end space-x-2">
                     <CustomButton
@@ -965,7 +1217,7 @@ const BusinessProfileSetup = () => {
                       width="w-20"
                       height="h-9"
                       type="submit"
-                      onClick={confirmDeleteDesign}
+                      onClick={confirmDeleteItem}
                     />
                   </div>
                 </div>
@@ -1066,64 +1318,70 @@ const BusinessProfileSetup = () => {
                           </div>
                         ) : component.items.length > 0 ? (
                           <div className="space-y-3">
-                            {component.items.map((item) => (
-                              <div
-                                key={item.id}
-                                className="flex border-b pb-3 last:border-0 last:pb-0"
-                              >
-                                {item.image && (
-                                  <div className="w-16 h-16 rounded overflow-hidden mr-3 flex-shrink-0">
-                                    <img
-                                      src={item.image}
-                                      alt=""
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                )}
-                                <div className="flex-1">
-                                  <div className="flex justify-between items-start">
-                                    <h5 className="font-semibold text-sm text-gray-800">
-                                      {item.title ||
-                                        item.name ||
-                                        item.day ||
-                                        item.category ||
-                                        item.reviewer ||
-                                        item.street ||
-                                        ""}
-                                    </h5>
-                                    {/* Display price for offers, designs, and services */}
-                                    {(component.id === "offers" ||
-                                      component.id === "designs" ||
-                                      component.id === "services") &&
-                                      item.price && (
-                                        <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded-full">
-                                          LKR {item.price}
-                                        </span>
-                                      )}
-                                  </div>
-                                  <p className="text-sm text-gray-600 mt-1">
-                                    {item.description ||
-                                      item.hours ||
-                                      item.comment ||
-                                      ""}
-                                  </p>
-                                  {item.rating && (
-                                    <div className="flex items-center mt-1">
-                                      {Array.from({
-                                        length: parseInt(item.rating),
-                                      }).map((_, i) => (
-                                        <span
-                                          key={i}
-                                          className="text-yellow-400"
-                                        >
-                                          ⭐
-                                        </span>
-                                      ))}
+                            {component.items
+                              .filter(
+                                (item, index, self) =>
+                                  index ===
+                                  self.findIndex((i) => i.id === item.id)
+                              )
+                              .map((item) => (
+                                <div
+                                  key={item.id}
+                                  className="flex border-b pb-3 last:border-0 last:pb-0"
+                                >
+                                  {item.image && (
+                                    <div className="w-16 h-16 rounded overflow-hidden mr-3 flex-shrink-0">
+                                      <img
+                                        src={item.image}
+                                        alt=""
+                                        className="w-full h-full object-cover"
+                                      />
                                     </div>
                                   )}
+                                  <div className="flex-1">
+                                    <div className="flex justify-between items-start">
+                                      <h5 className="font-semibold text-sm text-gray-800">
+                                        {item.title ||
+                                          item.name ||
+                                          item.day ||
+                                          item.category ||
+                                          item.reviewer ||
+                                          item.street ||
+                                          ""}
+                                      </h5>
+                                      {/* Display price for offers, designs, and services */}
+                                      {(component.id === "offers" ||
+                                        component.id === "designs" ||
+                                        component.id === "services") &&
+                                        item.price && (
+                                          <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded-full">
+                                            LKR {item.price}
+                                          </span>
+                                        )}
+                                    </div>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                      {item.description ||
+                                        item.hours ||
+                                        item.comment ||
+                                        ""}
+                                    </p>
+                                    {item.rating && (
+                                      <div className="flex items-center mt-1">
+                                        {Array.from({
+                                          length: parseInt(item.rating),
+                                        }).map((_, i) => (
+                                          <span
+                                            key={i}
+                                            className="text-yellow-400"
+                                          >
+                                            ⭐
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
                           </div>
                         ) : (
                           <p className="text-gray-500 text-xs italic">
