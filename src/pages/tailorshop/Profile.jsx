@@ -16,6 +16,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Loader from "../../components/ui/Loader";
 import { useAuthStore } from "../../store/Auth.store";
 import { useDesignStore } from "../../store/Design.store";
+import { useOfferStore } from "../../store/Offer.store";
 import { useShopStore } from "../../store/Shop.store";
 import { useUserInteractionStore } from "../../store/UserInteraction.store";
 
@@ -43,6 +44,13 @@ const TailorProfilePage = () => {
     isLoading: isLoadingDesigns,
     fetchDesignsById,
   } = useDesignStore();
+
+  // Use the offer store
+  const {
+    offers,
+    isLoading: isLoadingOffers,
+    fetchOffersByTailorId,
+  } = useOfferStore();
 
   const [activeTab, setActiveTab] = useState("designs");
   const [showAllBio, setShowAllBio] = useState(false);
@@ -86,15 +94,22 @@ const TailorProfilePage = () => {
     }
   }, [activeTab, fetchDesignsById, tailorId]);
 
+  // Fetch offers when the offers tab is active
+  useEffect(() => {
+    if (activeTab === "offers" && tailorId && tailorId !== "undefined") {
+      fetchOffersByTailorId(tailorId);
+    }
+  }, [activeTab, fetchOffersByTailorId, tailorId]);
+
   const handleDesignClick = (design) => {
     setSelectedDesign(design);
     setIsModalOpen(true);
-    document.body.style.overflow = "hidden"; // Prevent scrolling when modal is open
+    document.body.style.overflow = "hidden";
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
-    document.body.style.overflow = "auto"; // Re-enable scrolling
+    document.body.style.overflow = "auto";
   };
 
   if (isLoading) {
@@ -150,7 +165,6 @@ const TailorProfilePage = () => {
           await followUser(currentUserId, tailorId);
           toast.success("Now following");
         }
-        // Refresh followers count after follow/unfollow
         getFollowers(tailorId);
       } catch (error) {
         toast.error(error.response?.data?.message || "Action failed");
@@ -283,39 +297,82 @@ const TailorProfilePage = () => {
             case "offers":
               return (
                 <div className="space-y-3">
-                  {tailor.offers && tailor.offers.length > 0 ? (
-                    tailor.offers.map((offer, index) => (
-                      <motion.div
-                        key={offer.id || index}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl shadow-sm border border-primary/10"
-                      >
-                        <div className="flex">
-                          {offer.image && (
-                            <div className="w-16 h-16 rounded-lg overflow-hidden mr-3 flex-shrink-0">
-                              <img
-                                src={offer.image}
-                                alt={offer.title}
-                                className="w-full h-full object-cover"
-                              />
+                  {isLoadingOffers ? (
+                    <div className="py-10 flex justify-center">
+                      <Loader />
+                    </div>
+                  ) : offers && offers.length > 0 ? (
+                    offers.map((offer, index) => {
+                      const isActive = offer.endDate
+                        ? new Date(offer.endDate) > new Date()
+                        : true;
+
+                      return (
+                        <motion.div
+                          key={offer._id || index}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className={`bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl shadow-sm border ${
+                            isActive ? "border-primary/10" : "border-gray-200"
+                          }`}
+                        >
+                          <div className="flex">
+                            {offer.imageUrl && (
+                              <div className="w-16 h-16 rounded-lg overflow-hidden mr-3 flex-shrink-0">
+                                <img
+                                  src={offer.imageUrl}
+                                  alt={offer.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <div className="flex-1">
+                              <div className="flex justify-between items-start">
+                                <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium mb-2 inline-block">
+                                  {isActive ? "Active Offer" : "Expired"}
+                                </span>
+                                {offer.percentage > 0 && (
+                                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-bold">
+                                    {offer.percentage}% OFF
+                                  </span>
+                                )}
+                              </div>
+                              <h3 className="font-medium text-gray-800">
+                                {offer.title}
+                              </h3>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {offer.description}
+                              </p>
+                              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                                {offer.startDate && (
+                                  <div className="flex items-center">
+                                    <FaCalendarAlt className="mr-1 text-primary" />
+                                    <span>
+                                      Starts:{" "}
+                                      {new Date(
+                                        offer.startDate
+                                      ).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                )}
+                                {offer.endDate && (
+                                  <div className="flex items-center">
+                                    <FaCalendarAlt className="mr-1 text-primary" />
+                                    <span>
+                                      Ends:{" "}
+                                      {new Date(
+                                        offer.endDate
+                                      ).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          )}
-                          <div>
-                            <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium mb-2 inline-block">
-                              Special Offer
-                            </span>
-                            <h3 className="font-medium text-gray-800">
-                              {offer.title}
-                            </h3>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {offer.description}
-                            </p>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))
+                        </motion.div>
+                      );
+                    })
                   ) : (
                     <div className="py-10 text-center text-gray-500">
                       <FaTag className="text-3xl mx-auto mb-2 text-gray-300" />

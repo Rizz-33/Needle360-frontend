@@ -8,7 +8,9 @@ export const initialProfileComponents = [
     enabled: false,
     contentFields: [
       { name: "title", label: "Offer Title", type: "text" },
-      { name: "price", label: "Design Price", type: "number" },
+      { name: "percentage", label: "Discount Rate (%)", type: "number" },
+      { name: "startDate", label: "Start Date", type: "date" },
+      { name: "endDate", label: "End Date", type: "date" },
       { name: "description", label: "Offer Description", type: "textarea" },
       { name: "image", label: "Offer Image", type: "image" },
     ],
