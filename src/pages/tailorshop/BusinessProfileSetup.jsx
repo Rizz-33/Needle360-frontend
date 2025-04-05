@@ -11,6 +11,50 @@ import { useDesignStore } from "../../store/Design.store";
 import { useOfferStore } from "../../store/Offer.store";
 import { useShopStore } from "../../store/Shop.store";
 
+// Helper function to format time to AM/PM
+const formatTimeToAMPM = (timeString) => {
+  if (!timeString) return "";
+
+  // Handle both "HH:mm" format and ISO string
+  let timePart = timeString;
+  if (timeString.includes("T")) {
+    timePart = new Date(timeString).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } else {
+    const [hours, minutes] = timeString.split(":");
+    const date = new Date();
+    date.setHours(parseInt(hours, 10));
+    date.setMinutes(parseInt(minutes, 10));
+    timePart = date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  return timePart;
+};
+
+// Helper function to convert AM/PM to 24-hour format for storage
+const convertAMPMto24Hour = (timeString) => {
+  if (!timeString) return "00:00";
+
+  const [time, modifier] = timeString.split(" ");
+  let [hours, minutes] = time.split(":");
+
+  if (hours === "12") {
+    hours = "00";
+  }
+
+  if (modifier === "PM") {
+    hours = parseInt(hours, 10) + 12;
+  }
+
+  // Convert hours to string before using padStart
+  return `${String(hours).padStart(2, "0")}:${minutes}`;
+};
+
 const BusinessProfileSetup = () => {
   const { tailor, fetchTailorById, updateTailor } = useShopStore();
   const { user, isLoading } = useAuthStore();
@@ -51,8 +95,8 @@ const BusinessProfileSetup = () => {
     startDate: "",
     endDate: "",
     day: "",
-    from: "09:00",
-    to: "17:00",
+    from: "09:00 AM",
+    to: "05:00 PM",
     isOpen: true,
     status: "available",
     image: null,
@@ -162,8 +206,8 @@ const BusinessProfileSetup = () => {
         availComp.items = availabilitySlots.map((avail) => ({
           id: avail._id || Date.now(),
           day: avail.day || "",
-          from: avail.from || "09:00",
-          to: avail.to || "17:00",
+          from: formatTimeToAMPM(avail.from) || "09:00 AM",
+          to: formatTimeToAMPM(avail.to) || "05:00 PM",
           isOpen: avail.isOpen !== false,
           status: avail.status || "available",
         }));
@@ -254,12 +298,8 @@ const BusinessProfileSetup = () => {
     } else if (componentId === "availability") {
       setNewItemData({
         day: item.day,
-        from: item.from
-          ? item.from.split("T")[1]?.substring(0, 5) || "09:00"
-          : "09:00",
-        to: item.to
-          ? item.to.split("T")[1]?.substring(0, 5) || "17:00"
-          : "17:00",
+        from: item.from ? formatTimeToAMPM(item.from) : "09:00 AM",
+        to: item.to ? formatTimeToAMPM(item.to) : "05:00 PM",
         isOpen: item.isOpen !== false,
         status: item.status || "available",
       });
@@ -323,8 +363,8 @@ const BusinessProfileSetup = () => {
       startDate: "",
       endDate: "",
       day: "",
-      from: "09:00",
-      to: "17:00",
+      from: "09:00 AM",
+      to: "05:00 PM",
       isOpen: true,
       status: "available",
       image: null,
@@ -419,8 +459,8 @@ const BusinessProfileSetup = () => {
       } else if (editingComponent === "availability") {
         const newSlot = {
           day: newItemData.day,
-          from: newItemData.from,
-          to: newItemData.to,
+          from: convertAMPMto24Hour(newItemData.from),
+          to: convertAMPMto24Hour(newItemData.to),
           isOpen: newItemData.isOpen,
           status: "available",
         };
@@ -438,7 +478,11 @@ const BusinessProfileSetup = () => {
                     {
                       id: createdSlots[0]._id,
                       _id: createdSlots[0]._id,
-                      ...newSlot,
+                      day: newSlot.day,
+                      from: formatTimeToAMPM(newSlot.from),
+                      to: formatTimeToAMPM(newSlot.to),
+                      isOpen: newSlot.isOpen,
+                      status: newSlot.status,
                     },
                   ],
                 }
@@ -465,8 +509,8 @@ const BusinessProfileSetup = () => {
         startDate: "",
         endDate: "",
         day: "",
-        from: "09:00",
-        to: "17:00",
+        from: "09:00 AM",
+        to: "05:00 PM",
         isOpen: true,
         status: "available",
         image: null,
@@ -853,11 +897,13 @@ const BusinessProfileSetup = () => {
                                   <input
                                     type="time"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
-                                    value={newItemData.from || "09:00"}
+                                    value={convertAMPMto24Hour(
+                                      newItemData.from
+                                    )}
                                     onChange={(e) =>
                                       handleNewItemChange(
                                         "from",
-                                        e.target.value
+                                        formatTimeToAMPM(e.target.value)
                                       )
                                     }
                                   />
@@ -869,9 +915,12 @@ const BusinessProfileSetup = () => {
                                   <input
                                     type="time"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
-                                    value={newItemData.to || "17:00"}
+                                    value={convertAMPMto24Hour(newItemData.to)}
                                     onChange={(e) =>
-                                      handleNewItemChange("to", e.target.value)
+                                      handleNewItemChange(
+                                        "to",
+                                        formatTimeToAMPM(e.target.value)
+                                      )
                                     }
                                   />
                                 </div>
@@ -1033,8 +1082,8 @@ const BusinessProfileSetup = () => {
                                   startDate: "",
                                   endDate: "",
                                   day: "",
-                                  from: "09:00",
-                                  to: "17:00",
+                                  from: "09:00 AM",
+                                  to: "05:00 PM",
                                   isOpen: true,
                                   status: "available",
                                   image: null,
@@ -1120,9 +1169,12 @@ const BusinessProfileSetup = () => {
                           <input
                             type="time"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                            value={newItemData.from || "09:00"}
+                            value={convertAMPMto24Hour(newItemData.from)}
                             onChange={(e) =>
-                              handleNewItemChange("from", e.target.value)
+                              handleNewItemChange(
+                                "from",
+                                formatTimeToAMPM(e.target.value)
+                              )
                             }
                           />
                         </div>
@@ -1133,9 +1185,12 @@ const BusinessProfileSetup = () => {
                           <input
                             type="time"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                            value={newItemData.to || "17:00"}
+                            value={convertAMPMto24Hour(newItemData.to)}
                             onChange={(e) =>
-                              handleNewItemChange("to", e.target.value)
+                              handleNewItemChange(
+                                "to",
+                                formatTimeToAMPM(e.target.value)
+                              )
                             }
                           />
                         </div>
@@ -1385,8 +1440,8 @@ const BusinessProfileSetup = () => {
                           startDate: "",
                           endDate: "",
                           day: "",
-                          from: "09:00",
-                          to: "17:00",
+                          from: "09:00 AM",
+                          to: "05:00 PM",
                           isOpen: true,
                           status: "available",
                           image: null,
@@ -1426,8 +1481,8 @@ const BusinessProfileSetup = () => {
                               {
                                 id: editingItem.id,
                                 day: newItemData.day,
-                                from: newItemData.from,
-                                to: newItemData.to,
+                                from: convertAMPMto24Hour(newItemData.from),
+                                to: convertAMPMto24Hour(newItemData.to),
                                 isOpen: newItemData.isOpen,
                                 status: "available",
                               },
@@ -1443,8 +1498,8 @@ const BusinessProfileSetup = () => {
                             startDate: "",
                             endDate: "",
                             day: "",
-                            from: "09:00",
-                            to: "17:00",
+                            from: "09:00 AM",
+                            to: "05:00 PM",
                             isOpen: true,
                             status: "available",
                             image: null,
