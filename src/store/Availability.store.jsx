@@ -9,7 +9,7 @@ const BASE_API_URL = `${
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common["Content-Type"] = "application/json";
 
-export const useAvailabilityStore = create((set, get) => ({
+export const useAvailabilityStore = create((set) => ({
   availabilitySlots: [],
   isLoading: false,
   error: null,
@@ -65,7 +65,7 @@ export const useAvailabilityStore = create((set, get) => ({
       const response = await axios.put(
         `${BASE_API_URL}/tailors/${tailorId}/availability`,
         {
-          updates,
+          updates: Array.isArray(updates) ? updates : [updates],
         }
       );
 
@@ -88,7 +88,7 @@ export const useAvailabilityStore = create((set, get) => ({
       const response = await axios.delete(
         `${BASE_API_URL}/tailors/${tailorId}/availability`,
         {
-          data: { slotIds },
+          data: { slotIds: Array.isArray(slotIds) ? slotIds : [slotIds] },
         }
       );
 
