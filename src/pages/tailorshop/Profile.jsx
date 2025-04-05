@@ -186,7 +186,10 @@ const TailorProfilePage = () => {
   };
 
   const AvailabilityTabContent = () => {
-    const currentDay = new Date().toLocaleString("en-us", { weekday: "long" });
+    // Get the current day name properly
+    const today = new Date();
+    const currentDayName = today.toLocaleString("en-us", { weekday: "long" });
+
     const daysOfWeek = [
       "Monday",
       "Tuesday",
@@ -205,79 +208,114 @@ const TailorProfilePage = () => {
     }, {});
 
     const formatTime = (timeStr) => {
-      const [hours, minutes] = timeStr.split(":");
-      const date = new Date();
-      date.setHours(parseInt(hours), date.setMinutes(parseInt(minutes)));
-      return date.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      });
+      // Handle ISO date strings coming from API
+      if (timeStr && timeStr.includes("1970-01-01T")) {
+        const date = new Date(timeStr);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          });
+        }
+      }
+
+      // Fallback to handle simple HH:MM format if available
+      if (typeof timeStr === "string" && timeStr.includes(":")) {
+        const [hours, minutes] = timeStr.split(":");
+        const date = new Date();
+        date.setHours(parseInt(hours), parseInt(minutes));
+        return date.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        });
+      }
+
+      return "Invalid time";
     };
 
-    return (
-      <div className="space-y-4">
-        {daysOfWeek.map((day) => {
-          const daySlots = groupedSlots?.[day] || [];
-          const isToday = day === currentDay;
+    // Debug log to see what day we're detecting
+    console.log("Current day detected as:", currentDayName);
 
-          return (
-            <motion.div
-              key={day}
-              whileHover={{ scale: 1.01 }}
-              className={`p-3 rounded-lg ${
-                isToday ? "bg-blue-50 border border-blue-200" : "bg-gray-50"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center">
+    return (
+      <div className="space-y-6">
+        {/* Days row */}
+        <div className="flex overflow-x-auto pb-2 justify-center">
+          {daysOfWeek.map((day) => {
+            const daySlots = groupedSlots?.[day] || [];
+            const isToday = day === currentDayName;
+            const hasSlots =
+              daySlots.length > 0 &&
+              daySlots.some((slot) => slot.isOpen !== false);
+
+            return (
+              <div
+                key={day}
+                className={`flex-shrink-0 w-36 mr-8 last:mr-0 rounded-lg p-3 transition-all ${
+                  isToday
+                    ? "bg-blue-50 border-2 border-blue-200"
+                    : hasSlots
+                    ? "bg-gray-50 border border-gray-200"
+                    : "bg-gray-50 border border-gray-200 opacity-70"
+                }`}
+              >
+                {/* Day header */}
+                <div className="flex justify-between items-center mb-2">
                   <span
-                    className={`font-medium text-sm ${
-                      isToday ? "text-blue-600" : "text-gray-700"
+                    className={`font-medium ${
+                      isToday ? "text-blue-700" : "text-gray-700"
                     }`}
                   >
-                    {day}
+                    {day.substring(0, 3)}
                   </span>
                   {isToday && (
-                    <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">
+                    <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">
                       Today
                     </span>
                   )}
                 </div>
-                <div
-                  className={`text-xs px-2 py-1 rounded-full ${
-                    daySlots.length > 0
-                      ? "bg-green-100 text-green-800"
-                      : "bg-gray-200 text-gray-600"
-                  }`}
-                >
-                  {daySlots.length > 0 ? "Available" : "Not available"}
+
+                {/* Availability indicator */}
+                <div className="mb-2">
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      hasSlots
+                        ? "bg-green-100 text-green-800"
+                        : "bg-gray-200 text-gray-600"
+                    }`}
+                  >
+                    {hasSlots ? "Open" : "Closed"}
+                  </span>
+                </div>
+
+                {/* Time slots */}
+                <div className="space-y-1 mt-3">
+                  {hasSlots ? (
+                    daySlots
+                      .filter((slot) => slot.isOpen !== false)
+                      .map((slot, idx) => (
+                        <div
+                          key={idx}
+                          className={`px-2 py-1 rounded-md text-xs ${
+                            slot.status === "available"
+                              ? "bg-green-50 text-green-800 border border-green-100"
+                              : "bg-yellow-50 text-yellow-800 border border-yellow-100"
+                          }`}
+                        >
+                          {formatTime(slot.from)} - {formatTime(slot.to)}
+                        </div>
+                      ))
+                  ) : (
+                    <div className="text-xs text-gray-500 italic">
+                      Not available
+                    </div>
+                  )}
                 </div>
               </div>
-
-              {daySlots.length > 0 ? (
-                <div className="grid grid-cols-2 gap-2">
-                  {daySlots.map((slot, idx) => (
-                    <div
-                      key={idx}
-                      className={`p-2 rounded-md text-center text-xs ${
-                        slot.status === "available"
-                          ? "bg-green-50 text-green-800 border border-green-100"
-                          : "bg-yellow-50 text-yellow-800 border border-yellow-100"
-                      }`}
-                    >
-                      {formatTime(slot.from)} - {formatTime(slot.to)}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-1 text-xs text-gray-500">
-                  Closed
-                </div>
-              )}
-            </motion.div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     );
   };
