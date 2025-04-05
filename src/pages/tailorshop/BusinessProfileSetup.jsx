@@ -6,6 +6,7 @@ import { CustomButton } from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
 import { initialProfileComponents } from "../../configs/Profile.configs";
 import { useAuthStore } from "../../store/Auth.store";
+import { useAvailabilityStore } from "../../store/Availability.store";
 import { useDesignStore } from "../../store/Design.store";
 import { useOfferStore } from "../../store/Offer.store";
 import { useShopStore } from "../../store/Shop.store";
@@ -27,6 +28,13 @@ const BusinessProfileSetup = () => {
     updateOffer,
     deleteOffer,
   } = useOfferStore();
+  const {
+    availabilitySlots,
+    fetchTailorAvailability,
+    createBulkAvailability,
+    updateBulkAvailability,
+    deleteBulkAvailability,
+  } = useAvailabilityStore();
 
   const navigate = useNavigate();
 
@@ -42,6 +50,11 @@ const BusinessProfileSetup = () => {
     percentage: 0,
     startDate: "",
     endDate: "",
+    day: "",
+    from: "09:00",
+    to: "17:00",
+    isOpen: true,
+    status: "available",
     image: null,
   });
   const [editingComponent, setEditingComponent] = useState(null);
@@ -52,13 +65,30 @@ const BusinessProfileSetup = () => {
   const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  const daysOfWeek = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
+
   useEffect(() => {
     if (user && user._id) {
       fetchTailorById(user._id);
       fetchDesignsById(user._id);
       fetchOffersByTailorId(user._id);
+      fetchTailorAvailability(user._id);
     }
-  }, [fetchTailorById, fetchDesignsById, fetchOffersByTailorId, user]);
+  }, [
+    fetchTailorById,
+    fetchDesignsById,
+    fetchOffersByTailorId,
+    fetchTailorAvailability,
+    user,
+  ]);
 
   useEffect(() => {
     if (tailor) {
@@ -68,6 +98,7 @@ const BusinessProfileSetup = () => {
 
       const updatedComponents = [...components];
 
+      // Address component
       if (tailor.shopAddress) {
         const addressComp = updatedComponents.find(
           (comp) => comp.id === "address"
@@ -88,6 +119,7 @@ const BusinessProfileSetup = () => {
         }
       }
 
+      // Offers component
       const offersComp = updatedComponents.find((comp) => comp.id === "offers");
       if (offersComp) {
         offersComp.enabled = offers.length > 0;
@@ -106,6 +138,7 @@ const BusinessProfileSetup = () => {
         }));
       }
 
+      // Designs component
       const designsComp = updatedComponents.find(
         (comp) => comp.id === "designs"
       );
@@ -120,24 +153,23 @@ const BusinessProfileSetup = () => {
         }));
       }
 
-      if (
-        tailor.availability &&
-        Array.isArray(tailor.availability) &&
-        tailor.availability.length > 0
-      ) {
-        const availComp = updatedComponents.find(
-          (comp) => comp.id === "availability"
-        );
-        if (availComp) {
-          availComp.enabled = true;
-          availComp.items = tailor.availability.map((avail) => ({
-            id: avail.id || Date.now(),
-            day: avail.day || "",
-            hours: avail.hours || "",
-          }));
-        }
+      // Availability component
+      const availComp = updatedComponents.find(
+        (comp) => comp.id === "availability"
+      );
+      if (availComp) {
+        availComp.enabled = availabilitySlots.length > 0;
+        availComp.items = availabilitySlots.map((avail) => ({
+          id: avail._id || Date.now(),
+          day: avail.day || "",
+          from: avail.from || "09:00",
+          to: avail.to || "17:00",
+          isOpen: avail.isOpen !== false,
+          status: avail.status || "available",
+        }));
       }
 
+      // Services component
       if (
         tailor.services &&
         Array.isArray(tailor.services) &&
@@ -159,7 +191,7 @@ const BusinessProfileSetup = () => {
 
       setComponents(updatedComponents);
     }
-  }, [tailor, designItems, offers]);
+  }, [tailor, designItems, offers, availabilitySlots]);
 
   const steps = [
     { id: "basics", title: "Basic Info" },
@@ -219,6 +251,18 @@ const BusinessProfileSetup = () => {
         endDate: item.endDate,
         image: item.image,
       });
+    } else if (componentId === "availability") {
+      setNewItemData({
+        day: item.day,
+        from: item.from
+          ? item.from.split("T")[1]?.substring(0, 5) || "09:00"
+          : "09:00",
+        to: item.to
+          ? item.to.split("T")[1]?.substring(0, 5) || "17:00"
+          : "17:00",
+        isOpen: item.isOpen !== false,
+        status: item.status || "available",
+      });
     }
   };
 
@@ -234,6 +278,9 @@ const BusinessProfileSetup = () => {
           await deleteDesign(user._id, itemToDelete.id);
         } else if (itemToDelete.component === "offers") {
           await deleteOffer(user._id, itemToDelete.id);
+        } else if (itemToDelete.component === "availability") {
+          await deleteBulkAvailability(user._id, [itemToDelete.id]);
+          await fetchTailorAvailability(user._id);
         }
         setShowDeleteConfirm(false);
         setItemToDelete(null);
@@ -275,6 +322,11 @@ const BusinessProfileSetup = () => {
       percentage: 0,
       startDate: "",
       endDate: "",
+      day: "",
+      from: "09:00",
+      to: "17:00",
+      isOpen: true,
+      status: "available",
       image: null,
     });
   };
@@ -332,7 +384,6 @@ const BusinessProfileSetup = () => {
 
         const createdOffer = await createOffer(user._id, newOffer);
 
-        // Update the offers component with the newly created offer
         setComponents((prevComponents) =>
           prevComponents.map((comp) =>
             comp.id === "offers"
@@ -341,7 +392,7 @@ const BusinessProfileSetup = () => {
                   items: [
                     ...comp.items.filter(
                       (item) => item.id !== createdOffer._id
-                    ), // Remove duplicate if exists
+                    ),
                     {
                       id: createdOffer._id,
                       _id: createdOffer._id,
@@ -359,6 +410,35 @@ const BusinessProfileSetup = () => {
                             .split("T")[0]
                         : "",
                       image: createdOffer.imageUrl,
+                    },
+                  ],
+                }
+              : comp
+          )
+        );
+      } else if (editingComponent === "availability") {
+        const newSlot = {
+          day: newItemData.day,
+          from: newItemData.from,
+          to: newItemData.to,
+          isOpen: newItemData.isOpen,
+          status: "available",
+        };
+
+        const createdSlots = await createBulkAvailability(user._id, [newSlot]);
+        await fetchTailorAvailability(user._id);
+
+        setComponents((prevComponents) =>
+          prevComponents.map((comp) =>
+            comp.id === "availability"
+              ? {
+                  ...comp,
+                  items: [
+                    ...comp.items,
+                    {
+                      id: createdSlots[0]._id,
+                      _id: createdSlots[0]._id,
+                      ...newSlot,
                     },
                   ],
                 }
@@ -384,6 +464,11 @@ const BusinessProfileSetup = () => {
         percentage: 0,
         startDate: "",
         endDate: "",
+        day: "",
+        from: "09:00",
+        to: "17:00",
+        isOpen: true,
+        status: "available",
         image: null,
       });
       setEditingComponent(null);
@@ -411,18 +496,13 @@ const BusinessProfileSetup = () => {
       };
 
       const enabledComponents = components.filter(
-        (comp) => comp.enabled && !["designs", "offers"].includes(comp.id)
+        (comp) =>
+          comp.enabled &&
+          !["designs", "offers", "availability"].includes(comp.id)
       );
 
       enabledComponents.forEach((component) => {
         switch (component.id) {
-          case "availability":
-            updateData.availability = component.items.map((item) => ({
-              id: item.id,
-              day: item.day,
-              hours: item.hours,
-            }));
-            break;
           case "services":
             updateData.services = component.items.map((item) => ({
               id: item.id,
@@ -673,7 +753,8 @@ const BusinessProfileSetup = () => {
                                   )}
                               </div>
                               {(component.id === "designs" ||
-                                component.id === "offers") && (
+                                component.id === "offers" ||
+                                component.id === "availability") && (
                                 <div className="flex space-x-2">
                                   <button
                                     onClick={() =>
@@ -706,7 +787,8 @@ const BusinessProfileSetup = () => {
                               )}
                               <div className="text-sm text-gray-600">
                                 {item.description ||
-                                  item.hours ||
+                                  (component.id === "availability" &&
+                                    `${item.from} - ${item.to}`) ||
                                   item.comment ||
                                   ""}
                                 {component.id === "offers" && (
@@ -743,127 +825,200 @@ const BusinessProfileSetup = () => {
                             Add New {component.title.slice(0, -1)}
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {component.contentFields.map((field) => (
-                              <div
-                                key={field.name}
-                                className={
-                                  field.type === "textarea"
-                                    ? "md:col-span-2"
-                                    : ""
-                                }
-                              >
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  {field.label}
-                                </label>
-                                {field.type === "text" && (
-                                  <input
-                                    type="text"
+                            {component.id === "availability" ? (
+                              <>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Day
+                                  </label>
+                                  <select
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
-                                    value={newItemData[field.name] || ""}
+                                    value={newItemData.day || ""}
+                                    onChange={(e) =>
+                                      handleNewItemChange("day", e.target.value)
+                                    }
+                                  >
+                                    <option value="">Select day</option>
+                                    {daysOfWeek.map((day) => (
+                                      <option key={day} value={day}>
+                                        {day}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Opening Time
+                                  </label>
+                                  <input
+                                    type="time"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                    value={newItemData.from || "09:00"}
                                     onChange={(e) =>
                                       handleNewItemChange(
-                                        field.name,
+                                        "from",
                                         e.target.value
                                       )
                                     }
                                   />
-                                )}
-                                {field.type === "number" && (
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Closing Time
+                                  </label>
                                   <input
-                                    type="number"
+                                    type="time"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
-                                    value={newItemData[field.name] || ""}
+                                    value={newItemData.to || "17:00"}
                                     onChange={(e) =>
-                                      handleNewItemChange(
-                                        field.name,
-                                        e.target.value
-                                      )
-                                    }
-                                    min={
-                                      field.name === "percentage"
-                                        ? 0
-                                        : undefined
-                                    }
-                                    max={
-                                      field.name === "percentage"
-                                        ? 100
-                                        : undefined
+                                      handleNewItemChange("to", e.target.value)
                                     }
                                   />
-                                )}
-                                {field.type === "textarea" && (
-                                  <textarea
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
-                                    rows="3"
-                                    value={newItemData[field.name] || ""}
-                                    onChange={(e) =>
-                                      handleNewItemChange(
-                                        field.name,
-                                        e.target.value
-                                      )
-                                    }
-                                  ></textarea>
-                                )}
-                                {field.type === "date" && (
+                                </div>
+                                <div className="flex items-center">
                                   <input
-                                    type="date"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
-                                    value={newItemData[field.name] || ""}
+                                    type="checkbox"
+                                    id="isOpen"
+                                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                                    checked={newItemData.isOpen}
                                     onChange={(e) =>
                                       handleNewItemChange(
-                                        field.name,
-                                        e.target.value
+                                        "isOpen",
+                                        e.target.checked
                                       )
                                     }
                                   />
-                                )}
-                                {field.type === "image" && (
-                                  <div>
-                                    <div className="flex items-center">
-                                      <input
-                                        type="file"
-                                        id={`${component.id}-${field.name}`}
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={(e) =>
-                                          handleComponentImageUpload(
-                                            e,
-                                            field.name
-                                          )
-                                        }
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          document
-                                            .getElementById(
-                                              `${component.id}-${field.name}`
+                                  <label
+                                    htmlFor="isOpen"
+                                    className="ml-2 block text-sm text-gray-700"
+                                  >
+                                    Available?
+                                  </label>
+                                </div>
+                              </>
+                            ) : (
+                              component.contentFields.map((field) => (
+                                <div
+                                  key={field.name}
+                                  className={
+                                    field.type === "textarea"
+                                      ? "md:col-span-2"
+                                      : ""
+                                  }
+                                >
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    {field.label}
+                                  </label>
+                                  {field.type === "text" && (
+                                    <input
+                                      type="text"
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                      value={newItemData[field.name] || ""}
+                                      onChange={(e) =>
+                                        handleNewItemChange(
+                                          field.name,
+                                          e.target.value
+                                        )
+                                      }
+                                    />
+                                  )}
+                                  {field.type === "number" && (
+                                    <input
+                                      type="number"
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                      value={newItemData[field.name] || ""}
+                                      onChange={(e) =>
+                                        handleNewItemChange(
+                                          field.name,
+                                          e.target.value
+                                        )
+                                      }
+                                      min={
+                                        field.name === "percentage"
+                                          ? 0
+                                          : undefined
+                                      }
+                                      max={
+                                        field.name === "percentage"
+                                          ? 100
+                                          : undefined
+                                      }
+                                    />
+                                  )}
+                                  {field.type === "textarea" && (
+                                    <textarea
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                      rows="3"
+                                      value={newItemData[field.name] || ""}
+                                      onChange={(e) =>
+                                        handleNewItemChange(
+                                          field.name,
+                                          e.target.value
+                                        )
+                                      }
+                                    ></textarea>
+                                  )}
+                                  {field.type === "date" && (
+                                    <input
+                                      type="date"
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                      value={newItemData[field.name] || ""}
+                                      onChange={(e) =>
+                                        handleNewItemChange(
+                                          field.name,
+                                          e.target.value
+                                        )
+                                      }
+                                    />
+                                  )}
+                                  {field.type === "image" && (
+                                    <div>
+                                      <div className="flex items-center">
+                                        <input
+                                          type="file"
+                                          id={`${component.id}-${field.name}`}
+                                          accept="image/*"
+                                          className="hidden"
+                                          onChange={(e) =>
+                                            handleComponentImageUpload(
+                                              e,
+                                              field.name
                                             )
-                                            .click()
-                                        }
-                                        className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
-                                      >
-                                        Select Image
-                                      </button>
+                                          }
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            document
+                                              .getElementById(
+                                                `${component.id}-${field.name}`
+                                              )
+                                              .click()
+                                          }
+                                          className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
+                                        >
+                                          Select Image
+                                        </button>
+                                        {newItemData[field.name] && (
+                                          <span className="ml-2 text-green-600 text-sm">
+                                            Image selected
+                                          </span>
+                                        )}
+                                      </div>
                                       {newItemData[field.name] && (
-                                        <span className="ml-2 text-green-600 text-sm">
-                                          Image selected
-                                        </span>
+                                        <div className="mt-2 w-16 h-16 rounded overflow-hidden">
+                                          <img
+                                            src={newItemData[field.name]}
+                                            alt=""
+                                            className="w-full h-full object-cover"
+                                          />
+                                        </div>
                                       )}
                                     </div>
-                                    {newItemData[field.name] && (
-                                      <div className="mt-2 w-16 h-16 rounded overflow-hidden">
-                                        <img
-                                          src={newItemData[field.name]}
-                                          alt=""
-                                          className="w-full h-full object-cover"
-                                        />
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
+                                  )}
+                                </div>
+                              ))
+                            )}
                           </div>
                           <div className="flex justify-end mt-4 space-x-2">
                             <button
@@ -877,6 +1032,11 @@ const BusinessProfileSetup = () => {
                                   percentage: 0,
                                   startDate: "",
                                   endDate: "",
+                                  day: "",
+                                  from: "09:00",
+                                  to: "17:00",
+                                  isOpen: true,
+                                  status: "available",
                                   image: null,
                                 });
                               }}
@@ -888,11 +1048,15 @@ const BusinessProfileSetup = () => {
                               className="px-3 py-1 bg-primary text-white rounded-lg hover:bg-blue-700 text-sm"
                               onClick={addNewItem}
                               disabled={
-                                editingComponent === "offers" &&
-                                (!newItemData.title ||
-                                  !newItemData.description ||
-                                  !newItemData.startDate ||
-                                  !newItemData.endDate)
+                                (editingComponent === "offers" &&
+                                  (!newItemData.title ||
+                                    !newItemData.description ||
+                                    !newItemData.startDate ||
+                                    !newItemData.endDate)) ||
+                                (editingComponent === "availability" &&
+                                  (!newItemData.day ||
+                                    !newItemData.from ||
+                                    !newItemData.to))
                               }
                             >
                               Add
@@ -920,201 +1084,287 @@ const BusinessProfileSetup = () => {
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="bg-white rounded-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
                   <h3 className="text-sm text-primary font-semibold mb-4">
-                    Edit {editingComponent === "designs" ? "Design" : "Offer"}
+                    Edit{" "}
+                    {editingComponent === "designs"
+                      ? "Design"
+                      : editingComponent === "offers"
+                      ? "Offer"
+                      : "Availability"}
                   </h3>
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Title
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        value={newItemData.title || ""}
-                        onChange={(e) =>
-                          handleNewItemChange("title", e.target.value)
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        {editingComponent === "designs"
-                          ? "Price"
-                          : "Percentage Off"}
-                      </label>
-                      <input
-                        type={
-                          editingComponent === "designs" ? "text" : "number"
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        value={
-                          editingComponent === "designs"
-                            ? newItemData.price || ""
-                            : newItemData.percentage || ""
-                        }
-                        onChange={(e) =>
-                          handleNewItemChange(
-                            editingComponent === "designs"
-                              ? "price"
-                              : "percentage",
-                            e.target.value
-                          )
-                        }
-                        min={editingComponent === "offers" ? "0" : undefined}
-                        max={editingComponent === "offers" ? "100" : undefined}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Description
-                      </label>
-                      <textarea
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        rows="3"
-                        value={newItemData.description || ""}
-                        onChange={(e) =>
-                          handleNewItemChange("description", e.target.value)
-                        }
-                      />
-                    </div>
-                    {editingComponent === "offers" && (
+                    {editingComponent === "availability" ? (
                       <>
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Start Date
+                            Day
                           </label>
-                          <div className="relative">
-                            <input
-                              type="date"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-sm"
-                              value={newItemData.startDate || ""}
-                              onChange={(e) =>
-                                handleNewItemChange("startDate", e.target.value)
-                              }
-                              style={{
-                                colorScheme: "light",
-                              }}
-                            />
-                          </div>
+                          <select
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            value={newItemData.day || ""}
+                            onChange={(e) =>
+                              handleNewItemChange("day", e.target.value)
+                            }
+                          >
+                            <option value="">Select day</option>
+                            {daysOfWeek.map((day) => (
+                              <option key={day} value={day}>
+                                {day}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
-                            End Date
+                            Opening Time
                           </label>
-                          <div className="relative">
-                            <input
-                              type="date"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-sm"
-                              value={newItemData.endDate || ""}
-                              onChange={(e) =>
-                                handleNewItemChange("endDate", e.target.value)
-                              }
-                              style={{
-                                colorScheme: "light",
-                              }}
-                            />
-                          </div>
+                          <input
+                            type="time"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            value={newItemData.from || "09:00"}
+                            onChange={(e) =>
+                              handleNewItemChange("from", e.target.value)
+                            }
+                          />
                         </div>
-                        <div className="flex flex-wrap gap-2 my-2">
-                          <button
-                            type="button"
-                            className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
-                            onClick={() => {
-                              const today = new Date();
-                              const endDate = new Date();
-                              endDate.setDate(today.getDate() + 7);
-                              handleNewItemChange(
-                                "startDate",
-                                today.toISOString().split("T")[0]
-                              );
-                              handleNewItemChange(
-                                "endDate",
-                                endDate.toISOString().split("T")[0]
-                              );
-                            }}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Closing Time
+                          </label>
+                          <input
+                            type="time"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            value={newItemData.to || "17:00"}
+                            onChange={(e) =>
+                              handleNewItemChange("to", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id="isOpenEdit"
+                            className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                            checked={newItemData.isOpen}
+                            onChange={(e) =>
+                              handleNewItemChange("isOpen", e.target.checked)
+                            }
+                          />
+                          <label
+                            htmlFor="isOpenEdit"
+                            className="ml-2 block text-xs text-gray-700"
                           >
-                            7 Days
-                          </button>
-                          <button
-                            type="button"
-                            className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
-                            onClick={() => {
-                              const today = new Date();
-                              const endDate = new Date();
-                              endDate.setDate(today.getDate() + 30);
+                            Available?
+                          </label>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Title
+                          </label>
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            value={newItemData.title || ""}
+                            onChange={(e) =>
+                              handleNewItemChange("title", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            {editingComponent === "designs"
+                              ? "Price"
+                              : "Percentage Off"}
+                          </label>
+                          <input
+                            type={
+                              editingComponent === "designs" ? "text" : "number"
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            value={
+                              editingComponent === "designs"
+                                ? newItemData.price || ""
+                                : newItemData.percentage || ""
+                            }
+                            onChange={(e) =>
                               handleNewItemChange(
-                                "startDate",
-                                today.toISOString().split("T")[0]
-                              );
-                              handleNewItemChange(
-                                "endDate",
-                                endDate.toISOString().split("T")[0]
-                              );
-                            }}
-                          >
-                            30 Days
-                          </button>
-                          <button
-                            type="button"
-                            className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
-                            onClick={() => {
-                              const today = new Date();
-                              const endDate = new Date();
-                              endDate.setDate(today.getDate() + 90);
-                              handleNewItemChange(
-                                "startDate",
-                                today.toISOString().split("T")[0]
-                              );
-                              handleNewItemChange(
-                                "endDate",
-                                endDate.toISOString().split("T")[0]
-                              );
-                            }}
-                          >
-                            90 Days
-                          </button>
+                                editingComponent === "designs"
+                                  ? "price"
+                                  : "percentage",
+                                e.target.value
+                              )
+                            }
+                            min={
+                              editingComponent === "offers" ? "0" : undefined
+                            }
+                            max={
+                              editingComponent === "offers" ? "100" : undefined
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Description
+                          </label>
+                          <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            rows="3"
+                            value={newItemData.description || ""}
+                            onChange={(e) =>
+                              handleNewItemChange("description", e.target.value)
+                            }
+                          />
+                        </div>
+                        {editingComponent === "offers" && (
+                          <>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Start Date
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type="date"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-sm"
+                                  value={newItemData.startDate || ""}
+                                  onChange={(e) =>
+                                    handleNewItemChange(
+                                      "startDate",
+                                      e.target.value
+                                    )
+                                  }
+                                  style={{
+                                    colorScheme: "light",
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                End Date
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type="date"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-sm"
+                                  value={newItemData.endDate || ""}
+                                  onChange={(e) =>
+                                    handleNewItemChange(
+                                      "endDate",
+                                      e.target.value
+                                    )
+                                  }
+                                  style={{
+                                    colorScheme: "light",
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2 my-2">
+                              <button
+                                type="button"
+                                className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
+                                onClick={() => {
+                                  const today = new Date();
+                                  const endDate = new Date();
+                                  endDate.setDate(today.getDate() + 7);
+                                  handleNewItemChange(
+                                    "startDate",
+                                    today.toISOString().split("T")[0]
+                                  );
+                                  handleNewItemChange(
+                                    "endDate",
+                                    endDate.toISOString().split("T")[0]
+                                  );
+                                }}
+                              >
+                                7 Days
+                              </button>
+                              <button
+                                type="button"
+                                className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
+                                onClick={() => {
+                                  const today = new Date();
+                                  const endDate = new Date();
+                                  endDate.setDate(today.getDate() + 30);
+                                  handleNewItemChange(
+                                    "startDate",
+                                    today.toISOString().split("T")[0]
+                                  );
+                                  handleNewItemChange(
+                                    "endDate",
+                                    endDate.toISOString().split("T")[0]
+                                  );
+                                }}
+                              >
+                                30 Days
+                              </button>
+                              <button
+                                type="button"
+                                className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
+                                onClick={() => {
+                                  const today = new Date();
+                                  const endDate = new Date();
+                                  endDate.setDate(today.getDate() + 90);
+                                  handleNewItemChange(
+                                    "startDate",
+                                    today.toISOString().split("T")[0]
+                                  );
+                                  handleNewItemChange(
+                                    "endDate",
+                                    endDate.toISOString().split("T")[0]
+                                  );
+                                }}
+                              >
+                                90 Days
+                              </button>
+                            </div>
+                          </>
+                        )}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Image
+                          </label>
+                          <div className="flex items-center">
+                            <input
+                              type="file"
+                              id="item-image-edit"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) =>
+                                handleComponentImageUpload(e, "image")
+                              }
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                document
+                                  .getElementById("item-image-edit")
+                                  .click()
+                              }
+                              className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
+                            >
+                              Change Image
+                            </button>
+                            {newItemData.image && (
+                              <span className="ml-2 text-green-600 text-sm">
+                                Image selected
+                              </span>
+                            )}
+                          </div>
+                          {newItemData.image && (
+                            <div className="mt-2 w-full h-48 rounded overflow-hidden">
+                              <img
+                                src={newItemData.image}
+                                alt="Preview"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
                         </div>
                       </>
                     )}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Image
-                      </label>
-                      <div className="flex items-center">
-                        <input
-                          type="file"
-                          id="item-image-edit"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) =>
-                            handleComponentImageUpload(e, "image")
-                          }
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            document.getElementById("item-image-edit").click()
-                          }
-                          className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
-                        >
-                          Change Image
-                        </button>
-                        {newItemData.image && (
-                          <span className="ml-2 text-green-600 text-sm">
-                            Image selected
-                          </span>
-                        )}
-                      </div>
-                      {newItemData.image && (
-                        <div className="mt-2 w-full h-48 rounded overflow-hidden">
-                          <img
-                            src={newItemData.image}
-                            alt="Preview"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-                    </div>
                   </div>
                   <div className="flex justify-end space-x-2 mt-4">
                     <CustomButton
@@ -1134,6 +1384,11 @@ const BusinessProfileSetup = () => {
                           percentage: 0,
                           startDate: "",
                           endDate: "",
+                          day: "",
+                          from: "09:00",
+                          to: "17:00",
+                          isOpen: true,
+                          status: "available",
                           image: null,
                         });
                       }}
@@ -1166,6 +1421,18 @@ const BusinessProfileSetup = () => {
                               imageUrl:
                                 newItemData.image || editingItem.imageUrl,
                             });
+                          } else if (editingComponent === "availability") {
+                            await updateBulkAvailability(user._id, [
+                              {
+                                id: editingItem.id,
+                                day: newItemData.day,
+                                from: newItemData.from,
+                                to: newItemData.to,
+                                isOpen: newItemData.isOpen,
+                                status: "available",
+                              },
+                            ]);
+                            await fetchTailorAvailability(user._id);
                           }
                           setEditingItem(null);
                           setEditingComponent(null);
@@ -1175,6 +1442,11 @@ const BusinessProfileSetup = () => {
                             percentage: 0,
                             startDate: "",
                             endDate: "",
+                            day: "",
+                            from: "09:00",
+                            to: "17:00",
+                            isOpen: true,
+                            status: "available",
                             image: null,
                           });
                         } catch (error) {
@@ -1195,7 +1467,11 @@ const BusinessProfileSetup = () => {
                   </h3>
                   <p className="text-gray-600 mb-6 text-sm">
                     Are you sure you want to delete this{" "}
-                    {itemToDelete?.component === "designs" ? "design" : "offer"}
+                    {itemToDelete?.component === "designs"
+                      ? "design"
+                      : itemToDelete?.component === "offers"
+                      ? "offer"
+                      : "availability slot"}
                     ? This action cannot be undone.
                   </p>
                   <div className="flex justify-end space-x-2">
@@ -1349,7 +1625,6 @@ const BusinessProfileSetup = () => {
                                           item.street ||
                                           ""}
                                       </h5>
-                                      {/* Display price for offers, designs, and services */}
                                       {(component.id === "offers" ||
                                         component.id === "designs" ||
                                         component.id === "services") &&
@@ -1361,7 +1636,8 @@ const BusinessProfileSetup = () => {
                                     </div>
                                     <p className="text-sm text-gray-600 mt-1">
                                       {item.description ||
-                                        item.hours ||
+                                        (component.id === "availability" &&
+                                          `${item.from} - ${item.to}`) ||
                                         item.comment ||
                                         ""}
                                     </p>
