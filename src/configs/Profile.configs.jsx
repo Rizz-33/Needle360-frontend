@@ -35,10 +35,48 @@ export const initialProfileComponents = [
     icon: "📅",
     enabled: false,
     contentFields: [
-      { name: "day", label: "Day", type: "text" },
-      { name: "hours", label: "Hours", type: "text" },
+      {
+        name: "day",
+        label: "Day",
+        type: "select",
+        options: [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday",
+        ],
+      },
+      {
+        name: "from",
+        label: "Opening Time",
+        type: "time",
+        placeholder: "09:00 AM",
+      },
+      {
+        name: "to",
+        label: "Closing Time",
+        type: "time",
+        placeholder: "05:00 PM",
+      },
+      {
+        name: "isOpen",
+        label: "Available?",
+        type: "checkbox",
+        default: true,
+      },
     ],
     items: [],
+    // Additional availability-specific configuration
+    timeFormat: "HH:mm", // 24-hour format for API
+    displayFormat: "h:mm A", // 12-hour format for display
+    timezone: "local", // or specify a timezone
+    validation: {
+      minHours: 1, // minimum hours between from and to
+      maxHours: 24, // maximum hours between from and to
+    },
   },
   {
     id: "address",
