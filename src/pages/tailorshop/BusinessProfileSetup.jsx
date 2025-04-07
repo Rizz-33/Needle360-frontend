@@ -11,50 +11,6 @@ import { useDesignStore } from "../../store/Design.store";
 import { useOfferStore } from "../../store/Offer.store";
 import { useShopStore } from "../../store/Shop.store";
 
-// Helper function to format time to AM/PM
-const formatTimeToAMPM = (timeString) => {
-  if (!timeString) return "";
-
-  // Handle both "HH:mm" format and ISO string
-  let timePart = timeString;
-  if (timeString.includes("T")) {
-    timePart = new Date(timeString).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } else {
-    const [hours, minutes] = timeString.split(":");
-    const date = new Date();
-    date.setHours(parseInt(hours, 10));
-    date.setMinutes(parseInt(minutes, 10));
-    timePart = date.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  return timePart;
-};
-
-// Helper function to convert AM/PM to 24-hour format for storage
-const convertAMPMto24Hour = (timeString) => {
-  if (!timeString) return "00:00";
-
-  const [time, modifier] = timeString.split(" ");
-  let [hours, minutes] = time.split(":");
-
-  if (hours === "12") {
-    hours = "00";
-  }
-
-  if (modifier === "PM") {
-    hours = parseInt(hours, 10) + 12;
-  }
-
-  // Convert hours to string before using padStart
-  return `${String(hours).padStart(2, "0")}:${minutes}`;
-};
-
 const BusinessProfileSetup = () => {
   const { tailor, fetchTailorById, updateTailor } = useShopStore();
   const { user, isLoading } = useAuthStore();
@@ -78,6 +34,7 @@ const BusinessProfileSetup = () => {
     createBulkAvailability,
     updateBulkAvailability,
     deleteBulkAvailability,
+    validateTimeFormat,
   } = useAvailabilityStore();
 
   const navigate = useNavigate();
@@ -95,8 +52,8 @@ const BusinessProfileSetup = () => {
     startDate: "",
     endDate: "",
     day: "",
-    from: "09:00 AM",
-    to: "05:00 PM",
+    from: "09:00",
+    to: "17:00",
     isOpen: true,
     status: "available",
     image: null,
@@ -206,8 +163,8 @@ const BusinessProfileSetup = () => {
         availComp.items = availabilitySlots.map((avail) => ({
           id: avail._id || Date.now(),
           day: avail.day || "",
-          from: formatTimeToAMPM(avail.from) || "09:00 AM",
-          to: formatTimeToAMPM(avail.to) || "05:00 PM",
+          from: avail.from || "09:00",
+          to: avail.to || "17:00",
           isOpen: avail.isOpen !== false,
           status: avail.status || "available",
         }));
@@ -298,8 +255,8 @@ const BusinessProfileSetup = () => {
     } else if (componentId === "availability") {
       setNewItemData({
         day: item.day,
-        from: item.from ? formatTimeToAMPM(item.from) : "09:00 AM",
-        to: item.to ? formatTimeToAMPM(item.to) : "05:00 PM",
+        from: item.from || "09:00",
+        to: item.to || "17:00",
         isOpen: item.isOpen !== false,
         status: item.status || "available",
       });
@@ -363,8 +320,8 @@ const BusinessProfileSetup = () => {
       startDate: "",
       endDate: "",
       day: "",
-      from: "09:00 AM",
-      to: "05:00 PM",
+      from: "09:00",
+      to: "17:00",
       isOpen: true,
       status: "available",
       image: null,
@@ -390,28 +347,9 @@ const BusinessProfileSetup = () => {
           imageURLs: newItemData.image ? [newItemData.image] : [],
         };
 
-        const createdDesign = await createDesign(user._id, newDesign);
-
-        setComponents((prevComponents) =>
-          prevComponents.map((comp) =>
-            comp.id === "designs"
-              ? {
-                  ...comp,
-                  items: [
-                    ...comp.items,
-                    {
-                      id: createdDesign._id,
-                      _id: createdDesign._id,
-                      title: createdDesign.title,
-                      description: createdDesign.description,
-                      price: createdDesign.price,
-                      imageUrl: createdDesign.imageUrl,
-                    },
-                  ],
-                }
-              : comp
-          )
-        );
+        await createDesign(user._id, newDesign);
+        // Fetch updated designs instead of manually updating the state
+        await fetchDesignsById(user._id);
       } else if (editingComponent === "offers") {
         const newOffer = {
           title: newItemData.title || "",
@@ -422,74 +360,41 @@ const BusinessProfileSetup = () => {
           imageUrl: newItemData.image || null,
         };
 
-        const createdOffer = await createOffer(user._id, newOffer);
-
-        setComponents((prevComponents) =>
-          prevComponents.map((comp) =>
-            comp.id === "offers"
-              ? {
-                  ...comp,
-                  items: [
-                    ...comp.items.filter(
-                      (item) => item.id !== createdOffer._id
-                    ),
-                    {
-                      id: createdOffer._id,
-                      _id: createdOffer._id,
-                      title: createdOffer.title,
-                      description: createdOffer.description,
-                      percentage: createdOffer.percentage,
-                      startDate: createdOffer.startDate
-                        ? new Date(createdOffer.startDate)
-                            .toISOString()
-                            .split("T")[0]
-                        : "",
-                      endDate: createdOffer.endDate
-                        ? new Date(createdOffer.endDate)
-                            .toISOString()
-                            .split("T")[0]
-                        : "",
-                      image: createdOffer.imageUrl,
-                    },
-                  ],
-                }
-              : comp
-          )
-        );
+        await createOffer(user._id, newOffer);
+        // Fetch updated offers instead of manually updating the state
+        await fetchOffersByTailorId(user._id);
       } else if (editingComponent === "availability") {
+        // Validate the time slots
+        if (!newItemData.day || !newItemData.from || !newItemData.to) {
+          setSaveError("Day, opening time, and closing time are required");
+          return;
+        }
+
+        if (
+          !validateTimeFormat(newItemData.from) ||
+          !validateTimeFormat(newItemData.to)
+        ) {
+          setSaveError(
+            "Invalid time format. Please use HH:MM (24-hour format)"
+          );
+          return;
+        }
+
         const newSlot = {
           day: newItemData.day,
-          from: convertAMPMto24Hour(newItemData.from),
-          to: convertAMPMto24Hour(newItemData.to),
+          from: newItemData.from,
+          to: newItemData.to,
           isOpen: newItemData.isOpen,
           status: "available",
         };
 
-        const createdSlots = await createBulkAvailability(user._id, [newSlot]);
-        await fetchTailorAvailability(user._id);
+        // Create the new slot
+        await createBulkAvailability(user._id, [newSlot]);
 
-        setComponents((prevComponents) =>
-          prevComponents.map((comp) =>
-            comp.id === "availability"
-              ? {
-                  ...comp,
-                  items: [
-                    ...comp.items,
-                    {
-                      id: createdSlots[0]._id,
-                      _id: createdSlots[0]._id,
-                      day: newSlot.day,
-                      from: formatTimeToAMPM(newSlot.from),
-                      to: formatTimeToAMPM(newSlot.to),
-                      isOpen: newSlot.isOpen,
-                      status: newSlot.status,
-                    },
-                  ],
-                }
-              : comp
-          )
-        );
+        // Refresh the availability slots
+        await fetchTailorAvailability(user._id);
       } else {
+        // For other component types that don't use API calls
         setComponents((prevComponents) =>
           prevComponents.map((comp) =>
             comp.id === editingComponent
@@ -509,8 +414,8 @@ const BusinessProfileSetup = () => {
         startDate: "",
         endDate: "",
         day: "",
-        from: "09:00 AM",
-        to: "05:00 PM",
+        from: "09:00",
+        to: "17:00",
         isOpen: true,
         status: "available",
         image: null,
@@ -892,35 +797,30 @@ const BusinessProfileSetup = () => {
                                 </div>
                                 <div>
                                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Opening Time
+                                    Opening Time (24-hour)
                                   </label>
                                   <input
                                     type="time"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
-                                    value={convertAMPMto24Hour(
-                                      newItemData.from
-                                    )}
+                                    value={newItemData.from}
                                     onChange={(e) =>
                                       handleNewItemChange(
                                         "from",
-                                        formatTimeToAMPM(e.target.value)
+                                        e.target.value
                                       )
                                     }
                                   />
                                 </div>
                                 <div>
                                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Closing Time
+                                    Closing Time (24-hour)
                                   </label>
                                   <input
                                     type="time"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
-                                    value={convertAMPMto24Hour(newItemData.to)}
+                                    value={newItemData.to}
                                     onChange={(e) =>
-                                      handleNewItemChange(
-                                        "to",
-                                        formatTimeToAMPM(e.target.value)
-                                      )
+                                      handleNewItemChange("to", e.target.value)
                                     }
                                   />
                                 </div>
@@ -1082,8 +982,8 @@ const BusinessProfileSetup = () => {
                                   startDate: "",
                                   endDate: "",
                                   day: "",
-                                  from: "09:00 AM",
-                                  to: "05:00 PM",
+                                  from: "09:00",
+                                  to: "17:00",
                                   isOpen: true,
                                   status: "available",
                                   image: null,
@@ -1164,33 +1064,27 @@ const BusinessProfileSetup = () => {
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Opening Time
+                            Opening Time (24-hour)
                           </label>
                           <input
                             type="time"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                            value={convertAMPMto24Hour(newItemData.from)}
+                            value={newItemData.from}
                             onChange={(e) =>
-                              handleNewItemChange(
-                                "from",
-                                formatTimeToAMPM(e.target.value)
-                              )
+                              handleNewItemChange("from", e.target.value)
                             }
                           />
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Closing Time
+                            Closing Time (24-hour)
                           </label>
                           <input
                             type="time"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                            value={convertAMPMto24Hour(newItemData.to)}
+                            value={newItemData.to}
                             onChange={(e) =>
-                              handleNewItemChange(
-                                "to",
-                                formatTimeToAMPM(e.target.value)
-                              )
+                              handleNewItemChange("to", e.target.value)
                             }
                           />
                         </div>
@@ -1440,8 +1334,8 @@ const BusinessProfileSetup = () => {
                           startDate: "",
                           endDate: "",
                           day: "",
-                          from: "09:00 AM",
-                          to: "05:00 PM",
+                          from: "09:00",
+                          to: "17:00",
                           isOpen: true,
                           status: "available",
                           image: null,
@@ -1477,16 +1371,28 @@ const BusinessProfileSetup = () => {
                                 newItemData.image || editingItem.imageUrl,
                             });
                           } else if (editingComponent === "availability") {
+                            if (
+                              !validateTimeFormat(newItemData.from) ||
+                              !validateTimeFormat(newItemData.to)
+                            ) {
+                              setSaveError(
+                                "Invalid time format. Please use HH:MM (24-hour format)"
+                              );
+                              return;
+                            }
+
                             await updateBulkAvailability(user._id, [
                               {
                                 id: editingItem.id,
                                 day: newItemData.day,
-                                from: convertAMPMto24Hour(newItemData.from),
-                                to: convertAMPMto24Hour(newItemData.to),
+                                from: newItemData.from,
+                                to: newItemData.to,
                                 isOpen: newItemData.isOpen,
                                 status: "available",
                               },
                             ]);
+
+                            // Refresh the availability slots after update
                             await fetchTailorAvailability(user._id);
                           }
                           setEditingItem(null);
@@ -1498,8 +1404,8 @@ const BusinessProfileSetup = () => {
                             startDate: "",
                             endDate: "",
                             day: "",
-                            from: "09:00 AM",
-                            to: "05:00 PM",
+                            from: "09:00",
+                            to: "17:00",
                             isOpen: true,
                             status: "available",
                             image: null,
