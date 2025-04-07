@@ -235,9 +235,6 @@ const TailorProfilePage = () => {
       return "Invalid time";
     };
 
-    // Debug log to see what day we're detecting
-    console.log("Current day detected as:", currentDayName);
-
     return (
       <div className="space-y-6">
         {/* Days row */}
@@ -349,25 +346,24 @@ const TailorProfilePage = () => {
     </div>
   );
 
-  const ProfileHighlights = () => (
-    <div className="mb-4 overflow-x-auto">
-      <div className="flex gap-3 py-1">
-        {["Bestsellers", "New Arrivals", "Process", "Customer Fits"].map(
-          (highlight, index) => (
-            <div key={index} className="flex flex-col items-center">
-              <div className="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center bg-white shadow-sm">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden flex items-center justify-center">
-                  {index === 0 && <FaTag className="text-gray-500 text-sm" />}
-                  {index === 1 && (
-                    <FaPalette className="text-gray-500 text-sm" />
-                  )}
-                  {index === 2 && <FaTools className="text-gray-500 text-sm" />}
-                  {index === 3 && <FaStar className="text-gray-500 text-sm" />}
-                </div>
-              </div>
-              <span className="text-xs mt-1 text-gray-600">{highlight}</span>
+  const ServicesSection = () => (
+    <div className="mb-4">
+      <h3 className="text-xs font-medium text-gray-700 mb-2">
+        Services Offered
+      </h3>
+      <div className="flex flex-wrap gap-2">
+        {tailor.services && tailor.services.length > 0 ? (
+          tailor.services.map((service, index) => (
+            <div
+              key={index}
+              className="px-3 py-1.5 bg-blue-50 text-blue-800 rounded-full text-xs font-medium flex items-center gap-1"
+            >
+              <FaTools className="text-xs" />
+              <span>{service.title}</span>
             </div>
-          )
+          ))
+        ) : (
+          <div></div>
         )}
       </div>
     </div>
@@ -378,7 +374,6 @@ const TailorProfilePage = () => {
       <div className="flex">
         {[
           { id: "designs", label: "Designs", icon: <FaPalette size={14} /> },
-          { id: "services", label: "Services", icon: <FaTools size={14} /> },
           { id: "offers", label: "Offers", icon: <FaTag size={14} /> },
           {
             id: "availability",
@@ -453,47 +448,6 @@ const TailorProfilePage = () => {
               className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-xs font-medium hover:bg-primary-dark transition-colors"
             >
               Add Your First Design
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-
-  const ServicesList = () => (
-    <div className="space-y-2">
-      {tailor.services && tailor.services.length > 0 ? (
-        tailor.services.map((service, index) => (
-          <motion.div
-            key={service.id || index}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <div className="flex justify-between">
-              <h3 className="font-medium text-gray-800 text-sm">
-                {service.title}
-              </h3>
-              <span className="font-bold text-primary text-sm">
-                {typeof service.price === "number"
-                  ? `$${service.price}`
-                  : service.price}
-              </span>
-            </div>
-            <p className="text-xs text-gray-600 mt-1">{service.description}</p>
-          </motion.div>
-        ))
-      ) : (
-        <div className="py-10 text-center text-gray-500 text-sm">
-          <FaTools className="text-2xl mx-auto mb-2 text-gray-300" />
-          <p>No services to display</p>
-          {isOwnProfile && (
-            <button
-              onClick={() => navigate("/add-service")}
-              className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-xs font-medium hover:bg-primary-dark transition-colors"
-            >
-              Add Your Services
             </button>
           )}
         </div>
@@ -646,8 +600,6 @@ const TailorProfilePage = () => {
     switch (activeTab) {
       case "designs":
         return <DesignGrid />;
-      case "services":
-        return <ServicesList />;
       case "offers":
         return <OffersList />;
       case "availability":
@@ -758,7 +710,7 @@ const TailorProfilePage = () => {
             )}
           </div>
 
-          <ProfileHighlights />
+          <ServicesSection />
         </div>
 
         <ProfileTabs />
