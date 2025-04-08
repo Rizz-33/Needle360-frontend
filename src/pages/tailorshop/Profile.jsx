@@ -10,7 +10,6 @@ import {
   FaPalette,
   FaStar,
   FaTag,
-  FaTools,
 } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
 import Loader from "../../components/ui/Loader";
@@ -18,6 +17,7 @@ import { useAuthStore } from "../../store/Auth.store";
 import { useAvailabilityStore } from "../../store/Availability.store";
 import { useDesignStore } from "../../store/Design.store";
 import { useOfferStore } from "../../store/Offer.store";
+import { useServiceStore } from "../../store/Service.store";
 import { useShopStore } from "../../store/Shop.store";
 import { useUserInteractionStore } from "../../store/UserInteraction.store";
 
@@ -56,6 +56,17 @@ const TailorProfilePage = () => {
   // Use the availability store
   const { availabilitySlots, fetchTailorAvailability } = useAvailabilityStore();
 
+  // Use the service store
+  const {
+    services,
+    isLoading: isLoadingServices,
+    fetchServices,
+    addServices,
+    updateServices,
+    deleteServices,
+    getLocalServices,
+  } = useServiceStore();
+
   const [activeTab, setActiveTab] = useState("designs");
   const [showAllBio, setShowAllBio] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -78,6 +89,7 @@ const TailorProfilePage = () => {
     if (tailorId && tailorId !== "undefined") {
       fetchTailorById(tailorId);
       fetchTailorAvailability(tailorId);
+      fetchServices(tailorId);
       resetState();
       getFollowers(tailorId);
       getFollowing(tailorId);
@@ -186,7 +198,6 @@ const TailorProfilePage = () => {
   };
 
   const AvailabilityTabContent = () => {
-    // Get the current day name properly
     const today = new Date();
     const currentDayName = today.toLocaleString("en-us", { weekday: "long" });
 
@@ -200,7 +211,6 @@ const TailorProfilePage = () => {
       "Sunday",
     ];
 
-    // Group slots by day
     const groupedSlots = availabilitySlots?.reduce((acc, slot) => {
       if (!acc[slot.day]) acc[slot.day] = [];
       acc[slot.day].push(slot);
@@ -208,7 +218,6 @@ const TailorProfilePage = () => {
     }, {});
 
     const formatTime = (timeStr) => {
-      // Handle ISO date strings coming from API
       if (timeStr && timeStr.includes("1970-01-01T")) {
         const date = new Date(timeStr);
         if (!isNaN(date.getTime())) {
@@ -220,7 +229,6 @@ const TailorProfilePage = () => {
         }
       }
 
-      // Fallback to handle simple HH:MM format if available
       if (typeof timeStr === "string" && timeStr.includes(":")) {
         const [hours, minutes] = timeStr.split(":");
         const date = new Date();
@@ -237,7 +245,6 @@ const TailorProfilePage = () => {
 
     return (
       <div className="space-y-6">
-        {/* Days row */}
         <div className="flex overflow-x-auto pb-2 justify-center">
           {daysOfWeek.map((day) => {
             const daySlots = groupedSlots?.[day] || [];
@@ -257,7 +264,6 @@ const TailorProfilePage = () => {
                     : "bg-gray-50 border border-gray-200 opacity-70"
                 }`}
               >
-                {/* Day header */}
                 <div className="flex justify-between items-center mb-2">
                   <span
                     className={`font-medium ${
@@ -273,7 +279,6 @@ const TailorProfilePage = () => {
                   )}
                 </div>
 
-                {/* Availability indicator */}
                 <div className="mb-2">
                   <span
                     className={`text-xs px-2 py-1 rounded-full ${
@@ -286,7 +291,6 @@ const TailorProfilePage = () => {
                   </span>
                 </div>
 
-                {/* Time slots */}
                 <div className="space-y-1 mt-3">
                   {hasSlots ? (
                     daySlots
@@ -348,18 +352,16 @@ const TailorProfilePage = () => {
 
   const ServicesSection = () => (
     <div className="mb-4">
-      <h3 className="text-xs font-medium text-gray-700 mb-2">
-        Services Offered
-      </h3>
       <div className="flex flex-wrap gap-2">
-        {tailor.services && tailor.services.length > 0 ? (
-          tailor.services.map((service, index) => (
+        {services && services.length > 0 ? (
+          services.map((service, index) => (
             <div
               key={index}
-              className="px-3 py-1.5 bg-blue-50 text-blue-800 rounded-full text-xs font-medium flex items-center gap-1"
+              className="px-3 py-1.5 bg-blue-50 text-primary rounded-full text-xs font-medium flex items-center gap-1"
             >
-              <FaTools className="text-xs" />
-              <span>{service.title}</span>
+              <span>
+                {typeof service === "object" ? service.title : service}
+              </span>
             </div>
           ))
         ) : (
