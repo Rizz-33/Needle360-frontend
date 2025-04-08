@@ -97,11 +97,7 @@ export const initialProfileComponents = [
     title: "Services",
     icon: "🛠️",
     enabled: false,
-    contentFields: [
-      { name: "title", label: "Service Title", type: "text" },
-      { name: "description", label: "Description", type: "textarea" },
-      { name: "price", label: "Price", type: "text" },
-    ],
+    contentFields: [{ name: "title", label: "Service Title", type: "text" }],
     items: [],
   },
   {

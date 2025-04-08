@@ -9,6 +9,7 @@ import { useAuthStore } from "../../store/Auth.store";
 import { useAvailabilityStore } from "../../store/Availability.store";
 import { useDesignStore } from "../../store/Design.store";
 import { useOfferStore } from "../../store/Offer.store";
+import { useServiceStore } from "../../store/Service.store";
 import { useShopStore } from "../../store/Shop.store";
 
 const BusinessProfileSetup = () => {
@@ -36,6 +37,16 @@ const BusinessProfileSetup = () => {
     deleteBulkAvailability,
     validateTimeFormat,
   } = useAvailabilityStore();
+  const {
+    services,
+    isLoading: isServicesLoading,
+    error: servicesError,
+    fetchServices,
+    addServices,
+    updateServices,
+    deleteServices,
+    getLocalServices,
+  } = useServiceStore();
 
   const navigate = useNavigate();
 
@@ -57,6 +68,7 @@ const BusinessProfileSetup = () => {
     isOpen: true,
     status: "available",
     image: null,
+    price: "",
   });
   const [editingComponent, setEditingComponent] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
@@ -82,13 +94,15 @@ const BusinessProfileSetup = () => {
       fetchDesignsById(user._id);
       fetchOffersByTailorId(user._id);
       fetchTailorAvailability(user._id);
+      fetchServices(user._id);
     }
   }, [
+    user,
     fetchTailorById,
     fetchDesignsById,
     fetchOffersByTailorId,
     fetchTailorAvailability,
-    user,
+    fetchServices,
   ]);
 
   useEffect(() => {
@@ -171,28 +185,27 @@ const BusinessProfileSetup = () => {
       }
 
       // Services component
-      if (
-        tailor.services &&
-        Array.isArray(tailor.services) &&
-        tailor.services.length > 0
-      ) {
-        const servicesComp = updatedComponents.find(
-          (comp) => comp.id === "services"
-        );
-        if (servicesComp) {
-          servicesComp.enabled = true;
-          servicesComp.items = tailor.services.map((service) => ({
-            id: service.id || Date.now(),
-            title: service.title || "",
-            description: service.description || "",
-            price: service.price || "",
-          }));
-        }
+      const servicesComp = components.find((comp) => comp.id === "services");
+      if (servicesComp) {
+        servicesComp.enabled = services.length > 0;
+        servicesComp.items = services.map((service, index) => {
+          if (typeof service === "string") {
+            return {
+              id: service, // Use the service string as ID
+              title: service,
+            };
+          } else {
+            return {
+              id: service.id || `service-${index}`,
+              title: service.title || "",
+            };
+          }
+        });
       }
 
       setComponents(updatedComponents);
     }
-  }, [tailor, designItems, offers, availabilitySlots]);
+  }, [tailor, designItems, offers, availabilitySlots, services]);
 
   const steps = [
     { id: "basics", title: "Basic Info" },
@@ -260,6 +273,13 @@ const BusinessProfileSetup = () => {
         isOpen: item.isOpen !== false,
         status: item.status || "available",
       });
+    } else if (componentId === "services") {
+      // Extract the service name whether it's a string or object
+      const serviceName = typeof item === "string" ? item : item.title || "";
+      setNewItemData({
+        title: serviceName,
+        originalTitle: serviceName, // Keep track of original for updates
+      });
     }
   };
 
@@ -278,9 +298,26 @@ const BusinessProfileSetup = () => {
         } else if (itemToDelete.component === "availability") {
           await deleteBulkAvailability(user._id, [itemToDelete.id]);
           await fetchTailorAvailability(user._id);
+        } else if (itemToDelete.component === "services") {
+          // Get the service name to delete
+          const serviceToDelete = services.find(
+            (service) =>
+              (typeof service === "string" && service === itemToDelete.id) ||
+              (typeof service === "object" && service.title === itemToDelete.id)
+          );
+
+          if (serviceToDelete) {
+            const serviceName =
+              typeof serviceToDelete === "string"
+                ? serviceToDelete
+                : serviceToDelete.title;
+
+            await deleteServices(user._id, [serviceName]);
+            await fetchServices(user._id);
+          }
+          setShowDeleteConfirm(false);
+          setItemToDelete(null);
         }
-        setShowDeleteConfirm(false);
-        setItemToDelete(null);
       } catch (error) {
         console.error("Error deleting item:", error);
         setSaveError("Failed to delete item");
@@ -325,6 +362,7 @@ const BusinessProfileSetup = () => {
       isOpen: true,
       status: "available",
       image: null,
+      price: "",
     });
   };
 
@@ -348,7 +386,6 @@ const BusinessProfileSetup = () => {
         };
 
         await createDesign(user._id, newDesign);
-        // Fetch updated designs instead of manually updating the state
         await fetchDesignsById(user._id);
       } else if (editingComponent === "offers") {
         const newOffer = {
@@ -361,10 +398,8 @@ const BusinessProfileSetup = () => {
         };
 
         await createOffer(user._id, newOffer);
-        // Fetch updated offers instead of manually updating the state
         await fetchOffersByTailorId(user._id);
       } else if (editingComponent === "availability") {
-        // Validate the time slots
         if (!newItemData.day || !newItemData.from || !newItemData.to) {
           setSaveError("Day, opening time, and closing time are required");
           return;
@@ -388,13 +423,39 @@ const BusinessProfileSetup = () => {
           status: "available",
         };
 
-        // Create the new slot
         await createBulkAvailability(user._id, [newSlot]);
-
-        // Refresh the availability slots
         await fetchTailorAvailability(user._id);
+      } else if (editingComponent === "services") {
+        if (!newItemData.title.trim()) {
+          setSaveError("Service name cannot be empty");
+          return;
+        }
+
+        try {
+          // Add the new service to the existing services
+          await addServices(user._id, [newItemData.title.trim()]);
+          await fetchServices(user._id);
+
+          setNewItemData({
+            title: "",
+            description: "",
+            percentage: 0,
+            startDate: "",
+            endDate: "",
+            day: "",
+            from: "09:00",
+            to: "17:00",
+            isOpen: true,
+            status: "available",
+            image: null,
+            price: "",
+          });
+          setEditingComponent(null);
+        } catch (error) {
+          console.error("Error adding service:", error);
+          setSaveError("Failed to add service");
+        }
       } else {
-        // For other component types that don't use API calls
         setComponents((prevComponents) =>
           prevComponents.map((comp) =>
             comp.id === editingComponent
@@ -419,6 +480,7 @@ const BusinessProfileSetup = () => {
         isOpen: true,
         status: "available",
         image: null,
+        price: "",
       });
       setEditingComponent(null);
     } catch (error) {
@@ -447,26 +509,14 @@ const BusinessProfileSetup = () => {
       const enabledComponents = components.filter(
         (comp) =>
           comp.enabled &&
-          !["designs", "offers", "availability"].includes(comp.id)
+          !["designs", "offers", "availability", "services"].includes(comp.id)
       );
 
-      enabledComponents.forEach((component) => {
-        switch (component.id) {
-          case "services":
-            updateData.services = component.items.map((item) => ({
-              id: item.id,
-              title: item.title,
-              description: item.description,
-              price: item.price,
-            }));
-            break;
-          case "address":
-            if (component.items.length > 0) {
-              updateData.shopAddress = component.items[0].street;
-            }
-            break;
-        }
-      });
+      // Handle address component
+      const addressComp = components.find((comp) => comp.id === "address");
+      if (addressComp && addressComp.enabled && addressComp.items.length > 0) {
+        updateData.shopAddress = addressComp.items[0].street;
+      }
 
       await updateTailor(user._id, updateData);
       setSaveSuccess(true);
@@ -703,7 +753,8 @@ const BusinessProfileSetup = () => {
                               </div>
                               {(component.id === "designs" ||
                                 component.id === "offers" ||
-                                component.id === "availability") && (
+                                component.id === "availability" ||
+                                component.id === "services") && (
                                 <div className="flex space-x-2">
                                   <button
                                     onClick={() =>
@@ -987,6 +1038,7 @@ const BusinessProfileSetup = () => {
                                   isOpen: true,
                                   status: "available",
                                   image: null,
+                                  price: "",
                                 });
                               }}
                             >
@@ -1005,7 +1057,9 @@ const BusinessProfileSetup = () => {
                                 (editingComponent === "availability" &&
                                   (!newItemData.day ||
                                     !newItemData.from ||
-                                    !newItemData.to))
+                                    !newItemData.to)) ||
+                                (editingComponent === "services" &&
+                                  !newItemData.title)
                               }
                             >
                               Add
@@ -1038,7 +1092,9 @@ const BusinessProfileSetup = () => {
                       ? "Design"
                       : editingComponent === "offers"
                       ? "Offer"
-                      : "Availability"}
+                      : editingComponent === "availability"
+                      ? "Availability"
+                      : "Service"}
                   </h3>
                   <div className="space-y-4">
                     {editingComponent === "availability" ? (
@@ -1121,51 +1177,65 @@ const BusinessProfileSetup = () => {
                             }
                           />
                         </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            {editingComponent === "designs"
-                              ? "Price"
-                              : "Percentage Off"}
-                          </label>
-                          <input
-                            type={
-                              editingComponent === "designs" ? "text" : "number"
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                            value={
-                              editingComponent === "designs"
-                                ? newItemData.price || ""
-                                : newItemData.percentage || ""
-                            }
-                            onChange={(e) =>
-                              handleNewItemChange(
-                                editingComponent === "designs"
-                                  ? "price"
-                                  : "percentage",
-                                e.target.value
-                              )
-                            }
-                            min={
-                              editingComponent === "offers" ? "0" : undefined
-                            }
-                            max={
-                              editingComponent === "offers" ? "100" : undefined
-                            }
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Description
-                          </label>
-                          <textarea
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                            rows="3"
-                            value={newItemData.description || ""}
-                            onChange={(e) =>
-                              handleNewItemChange("description", e.target.value)
-                            }
-                          />
-                        </div>
+                        {editingComponent !== "services" && (
+                          <>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                {editingComponent === "designs"
+                                  ? "Price"
+                                  : "Percentage Off"}
+                              </label>
+                              <input
+                                type={
+                                  editingComponent === "designs" ||
+                                  editingComponent === "services"
+                                    ? "text"
+                                    : "number"
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                value={
+                                  editingComponent === "designs"
+                                    ? newItemData.price || ""
+                                    : newItemData.percentage || ""
+                                }
+                                onChange={(e) =>
+                                  handleNewItemChange(
+                                    editingComponent === "designs"
+                                      ? "price"
+                                      : "percentage",
+                                    e.target.value
+                                  )
+                                }
+                                min={
+                                  editingComponent === "offers"
+                                    ? "0"
+                                    : undefined
+                                }
+                                max={
+                                  editingComponent === "offers"
+                                    ? "100"
+                                    : undefined
+                                }
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Description
+                              </label>
+                              <textarea
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                rows="3"
+                                value={newItemData.description || ""}
+                                onChange={(e) =>
+                                  handleNewItemChange(
+                                    "description",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </div>
+                          </>
+                        )}
                         {editingComponent === "offers" && (
                           <>
                             <div>
@@ -1271,47 +1341,49 @@ const BusinessProfileSetup = () => {
                             </div>
                           </>
                         )}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Image
-                          </label>
-                          <div className="flex items-center">
-                            <input
-                              type="file"
-                              id="item-image-edit"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) =>
-                                handleComponentImageUpload(e, "image")
-                              }
-                            />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                document
-                                  .getElementById("item-image-edit")
-                                  .click()
-                              }
-                              className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
-                            >
-                              Change Image
-                            </button>
+                        {editingComponent !== "services" && (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Image
+                            </label>
+                            <div className="flex items-center">
+                              <input
+                                type="file"
+                                id="item-image-edit"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) =>
+                                  handleComponentImageUpload(e, "image")
+                                }
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  document
+                                    .getElementById("item-image-edit")
+                                    .click()
+                                }
+                                className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
+                              >
+                                Change Image
+                              </button>
+                              {newItemData.image && (
+                                <span className="ml-2 text-green-600 text-sm">
+                                  Image selected
+                                </span>
+                              )}
+                            </div>
                             {newItemData.image && (
-                              <span className="ml-2 text-green-600 text-sm">
-                                Image selected
-                              </span>
+                              <div className="mt-2 w-full h-48 rounded overflow-hidden">
+                                <img
+                                  src={newItemData.image}
+                                  alt="Preview"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
                             )}
                           </div>
-                          {newItemData.image && (
-                            <div className="mt-2 w-full h-48 rounded overflow-hidden">
-                              <img
-                                src={newItemData.image}
-                                alt="Preview"
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          )}
-                        </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -1339,6 +1411,7 @@ const BusinessProfileSetup = () => {
                           isOpen: true,
                           status: "available",
                           image: null,
+                          price: "",
                         });
                       }}
                     />
@@ -1392,24 +1465,41 @@ const BusinessProfileSetup = () => {
                               },
                             ]);
 
-                            // Refresh the availability slots after update
                             await fetchTailorAvailability(user._id);
+                          } else if (editingComponent === "services") {
+                            // Create a new array with the updated services
+                            const updatedServices = services.map((service) => {
+                              if (
+                                (typeof service === "string" &&
+                                  service === editingItem.title) ||
+                                (typeof service === "object" &&
+                                  service.title === editingItem.title)
+                              ) {
+                                return newItemData.title.trim();
+                              }
+                              return service;
+                            });
+
+                            await updateServices(user._id, updatedServices);
+                            await fetchServices(user._id);
+
+                            setEditingItem(null);
+                            setEditingComponent(null);
+                            setNewItemData({
+                              title: "",
+                              description: "",
+                              percentage: 0,
+                              startDate: "",
+                              endDate: "",
+                              day: "",
+                              from: "09:00",
+                              to: "17:00",
+                              isOpen: true,
+                              status: "available",
+                              image: null,
+                              price: "",
+                            });
                           }
-                          setEditingItem(null);
-                          setEditingComponent(null);
-                          setNewItemData({
-                            title: "",
-                            description: "",
-                            percentage: 0,
-                            startDate: "",
-                            endDate: "",
-                            day: "",
-                            from: "09:00",
-                            to: "17:00",
-                            isOpen: true,
-                            status: "available",
-                            image: null,
-                          });
                         } catch (error) {
                           console.error("Error updating item:", error);
                           setSaveError("Failed to update item");
@@ -1432,7 +1522,9 @@ const BusinessProfileSetup = () => {
                       ? "design"
                       : itemToDelete?.component === "offers"
                       ? "offer"
-                      : "availability slot"}
+                      : itemToDelete?.component === "availability"
+                      ? "availability slot"
+                      : "service"}
                     ? This action cannot be undone.
                   </p>
                   <div className="flex justify-end space-x-2">
