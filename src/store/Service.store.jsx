@@ -46,8 +46,12 @@ export const useServiceStore = create((set, get) => ({
 
     set({ isLoading: true, error: null });
     try {
+      const formattedServices = services.map((item) =>
+        typeof item === "string" ? item : item.title || item
+      );
+
       const response = await axios.post(`${BASE_API_URL}/${tailorId}`, {
-        services,
+        services: formattedServices,
       });
 
       set({
@@ -74,8 +78,12 @@ export const useServiceStore = create((set, get) => ({
 
     set({ isLoading: true, error: null });
     try {
+      const formattedServices = services.map((item) =>
+        typeof item === "string" ? item : item.title || item
+      );
+
       const response = await axios.put(`${BASE_API_URL}/${tailorId}`, {
-        services,
+        services: formattedServices,
       });
 
       set({
@@ -91,8 +99,8 @@ export const useServiceStore = create((set, get) => ({
     }
   },
 
-  // Delete all services for a tailor
-  deleteServices: async (tailorId) => {
+  // Delete specific services from a tailor's service list
+  deleteServices: async (tailorId, servicesToDelete) => {
     if (!tailorId) {
       return set({
         error: "Tailor ID is required",
@@ -100,10 +108,31 @@ export const useServiceStore = create((set, get) => ({
       });
     }
 
+    const serviceArray = Array.isArray(servicesToDelete)
+      ? servicesToDelete
+      : [servicesToDelete];
+
+    if (serviceArray.length === 0) {
+      return set({
+        error: "At least one service to delete is required",
+        isLoading: false,
+      });
+    }
+
     set({ isLoading: true, error: null });
     try {
-      await axios.delete(`${BASE_API_URL}/${tailorId}`);
-      set({ services: [], isLoading: false });
+      const formattedServices = serviceArray.map((item) =>
+        typeof item === "string" ? item : item.title || item
+      );
+
+      const response = await axios.delete(`${BASE_API_URL}/${tailorId}`, {
+        data: { services: formattedServices },
+      });
+
+      set({
+        services: response.data.services,
+        isLoading: false,
+      });
     } catch (error) {
       set({
         error: error.response?.data?.message || "Error deleting services",
