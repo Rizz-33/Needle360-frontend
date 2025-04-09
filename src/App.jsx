@@ -12,7 +12,7 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import Login from "./pages/auth/Login";
 import ResetPassword from "./pages/auth/ResetPassword";
 import Signup from "./pages/auth/Signup";
-import UserProfilePage from "./pages/customers/Profile";
+import CustomerProfilePage from "./pages/customers/Profile";
 import Design from "./pages/Design";
 import Home from "./pages/Home";
 import OurServices from "./pages/Service";
@@ -205,7 +205,7 @@ function App() {
           path="/user/:id"
           element={
             <ProtectedRoute>
-              <UserProfilePage />
+              <CustomerProfilePage />
             </ProtectedRoute>
           }
         />

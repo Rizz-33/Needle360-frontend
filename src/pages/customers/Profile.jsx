@@ -6,15 +6,15 @@ import { FaChevronLeft, FaPalette, FaStar } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
 import Loader from "../../components/ui/Loader";
 import { useAuthStore } from "../../store/Auth.store";
+import { useCustomerStore } from "../../store/Customer.store";
 import { useDesignStore } from "../../store/Design.store";
-import { useUserStore } from "../../store/User.store";
 import { useUserInteractionStore } from "../../store/UserInteraction.store";
 
-const UserProfilePage = () => {
+const CustomerProfilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, fetchUserById, isLoading } = useUserStore();
-  const { currentUser } = useAuthStore();
+  const { customer, fetchCustomerById, isLoading } = useCustomerStore();
+  const { user: currentUser } = useAuthStore();
   const {
     followers,
     following,
@@ -40,10 +40,16 @@ const UserProfilePage = () => {
   const [selectedDesign, setSelectedDesign] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const isOwnProfile =
-    !id || (currentUser && (currentUser._id === id || currentUser.id === id));
+  // Fix for isOwnProfile - Normalize IDs for comparison
   const currentUserId = currentUser?._id || currentUser?.id;
-  const profileUserId = id || currentUserId;
+  const profileUserId = id;
+
+  // Improved logic for determining if viewing own profile
+  const isOwnProfile =
+    !id ||
+    (currentUserId &&
+      profileUserId &&
+      String(currentUserId) === String(profileUserId));
 
   useEffect(() => {
     if (!id && !currentUserId) {
@@ -53,8 +59,17 @@ const UserProfilePage = () => {
   }, [id, navigate, currentUserId]);
 
   useEffect(() => {
+    // Debug logging for ID comparison
+    console.log("Current user ID (normalized):", currentUserId);
+    console.log("Profile ID from URL:", profileUserId);
+    console.log("Type of currentUserId:", typeof currentUserId);
+    console.log("Type of profileUserId:", typeof profileUserId);
+    console.log("isOwnProfile calculated as:", isOwnProfile);
+  }, [currentUser, id, isOwnProfile, currentUserId, profileUserId]);
+
+  useEffect(() => {
     if (profileUserId && profileUserId !== "undefined") {
-      fetchUserById(profileUserId);
+      fetchCustomerById(profileUserId);
       resetState();
       getFollowers(profileUserId);
       getFollowing(profileUserId);
@@ -67,7 +82,16 @@ const UserProfilePage = () => {
     return () => {
       resetState();
     };
-  }, [fetchUserById, profileUserId, currentUserId, isOwnProfile]);
+  }, [
+    fetchCustomerById,
+    profileUserId,
+    currentUserId,
+    isOwnProfile,
+    resetState,
+    getFollowers,
+    getFollowing,
+    checkIfFollowing,
+  ]);
 
   // Fetch designs when the designs tab is active
   useEffect(() => {
@@ -128,7 +152,7 @@ const UserProfilePage = () => {
     );
   }
 
-  if (!user) {
+  if (!customer) {
     return (
       <div className="min-h-screen w-full bg-white flex items-center justify-center">
         <div className="text-center text-gray-600">
@@ -266,9 +290,9 @@ const UserProfilePage = () => {
   };
 
   const truncatedBio =
-    user.bio && user.bio.length > 100 && !showAllBio
-      ? user.bio.substring(0, 100) + "..."
-      : user.bio;
+    customer.bio && customer.bio.length > 100 && !showAllBio
+      ? customer.bio.substring(0, 100) + "..."
+      : customer.bio;
 
   return (
     <div className="flex flex-col h-screen w-full bg-white">
@@ -292,15 +316,15 @@ const UserProfilePage = () => {
           {/* Profile image */}
           <div className="relative -mt-12 mb-3 flex justify-between">
             <div className="w-20 h-20 rounded-full border-4 border-white overflow-hidden bg-white shadow-lg">
-              {user.profilePicture ? (
+              {customer.profilePicture ? (
                 <img
-                  src={user.profilePicture}
-                  alt={user.name}
+                  src={customer.profilePicture}
+                  alt={customer.name}
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-primary to-blue-400 flex items-center justify-center text-white text-lg font-bold">
-                  {user.name?.charAt(0)}
+                  {customer.name?.charAt(0)}
                 </div>
               )}
             </div>
@@ -339,15 +363,15 @@ const UserProfilePage = () => {
 
           {/* Profile info */}
           <div className="mb-4 -mt-10">
-            <h1 className="text-xl font-bold text-gray-900">{user.name}</h1>
+            <h1 className="text-xl font-bold text-gray-900">{customer.name}</h1>
 
             <ProfileStats />
 
             {/* Bio */}
-            {user.bio && (
+            {customer.bio && (
               <div className="mt-2">
                 <p className="text-xs text-gray-700">{truncatedBio}</p>
-                {user.bio.length > 100 && (
+                {customer.bio.length > 100 && (
                   <button
                     onClick={toggleBio}
                     className="text-primary text-xs font-medium mt-1 hover:underline"
@@ -359,9 +383,9 @@ const UserProfilePage = () => {
             )}
 
             {/* Address */}
-            {user.address && (
+            {customer.address && (
               <div className="mt-2 text-xs text-gray-600">
-                <span>{user.address}</span>
+                <span>{customer.address}</span>
               </div>
             )}
           </div>
@@ -415,20 +439,20 @@ const UserProfilePage = () => {
               <div className="relative p-3 border-b">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100">
-                    {user.profilePicture ? (
+                    {customer.profilePicture ? (
                       <img
-                        src={user.profilePicture}
-                        alt={user.name}
+                        src={customer.profilePicture}
+                        alt={customer.name}
                         className="w-full h-full object-cover"
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-primary to-blue-400 flex items-center justify-center text-white text-xs font-bold">
-                        {user.name?.charAt(0)}
+                        {customer.name?.charAt(0)}
                       </div>
                     )}
                   </div>
                   <div>
-                    <h3 className="font-medium text-xs">{user.name}</h3>
+                    <h3 className="font-medium text-xs">{customer.name}</h3>
                     <p className="text-2xs text-gray-500">
                       {selectedDesign.category || "Design"}
                     </p>
@@ -591,4 +615,4 @@ const UserProfilePage = () => {
   );
 };
 
-export default UserProfilePage;
+export default CustomerProfilePage;
