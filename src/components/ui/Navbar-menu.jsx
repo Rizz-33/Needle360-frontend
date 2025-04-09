@@ -55,12 +55,21 @@ const ProfileMenu = () => {
           transition={transition}
           className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-md z-50"
         >
-          <a
-            href={`/tailor/${user?._id}`}
-            className="block px-4 py-2 text-sm hover:bg-gray-100"
-          >
-            Account
-          </a>
+          {user?.role === 4 ? (
+            <a
+              href={`/tailor/${user?._id}`}
+              className="block px-4 py-2 text-sm hover:bg-gray-100"
+            >
+              Account
+            </a>
+          ) : (
+            <a
+              href={`/user/${user?._id}`}
+              className="block px-4 py-2 text-sm hover:bg-gray-100"
+            >
+              Account
+            </a>
+          )}
           <button
             onClick={handleConfirmLogout}
             className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"

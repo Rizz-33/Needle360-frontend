@@ -338,7 +338,7 @@ const BusinessProfileSetup = () => {
       setCurrentStep(currentStep + 1);
     } else {
       handleSaveProfile();
-      navigate("/tailor/" + user._id);
+      navigate("/" + user._id);
     }
   };
 
