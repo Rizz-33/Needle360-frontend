@@ -14,10 +14,10 @@ import ResetPassword from "./pages/auth/ResetPassword";
 import Signup from "./pages/auth/Signup";
 import Design from "./pages/Design";
 import Home from "./pages/Home";
-import TailorProfilePage from "./pages/Profile";
 import OurServices from "./pages/Service";
 import BusinessProfileSetup from "./pages/tailorshop/BusinessProfileSetup";
 import PendingApproval from "./pages/tailorshop/PendingApproval";
+import TailorProfilePage from "./pages/tailorshop/Profile";
 import { useAuthStore } from "./store/Auth.store";
 
 // Component to protect routes that require authentication
