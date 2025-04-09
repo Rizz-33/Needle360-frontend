@@ -12,14 +12,14 @@ import {
   FaTag,
 } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
-import Loader from "../../components/ui/Loader";
-import { useAuthStore } from "../../store/Auth.store";
-import { useAvailabilityStore } from "../../store/Availability.store";
-import { useDesignStore } from "../../store/Design.store";
-import { useOfferStore } from "../../store/Offer.store";
-import { useServiceStore } from "../../store/Service.store";
-import { useShopStore } from "../../store/Shop.store";
-import { useUserInteractionStore } from "../../store/UserInteraction.store";
+import { useAuthStore } from "../store/Auth.store";
+import { useAvailabilityStore } from "../store/Availability.store";
+import { useDesignStore } from "../store/Design.store";
+import { useOfferStore } from "../store/Offer.store";
+import { useServiceStore } from "../store/Service.store";
+import { useShopStore } from "../store/Shop.store";
+import { useUserInteractionStore } from "../store/UserInteraction.store";
+import Loader from "../components/ui/Loader";
 
 const TailorProfilePage = () => {
   const { id } = useParams();
