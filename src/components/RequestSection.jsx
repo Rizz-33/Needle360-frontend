@@ -1,10 +1,12 @@
 import { ChevronRight } from "lucide-react";
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/Auth.store";
 import { CustomButton } from "./ui/Button";
 
 const RequestSection = () => {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
 
   // Check if the user is a tailor
   const isTailor = user?.role === 4;
@@ -22,14 +24,14 @@ const RequestSection = () => {
           dashboard. Let us know if you need any assistance with your shop.
         </p>
         <CustomButton
-          text="View Dashboard"
+          text="Start Your Journey"
           color="primary"
           hover_color="hoverAccent"
           variant="filled"
           width="w-36"
           height="h-9"
           type="button"
-          onClick={() => console.log("View Dashboard Clicked")}
+          onClick={() => navigate("/profile-setup")}
           iconRight={<ChevronRight />}
         />
         <div className="mb-12" />
