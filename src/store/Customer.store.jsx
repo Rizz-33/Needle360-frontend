@@ -40,6 +40,7 @@ export const useCustomerStore = create((set, get) => ({
           address: customer.address,
           followers: customer.followers,
           following: customer.following,
+          profilePic: customer.profilePic,
         }))
         .filter((customer) => customer.email); // Filtering out any null or undefined emails
 

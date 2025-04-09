@@ -316,9 +316,9 @@ const CustomerProfilePage = () => {
           {/* Profile image */}
           <div className="relative -mt-12 mb-3 flex justify-between">
             <div className="w-20 h-20 rounded-full border-4 border-white overflow-hidden bg-white shadow-lg">
-              {customer.profilePicture ? (
+              {customer.profilePic ? (
                 <img
-                  src={customer.profilePicture}
+                  src={customer.profilePic}
                   alt={customer.name}
                   className="w-full h-full object-cover"
                 />
@@ -439,9 +439,9 @@ const CustomerProfilePage = () => {
               <div className="relative p-3 border-b">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100">
-                    {customer.profilePicture ? (
+                    {customer.profilePic ? (
                       <img
-                        src={customer.profilePicture}
+                        src={customer.profilePic}
                         alt={customer.name}
                         className="w-full h-full object-cover"
                       />
