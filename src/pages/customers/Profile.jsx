@@ -133,7 +133,7 @@ const CustomerProfilePage = () => {
   };
 
   const handleEditProfile = () => {
-    navigate("/profile-setup");
+    navigate("/edit-profile");
   };
 
   const toggleBio = () => {
