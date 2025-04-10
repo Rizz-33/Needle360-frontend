@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Edit2, MessageCircleMore, X } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import {
   FaCalendarAlt,
@@ -39,11 +39,11 @@ const TailorProfilePage = () => {
     resetState,
   } = useUserInteractionStore();
 
-  // Use the design store
+  // Use the design store with just tailor designs
   const {
-    designs,
+    tailorDesigns: designs,
     isLoading: isLoadingDesigns,
-    fetchDesignsById,
+    fetchTailorDesignsById,
   } = useDesignStore();
 
   // Use the offer store
@@ -61,18 +61,12 @@ const TailorProfilePage = () => {
     services,
     isLoading: isLoadingServices,
     fetchServices,
-    addServices,
-    updateServices,
-    deleteServices,
-    getLocalServices,
   } = useServiceStore();
 
   const [activeTab, setActiveTab] = useState("designs");
   const [showAllBio, setShowAllBio] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [selectedDesign, setSelectedDesign] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const menuRef = useRef(null);
 
   const isOwnProfile = !id || (user && (user._id === id || user.id === id));
   const currentUserId = user?._id || user?.id;
@@ -107,9 +101,9 @@ const TailorProfilePage = () => {
   // Fetch designs when the designs tab is active
   useEffect(() => {
     if (activeTab === "designs" && tailorId && tailorId !== "undefined") {
-      fetchDesignsById(tailorId);
+      fetchTailorDesignsById(tailorId);
     }
-  }, [activeTab, fetchDesignsById, tailorId]);
+  }, [activeTab, fetchTailorDesignsById, tailorId]);
 
   // Fetch offers when the offers tab is active
   useEffect(() => {
@@ -410,7 +404,7 @@ const TailorProfilePage = () => {
       ) : designs && designs.length > 0 ? (
         designs.map((design, index) => (
           <motion.div
-            key={design.id || index}
+            key={design._id || index}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
@@ -420,7 +414,7 @@ const TailorProfilePage = () => {
             {design.imageUrl ? (
               <img
                 src={design.imageUrl}
-                alt={design.title || design.itemName}
+                alt={design.title || "Tailor Design"}
                 className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
               />
             ) : (
@@ -430,7 +424,7 @@ const TailorProfilePage = () => {
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-2">
               <div className="text-white font-medium text-xs">
-                <div>{design.title || design.itemName}</div>
+                <div>{design.title || "Untitled Design"}</div>
                 {design.price && (
                   <div className="mt-1 font-bold text-sm">
                     LKR {design.price}
