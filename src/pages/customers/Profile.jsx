@@ -364,23 +364,11 @@ const CustomerProfilePage = () => {
           {/* Profile info */}
           <div className="mb-4 -mt-10">
             <h1 className="text-xl font-bold text-gray-900">{customer.name}</h1>
+            {customer.bio && (
+              <p className="text-xs text-gray-500 mt-0.5">{customer.bio}</p>
+            )}
 
             <ProfileStats />
-
-            {/* Bio */}
-            {customer.bio && (
-              <div className="mt-2">
-                <p className="text-xs text-gray-700">{truncatedBio}</p>
-                {customer.bio.length > 100 && (
-                  <button
-                    onClick={toggleBio}
-                    className="text-primary text-xs font-medium mt-1 hover:underline"
-                  >
-                    {showAllBio ? "Show less" : "Show more"}
-                  </button>
-                )}
-              </div>
-            )}
 
             {/* Address */}
             {customer.address && (
