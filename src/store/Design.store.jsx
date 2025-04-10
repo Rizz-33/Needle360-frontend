@@ -11,199 +11,287 @@ axios.defaults.headers.common["Content-Type"] = "application/json";
 
 export const useDesignStore = create((set, get) => ({
   designs: [],
+  tailorDesigns: [],
+  customerDesigns: [],
   isLoading: false,
   error: null,
 
-  // Fetch all designs
+  // Helper function to transform design data
+  transformDesignData: (design) => ({
+    _id: design._id,
+    id: design._id, // For backward compatibility
+    title: design.title || design.itemName || "",
+    description: design.description || "",
+    price: design.price,
+    imageUrl: design.imageUrl || null,
+    tailorId: design.tailorId,
+    customerId: design.customerId,
+    userType: design.tailorId ? "tailor" : "customer",
+    createdAt: design.createdAt,
+    updatedAt: design.updatedAt,
+  }),
+
+  // Fetch all designs (both tailor and customer)
   fetchAllDesigns: async () => {
     set({ isLoading: true, error: null });
     try {
       const response = await axios.get(BASE_API_URL);
-
-      // Transform the response data to match frontend expectations
-      const transformedDesigns = response.data.map((design) => ({
-        _id: design._id,
-        id: design._id, // For backward compatibility
-        title: design.title || design.itemName || "",
-        description: design.description || "",
-        price: design.price,
-        imageUrl: design.imageUrl || null,
-        tailorId: design.tailorId,
-        createdAt: design.createdAt,
-        updatedAt: design.updatedAt,
-      }));
-
+      const transformedDesigns = response.data.map(get().transformDesignData);
       set({ designs: transformedDesigns, isLoading: false });
     } catch (error) {
       set({
         error: error.response?.data?.message || "Error fetching designs",
+        isLoading: false,
+      });
+    }
+  },
+
+  // Fetch all tailor designs
+  fetchAllTailorDesigns: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.get(`${BASE_API_URL}/tailors`);
+      const transformedDesigns = response.data.map(get().transformDesignData);
+      set({ tailorDesigns: transformedDesigns, isLoading: false });
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Error fetching tailor designs",
+        isLoading: false,
+      });
+    }
+  },
+
+  // Fetch all customer designs
+  fetchAllCustomerDesigns: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.get(`${BASE_API_URL}/customers`);
+      const transformedDesigns = response.data.map(get().transformDesignData);
+      set({ customerDesigns: transformedDesigns, isLoading: false });
+    } catch (error) {
+      set({
+        error:
+          error.response?.data?.message || "Error fetching customer designs",
         isLoading: false,
       });
     }
   },
 
   // Fetch designs by tailor ID
-  fetchDesignsById: async (tailorId) => {
-    if (!tailorId) {
-      return get().fetchAllDesigns();
-    }
+  fetchTailorDesignsById: async (tailorId) => {
+    if (!tailorId) return;
 
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(`${BASE_API_URL}/${tailorId}`);
-
-      // Transform the response data to match frontend expectations
-      const transformedDesigns = response.data.map((design) => ({
-        _id: design._id,
-        id: design._id, // For backward compatibility
-        title: design.title || design.itemName || "",
-        description: design.description || "",
-        price: design.price,
-        imageUrl: design.imageUrl || null,
-        tailorId: design.tailorId,
-        createdAt: design.createdAt,
-        updatedAt: design.updatedAt,
-      }));
-
-      set({ designs: transformedDesigns, isLoading: false });
+      const response = await axios.get(`${BASE_API_URL}/tailors/${tailorId}`);
+      const transformedDesigns = response.data.map(get().transformDesignData);
+      set({ tailorDesigns: transformedDesigns, isLoading: false });
     } catch (error) {
       set({
-        error: error.response?.data?.message || "Error fetching designs",
+        error: error.response?.data?.message || "Error fetching tailor designs",
+        isLoading: false,
+      });
+    }
+  },
+
+  // Fetch designs by customer ID
+  fetchCustomerDesignsById: async (customerId) => {
+    if (!customerId) return;
+
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.get(
+        `${BASE_API_URL}/customers/${customerId}`
+      );
+      const transformedDesigns = response.data.map(get().transformDesignData);
+      set({ customerDesigns: transformedDesigns, isLoading: false });
+    } catch (error) {
+      set({
+        error:
+          error.response?.data?.message || "Error fetching customer designs",
         isLoading: false,
       });
     }
   },
 
   // Create a new design for a tailor
-  createDesign: async (tailorId, designData) => {
+  createTailorDesign: async (tailorId, designData) => {
     set({ isLoading: true, error: null });
     try {
-      // Prepare the design data based on what the backend expects
-      const designPayload = {
-        ...designData,
-      };
-
-      // Handle the different naming conventions between frontend and backend
-      if (designData.image) {
-        designPayload.imageURLs = [designData.image];
-        delete designPayload.image;
-      }
-
-      // Make sure title and description exist if needed
-      if (!designPayload.itemName && !designPayload.title) {
-        designPayload.title = designData.title || "";
-        designPayload.description = designData.description || "";
-      }
-
-      const response = await axios.post(`${BASE_API_URL}/${tailorId}`, {
-        design: designPayload,
+      const response = await axios.post(`${BASE_API_URL}/tailors/${tailorId}`, {
+        design: {
+          ...designData,
+        },
       });
 
-      const newDesign = response.data.design;
-
-      // Transform the response to match frontend expectations
-      const transformedDesign = {
-        _id: newDesign._id,
-        id: newDesign._id,
-        title: newDesign.title || newDesign.itemName || "",
-        description: newDesign.description || "",
-        price: newDesign.price,
-        imageUrl: newDesign.imageUrl || null,
-        tailorId: newDesign.tailorId,
-        createdAt: newDesign.createdAt,
-        updatedAt: newDesign.updatedAt,
-      };
+      const newDesign = get().transformDesignData(response.data.design);
 
       set((state) => ({
-        designs: [...state.designs, transformedDesign],
+        designs: [...state.designs, newDesign],
+        tailorDesigns: [...state.tailorDesigns, newDesign],
         isLoading: false,
       }));
 
-      return transformedDesign;
+      return newDesign;
     } catch (error) {
       set({
-        error: error.response?.data?.message || "Error creating design",
+        error: error.response?.data?.message || "Error creating tailor design",
         isLoading: false,
       });
       throw error;
     }
   },
 
-  // Update an existing design
-  updateDesign: async (tailorId, designId, designData) => {
+  // Create a new design for a customer
+  createCustomerDesign: async (customerId, designData) => {
     set({ isLoading: true, error: null });
     try {
-      // Prepare the design data based on what the backend expects
-      const designPayload = {
-        ...designData,
-      };
-
-      // Handle the different naming conventions between frontend and backend
-      if (designData.image) {
-        designPayload.imageURLs = [designData.image];
-        delete designPayload.image;
-      }
-
-      // Make sure title and description exist if needed
-      if (!designPayload.itemName && !designPayload.title) {
-        designPayload.title = designData.title || "";
-        designPayload.description = designData.description || "";
-      }
-
-      const response = await axios.put(
-        `${BASE_API_URL}/${tailorId}/designs/${designId}`,
+      const response = await axios.post(
+        `${BASE_API_URL}/customers/${customerId}`,
         {
-          design: designPayload,
+          design: {
+            ...designData,
+            imageURLs: designData.image ? [designData.image] : [],
+          },
         }
       );
 
-      const updatedDesign = response.data.design;
-
-      // Transform the response to match frontend expectations
-      const transformedDesign = {
-        _id: updatedDesign._id,
-        id: updatedDesign._id,
-        title: updatedDesign.title || updatedDesign.itemName || "",
-        description: updatedDesign.description || "",
-        price: updatedDesign.price,
-        imageUrl: updatedDesign.imageUrl || null,
-        tailorId: updatedDesign.tailorId,
-        createdAt: updatedDesign.createdAt,
-        updatedAt: updatedDesign.updatedAt,
-      };
+      const newDesign = get().transformDesignData(response.data.design);
 
       set((state) => ({
-        designs: state.designs.map((design) =>
-          design._id === designId ? transformedDesign : design
+        designs: [...state.designs, newDesign],
+        customerDesigns: [...state.customerDesigns, newDesign],
+        isLoading: false,
+      }));
+
+      return newDesign;
+    } catch (error) {
+      set({
+        error:
+          error.response?.data?.message || "Error creating customer design",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  // Update a tailor design
+  updateTailorDesign: async (tailorId, designId, designData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.put(
+        `${BASE_API_URL}/tailors/${tailorId}/designs/${designId}`,
+        {
+          design: {
+            ...designData,
+          },
+        }
+      );
+
+      const updatedDesign = get().transformDesignData(response.data.design);
+
+      set((state) => ({
+        designs: state.designs.map((d) =>
+          d._id === designId ? updatedDesign : d
+        ),
+        tailorDesigns: state.tailorDesigns.map((d) =>
+          d._id === designId ? updatedDesign : d
         ),
         isLoading: false,
       }));
 
-      return transformedDesign;
+      return updatedDesign;
     } catch (error) {
       set({
-        error: error.response?.data?.message || "Error updating design",
+        error: error.response?.data?.message || "Error updating tailor design",
         isLoading: false,
       });
       throw error;
     }
   },
 
-  // Delete a design
-  deleteDesign: async (tailorId, designId) => {
+  // Update a customer design
+  updateCustomerDesign: async (customerId, designId, designData) => {
     set({ isLoading: true, error: null });
     try {
-      await axios.delete(`${BASE_API_URL}/${tailorId}/designs/${designId}`);
+      const response = await axios.put(
+        `${BASE_API_URL}/customers/${customerId}/designs/${designId}`,
+        {
+          design: {
+            ...designData,
+            imageURLs: designData.image ? [designData.image] : [],
+          },
+        }
+      );
+
+      const updatedDesign = get().transformDesignData(response.data.design);
 
       set((state) => ({
-        designs: state.designs.filter((design) => design._id !== designId),
+        designs: state.designs.map((d) =>
+          d._id === designId ? updatedDesign : d
+        ),
+        customerDesigns: state.customerDesigns.map((d) =>
+          d._id === designId ? updatedDesign : d
+        ),
+        isLoading: false,
+      }));
+
+      return updatedDesign;
+    } catch (error) {
+      set({
+        error:
+          error.response?.data?.message || "Error updating customer design",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  // Delete a tailor design
+  deleteTailorDesign: async (tailorId, designId) => {
+    set({ isLoading: true, error: null });
+    try {
+      await axios.delete(
+        `${BASE_API_URL}/tailors/${tailorId}/designs/${designId}`
+      );
+
+      set((state) => ({
+        designs: state.designs.filter((d) => d._id !== designId),
+        tailorDesigns: state.tailorDesigns.filter((d) => d._id !== designId),
         isLoading: false,
       }));
 
       return true;
     } catch (error) {
       set({
-        error: error.response?.data?.message || "Error deleting design",
+        error: error.response?.data?.message || "Error deleting tailor design",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  // Delete a customer design
+  deleteCustomerDesign: async (customerId, designId) => {
+    set({ isLoading: true, error: null });
+    try {
+      await axios.delete(
+        `${BASE_API_URL}/customers/${customerId}/designs/${designId}`
+      );
+
+      set((state) => ({
+        designs: state.designs.filter((d) => d._id !== designId),
+        customerDesigns: state.customerDesigns.filter(
+          (d) => d._id !== designId
+        ),
+        isLoading: false,
+      }));
+
+      return true;
+    } catch (error) {
+      set({
+        error:
+          error.response?.data?.message || "Error deleting customer design",
         isLoading: false,
       });
       throw error;
