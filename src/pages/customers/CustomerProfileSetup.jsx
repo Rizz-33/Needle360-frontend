@@ -7,10 +7,18 @@ import Loader from "../../components/ui/Loader";
 import { initialCustomerProfileComponents } from "../../configs/Profile.configs";
 import { useAuthStore } from "../../store/Auth.store";
 import { useCustomerStore } from "../../store/Customer.store";
+import { useDesignStore } from "../../store/Design.store";
 
 const CustomerProfileSetup = () => {
   const { customer, fetchCustomerById, updateCustomer } = useCustomerStore();
   const { user, isLoading } = useAuthStore();
+  const {
+    customerDesigns,
+    fetchCustomerDesignsById,
+    createCustomerDesign,
+    updateCustomerDesign,
+    deleteCustomerDesign,
+  } = useDesignStore();
   const navigate = useNavigate();
 
   const [showWelcome, setShowWelcome] = useState(true);
@@ -37,8 +45,9 @@ const CustomerProfileSetup = () => {
   useEffect(() => {
     if (user && user._id) {
       fetchCustomerById(user._id);
+      fetchCustomerDesignsById(user._id);
     }
-  }, [user, fetchCustomerById]);
+  }, [user, fetchCustomerById, fetchCustomerDesignsById]);
 
   useEffect(() => {
     if (customer) {
@@ -54,7 +63,7 @@ const CustomerProfileSetup = () => {
       );
       if (designsComp) {
         designsComp.enabled = true;
-        designsComp.items = customer.savedDesigns || [];
+        designsComp.items = customerDesigns || [];
       }
 
       // Reviews component
@@ -68,7 +77,7 @@ const CustomerProfileSetup = () => {
 
       setComponents(updatedComponents);
     }
-  }, [customer]);
+  }, [customer, customerDesigns]);
 
   const steps = [
     { id: "basics", title: "Basic Info" },
@@ -114,7 +123,7 @@ const CustomerProfileSetup = () => {
     setNewItemData({
       title: item.title || "",
       description: item.description || "",
-      image: item.image || null,
+      image: item.image || item.imageUrl || null,
     });
   };
 
@@ -126,21 +135,18 @@ const CustomerProfileSetup = () => {
   const confirmDeleteItem = async () => {
     if (itemToDelete && user?._id) {
       try {
-        // For customer profile, we'll handle deletions in the update
-        const updatedData = {};
-
         if (itemToDelete.component === "designs") {
-          updatedData.savedDesigns = components
-            .find((c) => c.id === "designs")
-            .items.filter((item) => item.id !== itemToDelete.id);
+          await deleteCustomerDesign(user._id, itemToDelete.id);
+          await fetchCustomerDesignsById(user._id);
         } else if (itemToDelete.component === "reviews") {
-          updatedData.reviews = components
-            .find((c) => c.id === "reviews")
-            .items.filter((item) => item.id !== itemToDelete.id);
+          const updatedData = {
+            reviews: components
+              .find((c) => c.id === "reviews")
+              .items.filter((item) => item.id !== itemToDelete.id),
+          };
+          await updateCustomer(user._id, updatedData);
+          await fetchCustomerById(user._id);
         }
-
-        await updateCustomer(user._id, updatedData);
-        await fetchCustomerById(user._id);
 
         setShowDeleteConfirm(false);
         setItemToDelete(null);
@@ -194,22 +200,29 @@ const CustomerProfileSetup = () => {
     if (!editingComponent || !user?._id) return;
 
     try {
-      const updatedData = {};
-      const newItem = {
-        id: Date.now().toString(),
-        title: newItemData.title,
-        description: newItemData.description,
-        image: newItemData.image,
-      };
-
       if (editingComponent === "designs") {
-        updatedData.savedDesigns = [...(customer?.savedDesigns || []), newItem];
+        const designData = {
+          title: newItemData.title,
+          description: newItemData.description,
+          image: newItemData.image,
+        };
+        await createCustomerDesign(user._id, designData);
+        await fetchCustomerDesignsById(user._id);
       } else if (editingComponent === "reviews") {
-        updatedData.reviews = [...(customer?.reviews || []), newItem];
+        const updatedData = {
+          reviews: [
+            ...(customer?.reviews || []),
+            {
+              id: Date.now().toString(),
+              title: newItemData.title,
+              description: newItemData.description,
+              image: newItemData.image,
+            },
+          ],
+        };
+        await updateCustomer(user._id, updatedData);
+        await fetchCustomerById(user._id);
       }
-
-      await updateCustomer(user._id, updatedData);
-      await fetchCustomerById(user._id);
 
       setNewItemData({
         title: "",
@@ -448,7 +461,7 @@ const CustomerProfileSetup = () => {
                       <div className="space-y-3 mb-4">
                         {component.items.map((item, index) => (
                           <div
-                            key={item.id}
+                            key={item.id || item._id}
                             className="bg-gray-50 p-3 rounded-lg"
                           >
                             <div className="flex justify-between items-center">
@@ -468,7 +481,10 @@ const CustomerProfileSetup = () => {
                                 </button>
                                 <button
                                   onClick={() =>
-                                    handleDeleteItem(item.id, component.id)
+                                    handleDeleteItem(
+                                      item.id || item._id,
+                                      component.id
+                                    )
                                   }
                                   className="text-xs text-red-600 hover:text-red-800"
                                 >
@@ -477,10 +493,10 @@ const CustomerProfileSetup = () => {
                               </div>
                             </div>
                             <div className="flex mt-2">
-                              {item.image && (
+                              {(item.image || item.imageUrl) && (
                                 <div className="w-16 h-16 rounded overflow-hidden mr-3">
                                   <img
-                                    src={item.image}
+                                    src={item.image || item.imageUrl}
                                     alt={item.title || "Item"}
                                     className="w-full h-full object-cover"
                                   />
@@ -740,30 +756,36 @@ const CustomerProfileSetup = () => {
                       type="submit"
                       onClick={async () => {
                         try {
-                          const updatedData = {};
-                          const updatedItem = {
-                            id: editingItem.id,
-                            title: newItemData.title,
-                            description: newItemData.description,
-                            image: newItemData.image || editingItem.image,
-                          };
-
                           if (editingComponent === "designs") {
-                            updatedData.savedDesigns = components
-                              .find((c) => c.id === "designs")
-                              .items.map((item) =>
-                                item.id === editingItem.id ? updatedItem : item
-                              );
+                            const designData = {
+                              title: newItemData.title,
+                              description: newItemData.description,
+                              image: newItemData.image,
+                            };
+                            await updateCustomerDesign(
+                              user._id,
+                              editingItem.id || editingItem._id,
+                              designData
+                            );
+                            await fetchCustomerDesignsById(user._id);
                           } else if (editingComponent === "reviews") {
-                            updatedData.reviews = components
-                              .find((c) => c.id === "reviews")
-                              .items.map((item) =>
-                                item.id === editingItem.id ? updatedItem : item
-                              );
+                            const updatedData = {
+                              reviews: components
+                                .find((c) => c.id === "reviews")
+                                .items.map((item) =>
+                                  item.id === editingItem.id
+                                    ? {
+                                        ...item,
+                                        title: newItemData.title,
+                                        description: newItemData.description,
+                                        image: newItemData.image,
+                                      }
+                                    : item
+                                ),
+                            };
+                            await updateCustomer(user._id, updatedData);
+                            await fetchCustomerById(user._id);
                           }
-
-                          await updateCustomer(user._id, updatedData);
-                          await fetchCustomerById(user._id);
 
                           setEditingItem(null);
                           setEditingComponent(null);
@@ -917,13 +939,13 @@ const CustomerProfileSetup = () => {
                           <div className="space-y-3">
                             {component.items.map((item) => (
                               <div
-                                key={item.id}
+                                key={item.id || item._id}
                                 className="flex border-b pb-3 last:border-0 last:pb-0"
                               >
-                                {item.image && (
+                                {(item.image || item.imageUrl) && (
                                   <div className="w-16 h-16 rounded overflow-hidden mr-3 flex-shrink-0">
                                     <img
-                                      src={item.image}
+                                      src={item.image || item.imageUrl}
                                       alt=""
                                       className="w-full h-full object-cover"
                                     />

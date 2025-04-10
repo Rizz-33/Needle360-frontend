@@ -119,7 +119,6 @@ export const initialCustomerProfileComponents = [
     enabled: false,
     contentFields: [
       { name: "title", label: "Design Title", type: "text" },
-      { name: "price", label: "Design Price", type: "number" },
       { name: "description", label: "Design Description", type: "textarea" },
       { name: "image", label: "Design Image", type: "image" },
     ],

@@ -16,11 +16,11 @@ const BusinessProfileSetup = () => {
   const { tailor, fetchTailorById, updateTailor } = useShopStore();
   const { user, isLoading } = useAuthStore();
   const {
-    designs: designItems,
-    fetchDesignsById,
-    createDesign,
-    updateDesign,
-    deleteDesign,
+    tailorDesigns: designItems,
+    fetchTailorDesignsById,
+    createTailorDesign,
+    updateTailorDesign,
+    deleteTailorDesign,
   } = useDesignStore();
   const {
     offers,
@@ -91,7 +91,7 @@ const BusinessProfileSetup = () => {
   useEffect(() => {
     if (user && user._id) {
       fetchTailorById(user._id);
-      fetchDesignsById(user._id);
+      fetchTailorDesignsById(user._id);
       fetchOffersByTailorId(user._id);
       fetchTailorAvailability(user._id);
       fetchServices(user._id);
@@ -99,7 +99,7 @@ const BusinessProfileSetup = () => {
   }, [
     user,
     fetchTailorById,
-    fetchDesignsById,
+    fetchTailorDesignsById,
     fetchOffersByTailorId,
     fetchTailorAvailability,
     fetchServices,
@@ -292,7 +292,7 @@ const BusinessProfileSetup = () => {
     if (itemToDelete && user?._id) {
       try {
         if (itemToDelete.component === "designs") {
-          await deleteDesign(user._id, itemToDelete.id);
+          await deleteTailorDesign(user._id, itemToDelete.id);
         } else if (itemToDelete.component === "offers") {
           await deleteOffer(user._id, itemToDelete.id);
         } else if (itemToDelete.component === "availability") {
@@ -338,7 +338,7 @@ const BusinessProfileSetup = () => {
       setCurrentStep(currentStep + 1);
     } else {
       handleSaveProfile();
-      navigate("/" + user._id);
+      navigate("/tailor/" + user._id);
     }
   };
 
@@ -385,8 +385,8 @@ const BusinessProfileSetup = () => {
           imageURLs: newItemData.image ? [newItemData.image] : [],
         };
 
-        await createDesign(user._id, newDesign);
-        await fetchDesignsById(user._id);
+        await createTailorDesign(user._id, newDesign);
+        await fetchTailorDesignsById(user._id);
       } else if (editingComponent === "offers") {
         const newOffer = {
           title: newItemData.title || "",
@@ -1426,7 +1426,7 @@ const BusinessProfileSetup = () => {
                       onClick={async () => {
                         try {
                           if (editingComponent === "designs") {
-                            await updateDesign(user._id, editingItem.id, {
+                            await updateTailorDesign(user._id, editingItem.id, {
                               title: newItemData.title,
                               description: newItemData.description,
                               price: newItemData.price,
