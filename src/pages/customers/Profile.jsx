@@ -30,9 +30,9 @@ const CustomerProfilePage = () => {
 
   // Use the design store
   const {
-    designs,
+    customerDesigns: designs,
     isLoading: isLoadingDesigns,
-    fetchDesignsById,
+    fetchCustomerDesignsById,
   } = useDesignStore();
 
   const [activeTab, setActiveTab] = useState("designs");
@@ -100,9 +100,9 @@ const CustomerProfilePage = () => {
       profileUserId &&
       profileUserId !== "undefined"
     ) {
-      fetchDesignsById(profileUserId);
+      fetchCustomerDesignsById(profileUserId);
     }
-  }, [activeTab, fetchDesignsById, profileUserId]);
+  }, [activeTab, fetchCustomerDesignsById, profileUserId]);
 
   const handleDesignClick = (design) => {
     setSelectedDesign(design);
