@@ -364,18 +364,19 @@ const CustomerProfilePage = () => {
           {/* Profile info */}
           <div className="mb-4 -mt-10">
             <h1 className="text-xl font-bold text-gray-900">{customer.name}</h1>
-            {customer.bio && (
-              <p className="text-xs text-gray-500 mt-0.5">{customer.bio}</p>
-            )}
 
             <ProfileStats />
 
+            {customer.bio && (
+              <p className="text-xs text-gray-500 mt-2">{customer.bio}</p>
+            )}
+
             {/* Address */}
-            {customer.address && (
+            {/* {customer.address && (
               <div className="mt-2 text-xs text-gray-600">
                 <span>{customer.address}</span>
               </div>
-            )}
+            )} */}
           </div>
         </div>
 
