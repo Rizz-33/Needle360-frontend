@@ -12,6 +12,8 @@ import {
   FaTag,
 } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
+import ChatPopup from "../../components/chat/ChatPopUp";
+import MessageButton from "../../components/chat/MessageButton";
 import Loader from "../../components/ui/Loader";
 import { useAuthStore } from "../../store/Auth.store";
 import { useAvailabilityStore } from "../../store/Availability.store";
@@ -68,9 +70,9 @@ const TailorProfilePage = () => {
   const [selectedDesign, setSelectedDesign] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const isOwnProfile = !id || (user && (user._id === id || user.id === id));
   const currentUserId = user?._id || user?.id;
   const tailorId = id || currentUserId;
+  const isOwnProfile = !id || (user && (user._id === id || user.id === id));
 
   useEffect(() => {
     if (!id) {
@@ -718,19 +720,7 @@ const TailorProfilePage = () => {
       {/* Fixed message button - only show when viewing someone else's profile */}
       {!isOwnProfile && (
         <div className="fixed bottom-4 right-4 z-20">
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-          >
-            <motion.button
-              className="p-3 bg-primary text-white rounded-full shadow-lg hover:shadow-xl transition-shadow"
-              whileHover={{ boxShadow: "0 8px 15px rgba(0, 0, 0, 0.2)" }}
-              onClick={() => navigate(`/chat/${tailorId}`)}
-            >
-              <MessageCircleMore size={20} />
-            </motion.button>
-          </motion.div>
+          <MessageButton userId={tailorId} />
         </div>
       )}
 
@@ -927,6 +917,8 @@ const TailorProfilePage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ChatPopup />
     </div>
   );
 };
