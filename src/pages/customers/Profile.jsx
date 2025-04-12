@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { FaChevronLeft, FaPalette, FaStar } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
+import ChatPopup from "../../components/chat/ChatPopUp";
+import MessageButton from "../../components/chat/MessageButton";
 import Loader from "../../components/ui/Loader";
 import { useAuthStore } from "../../store/Auth.store";
 import { useCustomerStore } from "../../store/Customer.store";
@@ -389,19 +391,7 @@ const CustomerProfilePage = () => {
       {/* Fixed message button - only show when viewing someone else's profile */}
       {!isOwnProfile && (
         <div className="fixed bottom-4 right-4 z-20">
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-          >
-            <motion.button
-              className="p-3 bg-primary text-white rounded-full shadow-lg hover:shadow-xl transition-shadow"
-              whileHover={{ boxShadow: "0 8px 15px rgba(0, 0, 0, 0.2)" }}
-              onClick={() => navigate(`/chat/${profileUserId}`)}
-            >
-              <MessageCircleMore size={20} />
-            </motion.button>
-          </motion.div>
+          <MessageButton userId={profileUserId} />
         </div>
       )}
 
@@ -600,6 +590,8 @@ const CustomerProfilePage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ChatPopup />
     </div>
   );
 };
