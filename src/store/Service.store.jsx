@@ -11,8 +11,30 @@ axios.defaults.headers.common["Content-Type"] = "application/json";
 
 export const useServiceStore = create((set, get) => ({
   services: [],
+  allServices: [],
+  tailors: [],
   isLoading: false,
   error: null,
+
+  // Fetch all services from all tailors
+  fetchAllServices: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.get(`${BASE_API_URL}`);
+      set({
+        allServices: response.data.services || [],
+        tailors: response.data.tailors || [],
+        isLoading: false,
+      });
+      return response.data;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Error fetching all services",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
 
   // Fetch all services for a specific tailor
   fetchServices: async (tailorId) => {
@@ -27,11 +49,13 @@ export const useServiceStore = create((set, get) => ({
     try {
       const response = await axios.get(`${BASE_API_URL}/${tailorId}`);
       set({ services: response.data.services || [], isLoading: false });
+      return response.data;
     } catch (error) {
       set({
         error: error.response?.data?.message || "Error fetching services",
         isLoading: false,
       });
+      throw error;
     }
   },
 
@@ -58,6 +82,11 @@ export const useServiceStore = create((set, get) => ({
         services: response.data.services,
         isLoading: false,
       });
+
+      // Refresh all services after adding new ones
+      get().fetchAllServices();
+
+      return response.data;
     } catch (error) {
       set({
         error: error.response?.data?.message || "Error adding services",
@@ -90,6 +119,11 @@ export const useServiceStore = create((set, get) => ({
         services: response.data.services,
         isLoading: false,
       });
+
+      // Refresh all services after updating
+      get().fetchAllServices();
+
+      return response.data;
     } catch (error) {
       set({
         error: error.response?.data?.message || "Error updating services",
@@ -133,6 +167,11 @@ export const useServiceStore = create((set, get) => ({
         services: response.data.services,
         isLoading: false,
       });
+
+      // Refresh all services after deleting
+      get().fetchAllServices();
+
+      return response.data;
     } catch (error) {
       set({
         error: error.response?.data?.message || "Error deleting services",
@@ -145,5 +184,15 @@ export const useServiceStore = create((set, get) => ({
   // Get services without API call (from local state)
   getLocalServices: () => {
     return get().services;
+  },
+
+  // Get all services without API call (from local state)
+  getAllLocalServices: () => {
+    return get().allServices;
+  },
+
+  // Get tailors without API call (from local state)
+  getLocalTailors: () => {
+    return get().tailors;
   },
 }));
