@@ -17,7 +17,7 @@ const Categories = () => {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto py-8 overflow-x-auto scrollbar-hide">
+    <div className="w-full max-w-7xl mx-auto pt-8 overflow-x-auto scrollbar-hide">
       <div className="flex space-x-8 p-4 min-w-max">
         {categories.map((category) => (
           <div
