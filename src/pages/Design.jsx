@@ -3,9 +3,9 @@
 import React from "react";
 import Categories from "../components/Categories";
 import HeroSection from "../components/design/Hero";
+import DesignGallery from "../components/ui/DesignGallery";
 import Footer from "../components/ui/Footer";
 import NavbarMenu from "../components/ui/Navbar-menu";
-import ProductCard from "../components/ui/ProductCard";
 
 const Design = () => {
   return (
@@ -17,7 +17,7 @@ const Design = () => {
             {/* <DesignerCanvas /> */}
             <HeroSection />
             <Categories />
-            <ProductCard />
+            <DesignGallery />
             <Footer />
           </div>
         </div>
