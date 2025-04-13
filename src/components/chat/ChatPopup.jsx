@@ -1,4 +1,3 @@
-// components/chat/ChatPopup.jsx
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Send, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
@@ -22,35 +21,81 @@ const ChatPopup = () => {
     fetchMessages,
     sendMessage,
     startNewConversation,
+    isConnected,
+    setCurrentUserId,
+    hasMore,
+    markConversationAsRead,
   } = useChatStore();
 
   const [newMessage, setNewMessage] = useState("");
-  const [selectedParticipant, setSelectedParticipant] = useState(null);
+  const [attachments, setAttachments] = useState([]);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const refreshIntervalRef = useRef(null);
 
-  // Fetch conversations when chat opens
+  useEffect(() => {
+    if (user?._id) {
+      setCurrentUserId(user._id);
+    }
+  }, [user, setCurrentUserId]);
+
+  // Set up auto-refresh interval
   useEffect(() => {
     if (isChatOpen) {
+      // Initial fetch
       fetchConversations();
-    }
-  }, [isChatOpen, fetchConversations]);
 
-  // Fetch messages when active conversation changes
-  useEffect(() => {
-    if (activeConversation?._id) {
-      fetchMessages(activeConversation._id);
+      // Set up interval for refreshing data (using 1000ms instead of 1ms for performance)
+      refreshIntervalRef.current = setInterval(() => {
+        fetchConversations();
+        if (activeConversation) {
+          fetchMessages(activeConversation._id, false, true); // Add a silent parameter to your fetchMessages function
+        }
+      }, 1000000);
     }
-  }, [activeConversation?._id, fetchMessages]);
 
-  // Auto-scroll to bottom when messages change
+    // Clean up interval when component unmounts or chat closes
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
+  }, [isChatOpen, activeConversation, fetchConversations, fetchMessages]);
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (messagesEndRef.current && !loadingMore) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, loadingMore]);
+
+  // In ChatPopup.jsx
+  useEffect(() => {
+    if (activeConversation && messages?.length > 0 && !isLoading) {
+      // Mark messages as read when user is viewing the conversation
+      markConversationAsRead(activeConversation._id);
+    }
+  }, [activeConversation?._id, messages?.length, isLoading]);
+
+  // Also add a visible focus event to mark as read when user returns to tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && activeConversation) {
+        markConversationAsRead(activeConversation._id);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [activeConversation]);
 
   const handleSendMessage = () => {
     if (newMessage.trim() || attachments.length > 0) {
-      sendMessage(newMessage);
+      sendMessage(newMessage, attachments);
       setNewMessage("");
+      setAttachments([]);
     }
   };
 
@@ -61,14 +106,53 @@ const ChatPopup = () => {
     }
   };
 
+  // In ChatPopup.jsx
+  const handleScroll = async () => {
+    if (
+      !messagesContainerRef.current ||
+      !activeConversation ||
+      !hasMore ||
+      isLoading ||
+      loadingMore
+    )
+      return;
+
+    const { scrollTop } = messagesContainerRef.current;
+    const isNearTop = scrollTop < 100;
+
+    if (isNearTop) {
+      setLoadingMore(true);
+      await fetchMessages(activeConversation._id, true);
+
+      // Preserve scroll position after loading more messages
+      setTimeout(() => {
+        if (messagesContainerRef.current && messages.length > 0) {
+          // Keep the same message visible after loading older messages
+          const firstVisibleMsg = document.getElementById(
+            `msg-${messages[0]._id}`
+          );
+          if (firstVisibleMsg) {
+            firstVisibleMsg.scrollIntoView();
+          }
+        }
+        setLoadingMore(false);
+      }, 100);
+    }
+  };
+
   const getOtherParticipant = (conversation) => {
-    if (!conversation || !user) return null;
+    if (!conversation?.participants || !user) return null;
     return conversation.participants.find((p) => p._id !== user._id);
   };
 
   const formatTime = (dateString) => {
+    if (!dateString) return "";
     const date = new Date(dateString);
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const handleConversationClick = (conversation) => {
+    setActiveConversation(conversation);
   };
 
   return (
@@ -81,36 +165,46 @@ const ChatPopup = () => {
           transition={{ type: "spring", damping: 25 }}
           className="fixed bottom-4 right-4 w-full max-w-md h-[70vh] bg-white rounded-xl shadow-xl overflow-hidden flex flex-col z-50"
         >
+          {/* Rest of your component remains unchanged */}
           {/* Header */}
           <div className="bg-primary text-white p-3 flex items-center justify-between">
-            {activeConversation ? (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setActiveConversation(null)}
-                  className="p-1 rounded-full hover:bg-primary-dark transition-colors"
-                >
-                  <ArrowLeft size={20} />
-                </button>
+            {/* Header content... */}
+            <div className="flex items-center">
+              <div
+                className={`w-2 h-2 rounded-full mr-2 ${
+                  isConnected ? "bg-green-500" : "bg-red-500"
+                }`}
+                title={isConnected ? "Connected" : "Disconnected"}
+              />
+
+              {activeConversation ? (
                 <div className="flex items-center gap-2">
-                  <Avatar
-                    user={getOtherParticipant(activeConversation)}
-                    size="sm"
-                  />
-                  <div>
-                    <h3 className="font-medium">
-                      {getOtherParticipant(activeConversation)?.name || "Chat"}
-                    </h3>
-                    <p className="text-xs opacity-80">
-                      {activeConversation.isGroup
-                        ? `${activeConversation.participants.length} members`
-                        : "Online"}
-                    </p>
+                  <button
+                    onClick={() => setActiveConversation(null)}
+                    className="p-1 rounded-full hover:bg-primary-dark transition-colors"
+                  >
+                    <ArrowLeft size={20} />
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <Avatar
+                      user={getOtherParticipant(activeConversation)}
+                      size="sm"
+                    />
+                    <div>
+                      <h3 className="font-medium">
+                        {getOtherParticipant(activeConversation)?.name ||
+                          "Chat"}
+                      </h3>
+                      <p className="text-xs opacity-80">
+                        {isConnected ? "Online" : "Offline"}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <h3 className="font-medium">Messages</h3>
-            )}
+              ) : (
+                <h3 className="font-medium">Messages</h3>
+              )}
+            </div>
 
             <button
               onClick={() => setChatOpen(false)}
@@ -129,7 +223,7 @@ const ChatPopup = () => {
                   <div className="flex justify-center p-4">
                     <Loader />
                   </div>
-                ) : conversations.length === 0 ? (
+                ) : conversations?.length === 0 ? (
                   <div className="text-center p-4 text-gray-500">
                     <p>No conversations yet</p>
                   </div>
@@ -139,12 +233,12 @@ const ChatPopup = () => {
                       const otherUser = getOtherParticipant(conversation);
                       const isUnread =
                         conversation.lastMessage &&
-                        !conversation.lastMessage.readBy.includes(user._id);
+                        !conversation.lastMessage.readBy?.includes(user?._id);
 
                       return (
                         <div
                           key={conversation._id}
-                          onClick={() => setActiveConversation(conversation)}
+                          onClick={() => handleConversationClick(conversation)}
                           className={`p-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 ${
                             isUnread ? "bg-blue-50" : ""
                           }`}
@@ -156,10 +250,9 @@ const ChatPopup = () => {
                                 {otherUser?.name || "Unknown"}
                               </h4>
                               <span className="text-xs text-gray-500">
-                                {conversation.lastMessage &&
-                                  formatTime(
-                                    conversation.lastMessage.createdAt
-                                  )}
+                                {formatTime(
+                                  conversation.lastMessage?.createdAt
+                                )}
                               </span>
                             </div>
                             <p className="text-sm text-gray-500 truncate">
@@ -182,12 +275,22 @@ const ChatPopup = () => {
             {activeConversation && (
               <div className="w-full flex flex-col">
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                <div
+                  ref={messagesContainerRef}
+                  onScroll={handleScroll}
+                  className="flex-1 overflow-y-auto p-4 space-y-3"
+                >
+                  {loadingMore && (
+                    <div className="flex justify-center py-2">
+                      <Loader size="sm" />
+                    </div>
+                  )}
+
                   {isLoading ? (
                     <div className="flex justify-center">
                       <Loader />
                     </div>
-                  ) : messages.length === 0 ? (
+                  ) : messages?.length === 0 ? (
                     <div className="text-center text-gray-500 py-8">
                       <p>No messages yet</p>
                       <p className="text-sm">Start the conversation!</p>
@@ -196,30 +299,38 @@ const ChatPopup = () => {
                     messages.map((message) => (
                       <div
                         key={message._id}
+                        id={`msg-${message._id}`} // Add this ID
                         className={`flex ${
-                          message.sender._id === user._id
+                          message.sender._id === user?._id
                             ? "justify-end"
                             : "justify-start"
                         }`}
                       >
-                        <div
-                          className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${
-                            message.sender._id === user._id
-                              ? "bg-primary text-white rounded-br-none"
-                              : "bg-gray-100 text-gray-800 rounded-bl-none"
-                          }`}
-                        >
-                          <p className="text-sm">{message.content}</p>
-                          <div className="flex justify-end mt-1">
-                            <span
-                              className={`text-xs ${
-                                message.sender._id === user._id
-                                  ? "text-white/80"
-                                  : "text-gray-500"
-                              }`}
-                            >
+                        <div className="flex flex-col items-end">
+                          <div
+                            className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${
+                              message.sender._id === user?._id
+                                ? "bg-primary text-white rounded-br-none"
+                                : "bg-gray-100 text-gray-800 rounded-bl-none"
+                            }`}
+                          >
+                            <p className="text-sm">{message.content}</p>
+                          </div>
+                          <div className="flex items-center mt-1 space-x-1">
+                            <span className="text-xs text-gray-500">
                               {formatTime(message.createdAt)}
                             </span>
+                            {message.sender._id === user?._id && (
+                              <span className="text-xs">
+                                {message.isSending ? (
+                                  <span className="text-gray-400">•••</span>
+                                ) : message.readBy?.length > 1 ? (
+                                  <span className="text-blue-500">✓✓</span>
+                                ) : (
+                                  <span className="text-gray-400">✓</span>
+                                )}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -238,10 +349,14 @@ const ChatPopup = () => {
                       onKeyPress={handleKeyPress}
                       placeholder="Type a message..."
                       className="flex-1 border rounded-full py-2 px-4 focus:outline-none focus:ring-1 focus:ring-primary"
+                      disabled={!isConnected}
                     />
                     <button
                       onClick={handleSendMessage}
-                      disabled={!newMessage.trim()}
+                      disabled={
+                        (!newMessage.trim() && attachments.length === 0) ||
+                        !isConnected
+                      }
                       className="p-2 rounded-full bg-primary text-white disabled:opacity-50"
                     >
                       <Send size={18} />
