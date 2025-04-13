@@ -32,6 +32,7 @@ const ChatPopup = () => {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const refreshIntervalRef = useRef(null);
 
   useEffect(() => {
     if (user?._id) {
@@ -39,11 +40,28 @@ const ChatPopup = () => {
     }
   }, [user, setCurrentUserId]);
 
+  // Set up auto-refresh interval
   useEffect(() => {
     if (isChatOpen) {
+      // Initial fetch
       fetchConversations();
+
+      // Set up interval for refreshing data (using 1000ms instead of 1ms for performance)
+      refreshIntervalRef.current = setInterval(() => {
+        fetchConversations();
+        if (activeConversation) {
+          fetchMessages(activeConversation._id, false, true); // Add a silent parameter to your fetchMessages function
+        }
+      }, 1000000);
     }
-  }, [isChatOpen, fetchConversations]);
+
+    // Clean up interval when component unmounts or chat closes
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
+  }, [isChatOpen, activeConversation, fetchConversations, fetchMessages]);
 
   useEffect(() => {
     if (messagesEndRef.current && !loadingMore) {
@@ -147,8 +165,10 @@ const ChatPopup = () => {
           transition={{ type: "spring", damping: 25 }}
           className="fixed bottom-4 right-4 w-full max-w-md h-[70vh] bg-white rounded-xl shadow-xl overflow-hidden flex flex-col z-50"
         >
+          {/* Rest of your component remains unchanged */}
           {/* Header */}
           <div className="bg-primary text-white p-3 flex items-center justify-between">
+            {/* Header content... */}
             <div className="flex items-center">
               <div
                 className={`w-2 h-2 rounded-full mr-2 ${
