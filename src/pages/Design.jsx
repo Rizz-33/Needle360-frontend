@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import Categories from "../components/Categories";
 import HeroSection from "../components/design/Hero";
+import Services from "../components/Services";
 import DesignGallery from "../components/ui/DesignGallery";
 import Footer from "../components/ui/Footer";
 import NavbarMenu from "../components/ui/Navbar-menu";
@@ -16,7 +16,7 @@ const Design = () => {
           <div className="w-full">
             {/* <DesignerCanvas /> */}
             <HeroSection />
-            <Categories />
+            <Services />
             <DesignGallery />
             <Footer />
           </div>
