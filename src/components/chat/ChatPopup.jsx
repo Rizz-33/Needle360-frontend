@@ -40,19 +40,46 @@ const ChatPopup = () => {
     }
   }, [user, setCurrentUserId]);
 
-  // Set up auto-refresh interval
+  useEffect(() => {
+    if (messagesEndRef.current && !loadingMore) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, loadingMore]);
+
+  // Update the effect that handles marking messages as read
+  useEffect(() => {
+    if (
+      activeConversation &&
+      messages?.length > 0 &&
+      !isLoading &&
+      isChatOpen
+    ) {
+      // Only mark messages as read if the tab is visible and the chat is open
+      if (document.visibilityState === "visible") {
+        markConversationAsRead(activeConversation._id);
+      }
+    }
+  }, [activeConversation?._id, messages?.length, isLoading, isChatOpen]);
+
+  // Modify the auto-refresh interval
   useEffect(() => {
     if (isChatOpen) {
       // Initial fetch
       fetchConversations();
 
-      // Set up interval for refreshing data (using 1000ms instead of 1ms for performance)
+      if (activeConversation) {
+        fetchMessages(activeConversation._id, false);
+      }
+
+      // Set up interval for refreshing data
       refreshIntervalRef.current = setInterval(() => {
         fetchConversations();
+
         if (activeConversation) {
-          fetchMessages(activeConversation._id, false, true); // Add a silent parameter to your fetchMessages function
+          // Use the silent parameter to avoid UI flicker and preserve read status
+          fetchMessages(activeConversation._id, false, true);
         }
-      }, 1000000);
+      }, 100000); // Use 10 seconds instead of 1000 seconds for more reasonable updates
     }
 
     // Clean up interval when component unmounts or chat closes
@@ -63,33 +90,37 @@ const ChatPopup = () => {
     };
   }, [isChatOpen, activeConversation, fetchConversations, fetchMessages]);
 
-  useEffect(() => {
-    if (messagesEndRef.current && !loadingMore) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages, loadingMore]);
-
-  // In ChatPopup.jsx
-  useEffect(() => {
-    if (activeConversation && messages?.length > 0 && !isLoading) {
-      // Mark messages as read when user is viewing the conversation
-      markConversationAsRead(activeConversation._id);
-    }
-  }, [activeConversation?._id, messages?.length, isLoading]);
-
-  // Also add a visible focus event to mark as read when user returns to tab
+  // Enhance visibility change handler
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible" && activeConversation) {
+      if (
+        document.visibilityState === "visible" &&
+        activeConversation &&
+        isChatOpen
+      ) {
+        // When the user returns to the tab, mark messages as read
+        console.log("Tab became visible, marking messages as read");
         markConversationAsRead(activeConversation._id);
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Also add a focus event for more reliable read status tracking
+    const handleWindowFocus = () => {
+      if (activeConversation && isChatOpen) {
+        console.log("Window focused, marking messages as read");
+        markConversationAsRead(activeConversation._id);
+      }
+    };
+
+    window.addEventListener("focus", handleWindowFocus);
+
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.addEventListener("focus", handleWindowFocus);
     };
-  }, [activeConversation]);
+  }, [activeConversation, isChatOpen, markConversationAsRead]);
 
   const handleSendMessage = () => {
     if (newMessage.trim() || attachments.length > 0) {
