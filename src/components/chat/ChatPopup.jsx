@@ -198,7 +198,7 @@ const ChatPopup = () => {
         >
           {/* Rest of your component remains unchanged */}
           {/* Header */}
-          <div className="bg-primary text-white p-3 flex items-center justify-between">
+          <div className="bg-secondary text-hoverAccent p-3 flex items-center justify-between">
             {/* Header content... */}
             <div className="flex items-center">
               <div
@@ -222,11 +222,11 @@ const ChatPopup = () => {
                       size="sm"
                     />
                     <div>
-                      <h3 className="font-medium">
+                      <h3 className="font-medium text-sm">
                         {getOtherParticipant(activeConversation)?.name ||
                           "Chat"}
                       </h3>
-                      <p className="text-xs opacity-80">
+                      <p className="text-[11px] opacity-80">
                         {isConnected ? "Online" : "Offline"}
                       </p>
                     </div>
@@ -277,7 +277,7 @@ const ChatPopup = () => {
                           <Avatar user={otherUser} />
                           <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-center">
-                              <h4 className="font-medium truncate">
+                              <h4 className="font-medium text-xs truncate">
                                 {otherUser?.name || "Unknown"}
                               </h4>
                               <span className="text-xs text-gray-500">
@@ -339,20 +339,20 @@ const ChatPopup = () => {
                       >
                         <div className="flex flex-col items-end">
                           <div
-                            className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${
+                            className={`max-w-xs lg:max-w-md px-3 py-2 rounded-full ${
                               message.sender._id === user?._id
-                                ? "bg-primary text-white rounded-br-none"
-                                : "bg-gray-100 text-gray-800 rounded-bl-none"
+                                ? "bg-primary/70 text-white text-sm rounded-br-none"
+                                : "bg-gray-100 text-gray-800 text-sm rounded-bl-none"
                             }`}
                           >
                             <p className="text-sm">{message.content}</p>
                           </div>
-                          <div className="flex items-center mt-1 space-x-1">
-                            <span className="text-xs text-gray-500">
+                          <div className="flex items-center mt-1 space-x-2">
+                            <span className="text-[10px] text-gray-500">
                               {formatTime(message.createdAt)}
                             </span>
                             {message.sender._id === user?._id && (
-                              <span className="text-xs">
+                              <span className="text-[10px]">
                                 {message.isSending ? (
                                   <span className="text-gray-400">•••</span>
                                 ) : message.readBy?.length > 1 ? (
@@ -379,7 +379,7 @@ const ChatPopup = () => {
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="Type a message..."
-                      className="flex-1 border rounded-full py-2 px-4 focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="flex-1 border rounded-full text-xs py-2 px-4 focus:outline-none focus:ring-1 focus:ring-primary"
                       disabled={!isConnected}
                     />
                     <button
