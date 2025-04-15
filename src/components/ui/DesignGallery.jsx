@@ -352,6 +352,8 @@ const DesignCard = ({ design }) => {
 const DesignGallery = () => {
   const {
     designs,
+    tailorDesigns,
+    customerDesigns,
     isLoading,
     error,
     fetchAllDesigns,
@@ -359,28 +361,41 @@ const DesignGallery = () => {
     fetchAllCustomerDesigns,
   } = useDesignStore();
 
+  const [activeFilter, setActiveFilter] = useState("all");
+
   useEffect(() => {
     // Fetch all designs when component mounts
     fetchAllDesigns();
-    fetchAllTailorDesigns();
-    fetchAllCustomerDesigns();
-  }, [fetchAllDesigns, fetchAllTailorDesigns, fetchAllCustomerDesigns]);
+  }, [fetchAllDesigns]);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader />
-      </div>
-    );
-  }
+  const handleFilterChange = async (filter) => {
+    setActiveFilter(filter);
 
-  if (error) {
-    return (
-      <div className="text-center text-red-500 p-4">
-        Error loading designs: {error}
-      </div>
-    );
-  }
+    try {
+      if (filter === "tailor") {
+        await fetchAllTailorDesigns();
+      } else if (filter === "customer") {
+        await fetchAllCustomerDesigns();
+      } else {
+        await fetchAllDesigns();
+      }
+    } catch (err) {
+      console.error("Error fetching designs:", err);
+    }
+  };
+
+  const getDisplayedDesigns = () => {
+    switch (activeFilter) {
+      case "tailor":
+        return tailorDesigns;
+      case "customer":
+        return customerDesigns;
+      default:
+        return designs;
+    }
+  };
+
+  const displayedDesigns = getDisplayedDesigns();
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -389,31 +404,45 @@ const DesignGallery = () => {
         <div className="flex space-x-3">
           <CustomButton
             text="Tailor Designs"
-            color="secondary"
-            hover_color="hoverSecondary"
-            variant="outlined"
-            onClick={fetchAllTailorDesigns}
+            color={activeFilter === "tailor" ? "primary" : "hoverAccent"}
+            hover_color="hoverAccent"
+            variant={activeFilter === "tailor" ? "filled" : "outlined"}
+            height="h-8"
+            width="w-24"
+            onClick={() => handleFilterChange("tailor")}
           />
           <CustomButton
             text="Customer Requests"
-            color="secondary"
-            hover_color="hoverSecondary"
-            variant="outlined"
-            onClick={fetchAllCustomerDesigns}
+            color={activeFilter === "customer" ? "primary" : "hoverAccent"}
+            hover_color="hoverAccent"
+            variant={activeFilter === "customer" ? "filled" : "outlined"}
+            height="h-8"
+            width="w-32"
+            onClick={() => handleFilterChange("customer")}
           />
           <CustomButton
             text="All Designs"
-            color="primary"
-            hover_color="hoverPrimary"
-            variant="contained"
-            onClick={fetchAllDesigns}
+            color={activeFilter === "all" ? "primary" : "hoverAccent"}
+            hover_color="hoverAccent"
+            variant={activeFilter === "all" ? "filled" : "outlined"}
+            height="h-8"
+            width="w-20"
+            onClick={() => handleFilterChange("all")}
           />
         </div>
       </div>
 
-      {designs && designs.length > 0 ? (
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <Loader />
+        </div>
+      ) : error ? (
+        <div className="text-center text-red-500 p-4">
+          Error loading designs: {error}
+        </div>
+      ) : displayedDesigns && displayedDesigns.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {designs.map((design, index) => (
+          {displayedDesigns.map((design, index) => (
             <DesignCard
               key={design._id || design.id || index}
               design={design}
@@ -422,7 +451,9 @@ const DesignGallery = () => {
         </div>
       ) : (
         <div className="text-center py-12">
-          <Loader size="small" />
+          <p className="text-gray-500 mb-4">
+            No designs found for the selected filter
+          </p>
         </div>
       )}
     </div>
