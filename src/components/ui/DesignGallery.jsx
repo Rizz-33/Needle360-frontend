@@ -6,11 +6,14 @@ import {
   FaRegStar,
   FaStar,
   FaTimes,
+  FaUser,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { roleTypeNumbers } from "../../configs/User.config";
+import { useAuthStore } from "../../store/Auth.store";
 import { useCustomerStore } from "../../store/Customer.store";
 import { useDesignStore } from "../../store/Design.store";
+import { useReviewStore } from "../../store/Review.store";
 import { useShopStore } from "../../store/Shop.store";
 import Loader from "../ui/Loader";
 import { CustomButton } from "./Button";
@@ -57,16 +60,137 @@ const formatDate = (dateString) => {
   return `${day}${suffix} of ${month}, ${year}`;
 };
 
+const ReviewItem = ({ review }) => {
+  const [reviewer, setReviewer] = useState({
+    name: "Anonymous User",
+    profileImage: null,
+    type: null,
+  });
+
+  useEffect(() => {
+    const fetchReviewer = async () => {
+      if (review.clientId) {
+        try {
+          // Try to fetch as customer first
+          try {
+            const customer = await useCustomerStore
+              .getState()
+              .fetchCustomerById(review.clientId);
+
+            if (customer && customer.name) {
+              setReviewer({
+                name: customer.name,
+                profileImage: customer.profilePic,
+                type: "customer",
+              });
+              return;
+            }
+          } catch (error) {
+            // If not a customer, try as tailor
+            console.log("Not a customer, trying tailor");
+          }
+
+          // Try to fetch as tailor
+          try {
+            const tailor = await useShopStore
+              .getState()
+              .fetchTailorById(review.clientId);
+
+            if (tailor) {
+              setReviewer({
+                name: tailor.shopName || tailor.name,
+                profileImage: tailor.logoUrl,
+                type: "tailor",
+              });
+              return;
+            }
+          } catch (error) {
+            console.error("Error fetching tailor reviewer details:", error);
+          }
+        } catch (error) {
+          console.error("Error fetching reviewer details:", error);
+        }
+      }
+    };
+
+    fetchReviewer();
+  }, [review.clientId]);
+
+  return (
+    <div className="border-b border-gray-200 py-4 last:border-0">
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex items-center">
+          <div className="mr-3 w-10 h-10 rounded-full overflow-hidden">
+            {reviewer.profileImage ? (
+              <img
+                src={reviewer.profileImage}
+                alt={reviewer.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "/assets/placeholder-user.jpg";
+                }}
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                <FaUser className="text-gray-500" />
+              </div>
+            )}
+          </div>
+          <div>
+            <h4 className="font-medium text-gray-800">
+              {reviewer.name}
+              {reviewer.type && (
+                <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                  {reviewer.type === "tailor" ? "Tailor" : "Customer"}
+                </span>
+              )}
+            </h4>
+            <div className="flex items-center mt-1">
+              <div className="flex mr-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <span key={star}>
+                    {star <= review.rating ? (
+                      <FaStar className="text-yellow-400 text-xs" />
+                    ) : (
+                      <FaRegStar className="text-yellow-400 text-xs" />
+                    )}
+                  </span>
+                ))}
+              </div>
+              <span className="text-xs text-gray-500">
+                {review.rating.toFixed(0)}/5
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center text-xs text-gray-500">
+          {formatDate(review.date)}
+        </div>
+      </div>
+      {review.comment && (
+        <p className="text-sm text-gray-600 mt-2">{review.comment}</p>
+      )}
+    </div>
+  );
+};
+
 const DesignCard = ({ design }) => {
   const [showModal, setShowModal] = useState(false);
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState("");
   const [creatorDetails, setCreatorDetails] = useState(null);
   const [isLoadingCreator, setIsLoadingCreator] = useState(false);
+  const [designReviews, setDesignReviews] = useState([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+  const [isOwnDesign, setIsOwnDesign] = useState(false);
+  const { createReview, fetchUserReviews } = useReviewStore();
+  const { user } = useAuthStore();
 
   const handleViewDetails = () => {
     setShowModal(true);
     fetchCreatorDetails();
+    fetchDesignReviews();
   };
 
   const closeModal = () => {
@@ -87,17 +211,52 @@ const DesignCard = ({ design }) => {
           .getState()
           .fetchTailorById(design.tailorId);
         setCreatorDetails(response);
+
+        // Check if current user is the design creator
+        if (
+          user &&
+          (user.id === design.tailorId || user._id === design.tailorId)
+        ) {
+          setIsOwnDesign(true);
+        }
       } else if (design.customerId) {
         const response = await useCustomerStore
           .getState()
           .fetchCustomerById(design.customerId);
         setCreatorDetails(response);
+
+        // Check if current user is the design creator
+        if (
+          user &&
+          (user.id === design.customerId || user._id === design.customerId)
+        ) {
+          setIsOwnDesign(true);
+        }
       }
     } catch (error) {
       console.error("Error fetching creator details:", error);
       toast.error("Failed to load creator details");
     } finally {
       setIsLoadingCreator(false);
+    }
+  };
+
+  const fetchDesignReviews = async () => {
+    setIsLoadingReviews(true);
+    try {
+      // Determine the userId for fetching reviews
+      const userId = design.tailorId || design.customerId;
+
+      if (userId) {
+        const response = await fetchUserReviews(userId);
+        // Filter reviews related to this design if needed
+        const relevantReviews = response.reviews || [];
+        setDesignReviews(relevantReviews);
+      }
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    } finally {
+      setIsLoadingReviews(false);
     }
   };
 
@@ -108,6 +267,42 @@ const DesignCard = ({ design }) => {
     }
 
     try {
+      // Get the current user from auth store
+      const currentUserId = user?.id || user?._id;
+
+      if (!currentUserId) {
+        toast.error("You must be logged in to submit a review");
+        return;
+      }
+
+      // Determine who to send the review to (tailor or customer)
+      const revieweeId = design.tailorId || design.customerId;
+
+      if (!revieweeId) {
+        toast.error("Cannot determine who to review");
+        return;
+      }
+
+      // Check if user is reviewing their own design
+      if (currentUserId === revieweeId) {
+        toast.error("You cannot review your own design");
+        return;
+      }
+
+      // Create review data
+      const reviewData = {
+        clientId: currentUserId,
+        rating: rating,
+        comment: review,
+        date: new Date(),
+      };
+
+      // Submit the review
+      await createReview(revieweeId, reviewData);
+
+      // Refresh reviews
+      fetchDesignReviews();
+
       toast.success("Thank you for your review!");
       setRating(0);
       setReview("");
@@ -133,6 +328,13 @@ const DesignCard = ({ design }) => {
     design.updatedAt &&
     new Date(design.createdAt).getTime() !==
       new Date(design.updatedAt).getTime();
+
+  // Calculate average rating from design reviews
+  const averageRating =
+    designReviews.length > 0
+      ? designReviews.reduce((sum, review) => sum + review.rating, 0) /
+        designReviews.length
+      : design.rating || 0;
 
   return (
     <>
@@ -175,7 +377,7 @@ const DesignCard = ({ design }) => {
               <div className="flex">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <span key={star}>
-                    {star <= (design.rating || 0) ? (
+                    {star <= averageRating ? (
                       <FaStar className="text-yellow-400 text-sm" />
                     ) : (
                       <FaRegStar className="text-yellow-400 text-sm" />
@@ -184,8 +386,10 @@ const DesignCard = ({ design }) => {
                 ))}
               </div>
               <span className="text-xs text-gray-500 mt-1">
-                {design.rating
-                  ? `${design.rating.toFixed(1)}/5`
+                {averageRating > 0
+                  ? `${averageRating.toFixed(1)}/5 (${
+                      designReviews.length
+                    } review${designReviews.length !== 1 ? "s" : ""})`
                   : "No ratings yet"}
               </span>
             </div>
@@ -267,7 +471,7 @@ const DesignCard = ({ design }) => {
               </div>
 
               {/* Creator Details */}
-              <div className="border-b border-primary/10  pb-4">
+              <div className="border-b border-primary/10 pb-4">
                 <h3 className="text-xs text-gray-900 mb-3">Designed by</h3>
                 {isLoadingCreator ? (
                   <div className="flex justify-center py-4">
@@ -319,33 +523,72 @@ const DesignCard = ({ design }) => {
                 )}
               </div>
 
-              {/* Review Section */}
-              <div>
+              {/* Reviews Display Section */}
+              <div className="border-b border-primary/10 pb-4">
                 <h3 className="text-md font-semibold text-gray-900 mb-3">
-                  Rate this Design
+                  Reviews
                 </h3>
-                <div className="space-y-4">
-                  <div>
-                    <StarRating rating={rating} setRating={setRating} />
+                {isLoadingReviews ? (
+                  <div className="flex justify-center py-4">
+                    <Loader size="small" />
                   </div>
-                  <textarea
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    rows="3"
-                    placeholder="Share your thoughts about this design..."
-                    value={review}
-                    onChange={(e) => setReview(e.target.value)}
-                  />
-                  <CustomButton
-                    text="Submit Review"
-                    color="primary"
-                    hover_color="hoverPrimary"
-                    variant="outlined"
-                    onClick={handleSubmitReview}
-                    width="w-1/3"
-                    height="h-10"
-                  />
-                </div>
+                ) : designReviews.length > 0 ? (
+                  <div className="space-y-4">
+                    {designReviews.map((review, index) => (
+                      <ReviewItem key={index} review={review} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-gray-500 text-sm py-2">
+                    No reviews yet. Be the first to review!
+                  </div>
+                )}
               </div>
+
+              {/* Add Review Section - Only show if user is not the design creator */}
+              {!isOwnDesign && user && (
+                <div>
+                  <h3 className="text-md font-semibold text-gray-900 mb-3">
+                    Rate this Design
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <StarRating rating={rating} setRating={setRating} />
+                    </div>
+                    <textarea
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      rows="3"
+                      placeholder="Share your thoughts about this design..."
+                      value={review}
+                      onChange={(e) => setReview(e.target.value)}
+                    />
+                    <CustomButton
+                      text="Submit Review"
+                      color="primary"
+                      hover_color="hoverPrimary"
+                      variant="outlined"
+                      onClick={handleSubmitReview}
+                      width="w-1/3"
+                      height="h-10"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Message if user is viewing their own design */}
+              {isOwnDesign && (
+                <div className="text-center text-xs text-gray-500 italic py-2">
+                  This is your design. You cannot leave a review on your own
+                  work.
+                </div>
+              )}
+
+              {/* Message if user is not logged in */}
+              {!user && (
+                <div className="text-center text-gray-500 italic py-2">
+                  Please log in to leave a review.
+                </div>
+              )}
             </div>
           </div>
         </div>
