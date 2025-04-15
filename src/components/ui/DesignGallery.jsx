@@ -218,6 +218,11 @@ const DesignCard = ({ design }) => {
               <h2 className="text-xl font-bold text-gray-800">
                 {design.title || "Untitled Design"}
               </h2>
+              <h3 className="text-lg text-primary font-bold">
+                {design.price
+                  ? formatPrice(design.price)
+                  : "Price not specified"}
+              </h3>
               <button
                 onClick={closeModal}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -255,14 +260,14 @@ const DesignCard = ({ design }) => {
               </div>
 
               {/* Description */}
-              <div className="border-b border-primary/20 pb-4">
+              <div className="border-b border-primary/10 pb-4">
                 <p className="text-gray-600 text-sm">
                   {design.description || "No description available"}
                 </p>
               </div>
 
               {/* Creator Details */}
-              <div className="border-b pb-4">
+              <div className="border-b border-primary/10  pb-4">
                 <h3 className="text-xs text-gray-900 mb-3">Designed by</h3>
                 {isLoadingCreator ? (
                   <div className="flex justify-center py-4">
