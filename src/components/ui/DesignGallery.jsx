@@ -558,7 +558,7 @@ const DesignCard = ({ design }) => {
                     <textarea
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       rows="3"
-                      placeholder="Share your thoughts about this design..."
+                      placeholder="Share your thoughts about this designer..."
                       value={review}
                       onChange={(e) => setReview(e.target.value)}
                     />
