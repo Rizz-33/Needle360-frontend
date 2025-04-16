@@ -1,8 +1,14 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Edit2, MessageCircleMore, X } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
-import { FaChevronLeft, FaPalette, FaStar } from "react-icons/fa";
+import {
+  FaChevronLeft,
+  FaPalette,
+  FaRegStar,
+  FaStar,
+  FaUser,
+} from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
 import ChatPopup from "../../components/chat/ChatPopUp";
 import MessageButton from "../../components/chat/MessageButton";
@@ -10,7 +16,30 @@ import Loader from "../../components/ui/Loader";
 import { useAuthStore } from "../../store/Auth.store";
 import { useCustomerStore } from "../../store/Customer.store";
 import { useDesignStore } from "../../store/Design.store";
+import { useReviewStore } from "../../store/Review.store";
+import { useShopStore } from "../../store/Shop.store";
 import { useUserInteractionStore } from "../../store/UserInteraction.store";
+
+const formatDate = (dateString) => {
+  if (!dateString) return "Date not available";
+
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const month = date.toLocaleString("default", { month: "long" });
+  const year = date.getFullYear();
+
+  // Add ordinal suffix to day
+  const suffix =
+    day % 10 === 1 && day !== 11
+      ? "st"
+      : day % 10 === 2 && day !== 12
+      ? "nd"
+      : day % 10 === 3 && day !== 13
+      ? "rd"
+      : "th";
+
+  return `${day}${suffix} ${month}, ${year}`;
+};
 
 const CustomerProfilePage = () => {
   const { id } = useParams();
@@ -37,10 +66,22 @@ const CustomerProfilePage = () => {
     fetchCustomerDesignsById,
   } = useDesignStore();
 
+  // Use the review store
+  const {
+    reviews,
+    isLoading: isLoadingReviews,
+    fetchUserReviews,
+  } = useReviewStore();
+
+  // Use shop store to fetch reviewer details
+  const { fetchTailorById } = useShopStore();
+
   const [activeTab, setActiveTab] = useState("designs");
   const [showAllBio, setShowAllBio] = useState(false);
   const [selectedDesign, setSelectedDesign] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [reviewersData, setReviewersData] = useState({});
+  const loadingReviewerIdsRef = useRef(new Set());
 
   // Fix for isOwnProfile - Normalize IDs for comparison
   const currentUserId = currentUser?._id || currentUser?.id;
@@ -53,6 +94,67 @@ const CustomerProfilePage = () => {
       profileUserId &&
       String(currentUserId) === String(profileUserId));
 
+  const loadReviewerDetails = useCallback(
+    async (reviewClientId) => {
+      // Skip if already loaded or loading
+      if (
+        reviewersData[reviewClientId] ||
+        loadingReviewerIdsRef.current.has(reviewClientId)
+      ) {
+        return;
+      }
+
+      // Mark as loading
+      loadingReviewerIdsRef.current.add(reviewClientId);
+
+      try {
+        // First try customer
+        try {
+          const customer = await useCustomerStore
+            .getState()
+            .fetchCustomerById(reviewClientId);
+          if (customer && customer.name) {
+            setReviewersData((prev) => ({
+              ...prev,
+              [reviewClientId]: {
+                name: customer.name,
+                profileImage: customer.profilePic,
+                type: "customer",
+              },
+            }));
+            return;
+          }
+        } catch (error) {
+          // Not a customer, continue to tailor
+        }
+
+        // Try tailor
+        try {
+          const tailor = await fetchTailorById(reviewClientId);
+          if (tailor) {
+            setReviewersData((prev) => ({
+              ...prev,
+              [reviewClientId]: {
+                name: tailor.shopName || tailor.name,
+                profileImage: tailor.logoUrl,
+                type: "tailor",
+              },
+            }));
+            return;
+          }
+        } catch (error) {
+          console.error("Error fetching tailor reviewer details:", error);
+        }
+      } catch (error) {
+        console.error("Error fetching reviewer details:", error);
+      } finally {
+        // Remove from loading, whether successful or not
+        loadingReviewerIdsRef.current.delete(reviewClientId);
+      }
+    },
+    [reviewersData]
+  );
+
   useEffect(() => {
     if (!id && !currentUserId) {
       navigate("/");
@@ -61,20 +163,12 @@ const CustomerProfilePage = () => {
   }, [id, navigate, currentUserId]);
 
   useEffect(() => {
-    // Debug logging for ID comparison
-    console.log("Current user ID (normalized):", currentUserId);
-    console.log("Profile ID from URL:", profileUserId);
-    console.log("Type of currentUserId:", typeof currentUserId);
-    console.log("Type of profileUserId:", typeof profileUserId);
-    console.log("isOwnProfile calculated as:", isOwnProfile);
-  }, [currentUser, id, isOwnProfile, currentUserId, profileUserId]);
-
-  useEffect(() => {
     if (profileUserId && profileUserId !== "undefined") {
       fetchCustomerById(profileUserId);
       resetState();
       getFollowers(profileUserId);
       getFollowing(profileUserId);
+      fetchUserReviews(profileUserId); // Fetch reviews when component mounts
 
       if (!isOwnProfile && currentUserId) {
         checkIfFollowing(currentUserId, profileUserId);
@@ -93,6 +187,7 @@ const CustomerProfilePage = () => {
     getFollowers,
     getFollowing,
     checkIfFollowing,
+    fetchUserReviews,
   ]);
 
   // Fetch designs when the designs tab is active
@@ -105,6 +200,37 @@ const CustomerProfilePage = () => {
       fetchCustomerDesignsById(profileUserId);
     }
   }, [activeTab, fetchCustomerDesignsById, profileUserId]);
+
+  useEffect(() => {
+    // Only proceed if we have reviews
+    if (!reviews || reviews.length === 0) return;
+
+    // Find reviewers that need to be loaded
+    const reviewersToLoad = reviews
+      .filter((review) => review.clientId)
+      .filter(
+        (review) =>
+          !reviewersData[review.clientId] &&
+          !loadingReviewerIdsRef.current.has(review.clientId)
+      )
+      .map((review) => review.clientId);
+
+    // Load each reviewer
+    reviewersToLoad.forEach((clientId) => {
+      loadReviewerDetails(clientId);
+    });
+  }, [reviews, loadReviewerDetails]);
+
+  // Calculate average rating from the reviews in the store
+  const avgRating =
+    reviews.length > 0
+      ? reviews.reduce(
+          (acc, review) => acc + parseFloat(review.rating) || 0,
+          0
+        ) / reviews.length
+      : 0;
+
+  const formattedRating = avgRating.toFixed(1);
 
   const handleDesignClick = (design) => {
     setSelectedDesign(design);
@@ -190,6 +316,12 @@ const CustomerProfilePage = () => {
         </span>{" "}
         designs
       </div>
+      {avgRating > 0 && (
+        <div className="flex items-center">
+          <FaStar className="text-yellow-400 mr-1 text-xs" />
+          <span className="font-semibold text-gray-900">{formattedRating}</span>
+        </div>
+      )}
     </div>
   );
 
@@ -198,7 +330,7 @@ const CustomerProfilePage = () => {
       <div className="flex">
         {[
           { id: "designs", label: "Designs", icon: <FaPalette size={14} /> },
-          { id: "likes", label: "Likes", icon: <FaStar size={14} /> },
+          { id: "reviews", label: "Reviews", icon: <FaStar size={14} /> },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -273,19 +405,105 @@ const CustomerProfilePage = () => {
     </div>
   );
 
-  const LikesTabContent = () => (
-    <div className="py-10 text-center text-gray-500 text-sm">
-      <FaStar className="text-2xl mx-auto mb-2 text-gray-300" />
-      <p>Liked designs will appear here</p>
-    </div>
-  );
+  const ReviewsList = () => {
+    return (
+      <div className="space-y-2">
+        {isLoadingReviews ? (
+          <div className="py-10 flex justify-center">
+            <Loader />
+          </div>
+        ) : reviews && reviews.length > 0 ? (
+          reviews.map((review, index) => {
+            const reviewer = reviewersData[review.clientId] || {
+              name: "Anonymous User",
+              profileImage: null,
+              type: null,
+            };
+
+            return (
+              <motion.div
+                key={review._id || index}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="bg-white p-3 rounded-lg shadow-sm border border-gray-100"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center">
+                    <div className="mr-3 w-10 h-10 rounded-full overflow-hidden">
+                      {reviewer.profileImage ? (
+                        <img
+                          src={reviewer.profileImage}
+                          alt={reviewer.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <FaUser className="text-gray-500" />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-800 text-sm">
+                        {reviewer.name}
+                        {reviewer.type && (
+                          <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                            {reviewer.type === "tailor" ? "Tailor" : "Customer"}
+                          </span>
+                        )}
+                      </h3>
+                      <div className="flex items-center mt-1">
+                        <div className="flex mr-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <span key={star}>
+                              {star <= review.rating ? (
+                                <FaStar className="text-yellow-400 text-xs" />
+                              ) : (
+                                <FaRegStar className="text-yellow-400 text-xs" />
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {review.rating.toFixed(0)}/5
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center text-xs text-gray-500">
+                    {formatDate(review.createdAt || review.date)}
+                  </div>
+                </div>
+                {review.comment && (
+                  <p className="text-xs text-gray-600 mt-2">{review.comment}</p>
+                )}
+              </motion.div>
+            );
+          })
+        ) : (
+          <div className="py-10 text-center text-gray-500 text-sm">
+            <FaStar className="text-2xl mx-auto mb-2 text-gray-300" />
+            <p>No reviews yet</p>
+            {!isOwnProfile && (
+              <button
+                onClick={() => navigate(`/leave-review/${profileUserId}`)}
+                className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-xs font-medium hover:bg-primary-dark transition-colors"
+              >
+                Leave a Review
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const getTabContent = () => {
     switch (activeTab) {
       case "designs":
         return <DesignGrid />;
-      case "likes":
-        return <LikesTabContent />;
+      case "reviews":
+        return <ReviewsList />;
       default:
         return null;
     }
@@ -369,16 +587,20 @@ const CustomerProfilePage = () => {
 
             <ProfileStats />
 
+            {/* Bio */}
             {customer.bio && (
-              <p className="text-xs text-gray-500 mt-2">{customer.bio}</p>
-            )}
-
-            {/* Address */}
-            {/* {customer.address && (
-              <div className="mt-2 text-xs text-gray-600">
-                <span>{customer.address}</span>
+              <div className="mt-2">
+                <p className="text-xs text-gray-700">{truncatedBio}</p>
+                {customer.bio.length > 100 && (
+                  <button
+                    onClick={toggleBio}
+                    className="text-primary text-xs font-medium mt-1 hover:underline"
+                  >
+                    {showAllBio ? "Show less" : "Show more"}
+                  </button>
+                )}
               </div>
-            )} */}
+            )}
           </div>
         </div>
 
