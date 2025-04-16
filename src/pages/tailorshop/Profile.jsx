@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Edit2, MessageCircleMore, X } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import {
   FaCalendarAlt,
@@ -8,8 +8,10 @@ import {
   FaClock,
   FaMapMarkerAlt,
   FaPalette,
+  FaRegStar,
   FaStar,
   FaTag,
+  FaUser,
 } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
 import ChatPopup from "../../components/chat/ChatPopUp";
@@ -17,11 +19,34 @@ import MessageButton from "../../components/chat/MessageButton";
 import Loader from "../../components/ui/Loader";
 import { useAuthStore } from "../../store/Auth.store";
 import { useAvailabilityStore } from "../../store/Availability.store";
+import { useCustomerStore } from "../../store/Customer.store";
 import { useDesignStore } from "../../store/Design.store";
 import { useOfferStore } from "../../store/Offer.store";
+import { useReviewStore } from "../../store/Review.store";
 import { useServiceStore } from "../../store/Service.store";
 import { useShopStore } from "../../store/Shop.store";
 import { useUserInteractionStore } from "../../store/UserInteraction.store";
+
+const formatDate = (dateString) => {
+  if (!dateString) return "Date not available";
+
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const month = date.toLocaleString("default", { month: "long" });
+  const year = date.getFullYear();
+
+  // Add ordinal suffix to day
+  const suffix =
+    day % 10 === 1 && day !== 11
+      ? "st"
+      : day % 10 === 2 && day !== 12
+      ? "nd"
+      : day % 10 === 3 && day !== 13
+      ? "rd"
+      : "th";
+
+  return `${day}${suffix} ${month}, ${year}`;
+};
 
 const TailorProfilePage = () => {
   const { id } = useParams();
@@ -57,22 +82,111 @@ const TailorProfilePage = () => {
 
   // Use the availability store
   const { availabilitySlots, fetchTailorAvailability } = useAvailabilityStore();
-
   // Use the service store
+  const { services, fetchServices } = useServiceStore();
+
+  // Use the review store
   const {
-    services,
-    isLoading: isLoadingServices,
-    fetchServices,
-  } = useServiceStore();
+    reviews,
+    isLoading: isLoadingReviews,
+    fetchUserReviews,
+  } = useReviewStore();
+
+  // Use customer store to fetch reviewer details
+  const { fetchCustomerById } = useCustomerStore();
 
   const [activeTab, setActiveTab] = useState("designs");
   const [showAllBio, setShowAllBio] = useState(false);
   const [selectedDesign, setSelectedDesign] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [reviewers, setReviewers] = useState({});
+  const [reviewersData, setReviewersData] = useState({});
 
   const currentUserId = user?._id || user?.id;
   const tailorId = id || currentUserId;
   const isOwnProfile = !id || (user && (user._id === id || user.id === id));
+  const loadingReviewerIdsRef = useRef(new Set());
+
+  const loadReviewerDetails = useCallback(
+    async (reviewClientId) => {
+      // Skip if already loaded or loading
+      if (
+        reviewersData[reviewClientId] ||
+        loadingReviewerIdsRef.current.has(reviewClientId)
+      ) {
+        return;
+      }
+
+      // Mark as loading
+      loadingReviewerIdsRef.current.add(reviewClientId);
+
+      try {
+        // First try customer
+        try {
+          const customer = await fetchCustomerById(reviewClientId);
+          if (customer && customer.name) {
+            setReviewersData((prev) => ({
+              ...prev,
+              [reviewClientId]: {
+                name: customer.name,
+                profileImage: customer.profilePic,
+                type: "customer",
+              },
+            }));
+            return;
+          }
+        } catch (error) {
+          // Not a customer, continue to tailor
+        }
+
+        // Try tailor
+        try {
+          const tailor = await useShopStore
+            .getState()
+            .fetchTailorById(reviewClientId);
+          if (tailor) {
+            setReviewersData((prev) => ({
+              ...prev,
+              [reviewClientId]: {
+                name: tailor.shopName || tailor.name,
+                profileImage: tailor.logoUrl,
+                type: "tailor",
+              },
+            }));
+            return;
+          }
+        } catch (error) {
+          console.error("Error fetching tailor reviewer details:", error);
+        }
+      } catch (error) {
+        console.error("Error fetching reviewer details:", error);
+      } finally {
+        // Remove from loading, whether successful or not
+        loadingReviewerIdsRef.current.delete(reviewClientId);
+      }
+    },
+    [reviewersData]
+  );
+
+  useEffect(() => {
+    // Only proceed if we have reviews
+    if (!reviews || reviews.length === 0) return;
+
+    // Find reviewers that need to be loaded
+    const reviewersToLoad = reviews
+      .filter((review) => review.clientId)
+      .filter(
+        (review) =>
+          !reviewersData[review.clientId] &&
+          !loadingReviewerIdsRef.current.has(review.clientId)
+      )
+      .map((review) => review.clientId);
+
+    // Load each reviewer
+    reviewersToLoad.forEach((clientId) => {
+      loadReviewerDetails(clientId);
+    });
+  }, [reviews, loadReviewerDetails]);
 
   useEffect(() => {
     if (!id) {
@@ -89,6 +203,7 @@ const TailorProfilePage = () => {
       resetState();
       getFollowers(tailorId);
       getFollowing(tailorId);
+      fetchUserReviews(tailorId); // Fetch reviews when component mounts
 
       if (!isOwnProfile && currentUserId) {
         checkIfFollowing(currentUserId, tailorId);
@@ -113,6 +228,19 @@ const TailorProfilePage = () => {
       fetchOffersByTailorId(tailorId);
     }
   }, [activeTab, fetchOffersByTailorId, tailorId]);
+
+  // Calculate average rating from the reviews in the store
+  const avgRating =
+    reviews.length > 0
+      ? reviews.reduce(
+          (acc, review) => acc + parseFloat(review.rating) || 0,
+          0
+        ) / reviews.length
+      : 0;
+
+  const formattedRating = avgRating.toFixed(1);
+
+  // This function is replaced by loadReviewerDetails
 
   const handleDesignClick = (design) => {
     setSelectedDesign(design);
@@ -148,16 +276,6 @@ const TailorProfilePage = () => {
       </div>
     );
   }
-
-  const avgRating =
-    tailor.reviews && tailor.reviews.length > 0
-      ? tailor.reviews.reduce(
-          (acc, review) => acc + parseFloat(review.rating) || 0,
-          0
-        ) / tailor.reviews.length
-      : 0;
-
-  const formattedRating = avgRating.toFixed(1);
 
   const truncatedBio =
     tailor.bio && tailor.bio.length > 100 && !showAllBio
@@ -542,57 +660,98 @@ const TailorProfilePage = () => {
     </div>
   );
 
-  const ReviewsList = () => (
-    <div className="space-y-2">
-      {tailor.reviews && tailor.reviews.length > 0 ? (
-        tailor.reviews.map((review, index) => (
-          <motion.div
-            key={review.id || index}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className="bg-white p-3 rounded-lg shadow-sm border border-gray-100"
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-medium text-gray-800 text-sm">
-                  {review.reviewer || review.clientName}
-                </h3>
-                <div className="flex text-yellow-400 mt-1">
-                  {Array.from({
-                    length: parseInt(review.rating) || 5,
-                  }).map((_, i) => (
-                    <FaStar key={i} className="text-xs" />
-                  ))}
+  const ReviewsList = () => {
+    return (
+      <div className="space-y-2">
+        {isLoadingReviews ? (
+          <div className="py-10 flex justify-center">
+            <Loader />
+          </div>
+        ) : reviews && reviews.length > 0 ? (
+          reviews.map((review, index) => {
+            const reviewer = reviewersData[review.clientId] || {
+              name: "Anonymous User",
+              profileImage: null,
+              type: null,
+            };
+
+            return (
+              <motion.div
+                key={review._id || index}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="bg-white p-3 rounded-lg shadow-sm border border-gray-100"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center">
+                    <div className="mr-3 w-10 h-10 rounded-full overflow-hidden">
+                      {reviewer.profileImage ? (
+                        <img
+                          src={reviewer.profileImage}
+                          alt={reviewer.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <FaUser className="text-gray-500" />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-800 text-sm">
+                        {reviewer.name}
+                        {reviewer.type && (
+                          <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                            {reviewer.type === "tailor" ? "Tailor" : "Customer"}
+                          </span>
+                        )}
+                      </h3>
+                      <div className="flex items-center mt-1">
+                        <div className="flex mr-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <span key={star}>
+                              {star <= review.rating ? (
+                                <FaStar className="text-yellow-400 text-xs" />
+                              ) : (
+                                <FaRegStar className="text-yellow-400 text-xs" />
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {review.rating.toFixed(0)}/5
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center text-xs text-gray-500">
+                    {formatDate(review.createdAt || review.date)}
+                  </div>
                 </div>
-              </div>
-              <span className="text-xs text-gray-400">
-                {review.createdAt
-                  ? new Date(review.createdAt).toLocaleDateString()
-                  : "2 days ago"}
-              </span>
-            </div>
-            <p className="text-xs text-gray-600 mt-2">
-              {review.comment || review.text}
-            </p>
-          </motion.div>
-        ))
-      ) : (
-        <div className="py-10 text-center text-gray-500 text-sm">
-          <FaStar className="text-2xl mx-auto mb-2 text-gray-300" />
-          <p>No reviews yet</p>
-          {!isOwnProfile && (
-            <button
-              onClick={() => navigate(`/leave-review/${tailorId}`)}
-              className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-xs font-medium hover:bg-primary-dark transition-colors"
-            >
-              Leave a Review
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
+                {review.comment && (
+                  <p className="text-xs text-gray-600 mt-2">{review.comment}</p>
+                )}
+              </motion.div>
+            );
+          })
+        ) : (
+          <div className="py-10 text-center text-gray-500 text-sm">
+            <FaStar className="text-2xl mx-auto mb-2 text-gray-300" />
+            <p>No reviews yet</p>
+            {!isOwnProfile && (
+              <button
+                onClick={() => navigate(`/leave-review/${tailorId}`)}
+                className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-xs font-medium hover:bg-primary-dark transition-colors"
+              >
+                Leave a Review
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const getTabContent = () => {
     switch (activeTab) {
