@@ -306,7 +306,7 @@ const DesignCard = ({ design }) => {
     } else if (price) {
       return `LKR ${price}`;
     }
-    return "Price not specified";
+    return "Not For Sale";
   };
 
   const placeholderImg = "/assets/placeholder-design.jpg";
@@ -412,9 +412,7 @@ const DesignCard = ({ design }) => {
                 {design.title || "Untitled Design"}
               </h2>
               <h3 className="text-lg text-primary font-bold">
-                {design.price
-                  ? formatPrice(design.price)
-                  : "Price not specified"}
+                {design.price ? formatPrice(design.price) : ""}
               </h3>
               <button
                 onClick={closeModal}
