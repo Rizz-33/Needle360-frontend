@@ -1,21 +1,26 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Edit2, MessageCircleMore, X } from "lucide-react";
+import { Edit2 } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import {
   FaCalendarAlt,
   FaChevronLeft,
   FaClock,
+  FaEdit,
+  FaEnvelope,
   FaMapMarkerAlt,
   FaPalette,
+  FaPhone,
   FaRegStar,
   FaStar,
   FaTag,
+  FaTimes,
   FaUser,
 } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
 import ChatPopup from "../../components/chat/ChatPopUp";
 import MessageButton from "../../components/chat/MessageButton";
+import { CustomButton } from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
 import { useAuthStore } from "../../store/Auth.store";
 import { useAvailabilityStore } from "../../store/Availability.store";
@@ -48,6 +53,137 @@ const formatDate = (dateString) => {
   return `${day}${suffix} ${month}, ${year}`;
 };
 
+const StarRating = ({ rating, setRating }) => {
+  return (
+    <div className="flex">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => setRating(star)}
+          className="focus:outline-none"
+        >
+          {star <= rating ? (
+            <FaStar className="text-yellow-400 text-lg" />
+          ) : (
+            <FaRegStar className="text-yellow-400 text-lg" />
+          )}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+const ReviewItem = ({ review }) => {
+  const [reviewer, setReviewer] = useState({
+    name: "Anonymous User",
+    profileImage: null,
+    type: null,
+  });
+
+  useEffect(() => {
+    const fetchReviewer = async () => {
+      if (review.clientId) {
+        try {
+          // Try to fetch as customer first
+          try {
+            const customer = await useCustomerStore
+              .getState()
+              .fetchCustomerById(review.clientId);
+            if (customer && customer.name) {
+              setReviewer({
+                name: customer.name,
+                profileImage: customer.profilePic,
+                type: "customer",
+              });
+              return;
+            }
+          } catch (error) {}
+
+          // Try to fetch as tailor
+          try {
+            const tailor = await useShopStore
+              .getState()
+              .fetchTailorById(review.clientId);
+            if (tailor) {
+              setReviewer({
+                name: tailor.shopName || tailor.name,
+                profileImage: tailor.logoUrl,
+                type: "tailor",
+              });
+              return;
+            }
+          } catch (error) {
+            console.error("Error fetching tailor reviewer details:", error);
+          }
+        } catch (error) {
+          console.error("Error fetching reviewer details:", error);
+        }
+      }
+    };
+
+    fetchReviewer();
+  }, [review.clientId]);
+
+  return (
+    <div className="border-b border-gray-200 py-4 last:border-0">
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex items-center">
+          <div className="mr-3 w-10 h-10 rounded-full overflow-hidden">
+            {reviewer.profileImage ? (
+              <img
+                src={reviewer.profileImage}
+                alt={reviewer.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "/assets/placeholder-user.jpg";
+                }}
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                <FaUser className="text-gray-500" />
+              </div>
+            )}
+          </div>
+          <div>
+            <h4 className="font-medium text-gray-800">
+              {reviewer.name}
+              {reviewer.type && (
+                <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                  {reviewer.type === "tailor" ? "Tailor" : "Customer"}
+                </span>
+              )}
+            </h4>
+            <div className="flex items-center mt-1">
+              <div className="flex mr-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <span key={star}>
+                    {star <= review.rating ? (
+                      <FaStar className="text-yellow-400 text-xs" />
+                    ) : (
+                      <FaRegStar className="text-yellow-400 text-xs" />
+                    )}
+                  </span>
+                ))}
+              </div>
+              <span className="text-xs text-gray-500">
+                {review.rating.toFixed(0)}/5
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center text-xs text-gray-500">
+          {formatDate(review.createdAt || review.date)}
+        </div>
+      </div>
+      {review.comment && (
+        <p className="text-sm text-gray-600 mt-2">{review.comment}</p>
+      )}
+    </div>
+  );
+};
+
 const TailorProfilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -65,34 +201,24 @@ const TailorProfilePage = () => {
     checkIfFollowing,
     resetState,
   } = useUserInteractionStore();
-
-  // Use the design store with just tailor designs
   const {
     tailorDesigns: designs,
     isLoading: isLoadingDesigns,
     fetchTailorDesignsById,
   } = useDesignStore();
-
-  // Use the offer store
   const {
     offers,
     isLoading: isLoadingOffers,
     fetchOffersByTailorId,
   } = useOfferStore();
-
-  // Use the availability store
   const { availabilitySlots, fetchTailorAvailability } = useAvailabilityStore();
-  // Use the service store
   const { services, fetchServices } = useServiceStore();
-
-  // Use the review store
   const {
     reviews,
     isLoading: isLoadingReviews,
     fetchUserReviews,
+    createReview,
   } = useReviewStore();
-
-  // Use customer store to fetch reviewer details
   const { fetchCustomerById } = useCustomerStore();
 
   const [activeTab, setActiveTab] = useState("designs");
@@ -101,6 +227,8 @@ const TailorProfilePage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [reviewers, setReviewers] = useState({});
   const [reviewersData, setReviewersData] = useState({});
+  const [rating, setRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
 
   const currentUserId = user?._id || user?.id;
   const tailorId = id || currentUserId;
@@ -109,7 +237,6 @@ const TailorProfilePage = () => {
 
   const loadReviewerDetails = useCallback(
     async (reviewClientId) => {
-      // Skip if already loaded or loading
       if (
         reviewersData[reviewClientId] ||
         loadingReviewerIdsRef.current.has(reviewClientId)
@@ -117,11 +244,9 @@ const TailorProfilePage = () => {
         return;
       }
 
-      // Mark as loading
       loadingReviewerIdsRef.current.add(reviewClientId);
 
       try {
-        // First try customer
         try {
           const customer = await fetchCustomerById(reviewClientId);
           if (customer && customer.name) {
@@ -135,11 +260,8 @@ const TailorProfilePage = () => {
             }));
             return;
           }
-        } catch (error) {
-          // Not a customer, continue to tailor
-        }
+        } catch (error) {}
 
-        // Try tailor
         try {
           const tailor = await useShopStore
             .getState()
@@ -161,7 +283,6 @@ const TailorProfilePage = () => {
       } catch (error) {
         console.error("Error fetching reviewer details:", error);
       } finally {
-        // Remove from loading, whether successful or not
         loadingReviewerIdsRef.current.delete(reviewClientId);
       }
     },
@@ -169,10 +290,8 @@ const TailorProfilePage = () => {
   );
 
   useEffect(() => {
-    // Only proceed if we have reviews
     if (!reviews || reviews.length === 0) return;
 
-    // Find reviewers that need to be loaded
     const reviewersToLoad = reviews
       .filter((review) => review.clientId)
       .filter(
@@ -182,7 +301,6 @@ const TailorProfilePage = () => {
       )
       .map((review) => review.clientId);
 
-    // Load each reviewer
     reviewersToLoad.forEach((clientId) => {
       loadReviewerDetails(clientId);
     });
@@ -203,7 +321,7 @@ const TailorProfilePage = () => {
       resetState();
       getFollowers(tailorId);
       getFollowing(tailorId);
-      fetchUserReviews(tailorId); // Fetch reviews when component mounts
+      fetchUserReviews(tailorId);
 
       if (!isOwnProfile && currentUserId) {
         checkIfFollowing(currentUserId, tailorId);
@@ -215,21 +333,18 @@ const TailorProfilePage = () => {
     };
   }, [fetchTailorById, tailorId, currentUserId, isOwnProfile]);
 
-  // Fetch designs when the designs tab is active
   useEffect(() => {
     if (activeTab === "designs" && tailorId && tailorId !== "undefined") {
       fetchTailorDesignsById(tailorId);
     }
   }, [activeTab, fetchTailorDesignsById, tailorId]);
 
-  // Fetch offers when the offers tab is active
   useEffect(() => {
     if (activeTab === "offers" && tailorId && tailorId !== "undefined") {
       fetchOffersByTailorId(tailorId);
     }
   }, [activeTab, fetchOffersByTailorId, tailorId]);
 
-  // Calculate average rating from the reviews in the store
   const avgRating =
     reviews.length > 0
       ? reviews.reduce(
@@ -240,8 +355,6 @@ const TailorProfilePage = () => {
 
   const formattedRating = avgRating.toFixed(1);
 
-  // This function is replaced by loadReviewerDetails
-
   const handleDesignClick = (design) => {
     setSelectedDesign(design);
     setIsModalOpen(true);
@@ -250,6 +363,8 @@ const TailorProfilePage = () => {
 
   const closeModal = () => {
     setIsModalOpen(false);
+    setRating(0);
+    setReviewComment("");
     document.body.style.overflow = "auto";
   };
 
@@ -770,9 +885,7 @@ const TailorProfilePage = () => {
 
   return (
     <div className="flex flex-col h-screen w-full bg-white">
-      {/* Scrollable content area */}
       <div className="flex-1 overflow-y-auto pb-16">
-        {/* Cover image with back button */}
         <div className="h-32 bg-gradient-to-r from-blue-50 to-purple-50 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent"></div>
           <motion.button
@@ -785,9 +898,7 @@ const TailorProfilePage = () => {
           </motion.button>
         </div>
 
-        {/* Profile section */}
         <div className="px-4 relative">
-          {/* Profile image */}
           <div className="relative -mt-12 mb-3 flex justify-between">
             <div className="w-20 h-20 rounded-full border-4 border-white overflow-hidden bg-white shadow-lg">
               {tailor.logoUrl ? (
@@ -803,7 +914,6 @@ const TailorProfilePage = () => {
               )}
             </div>
 
-            {/* Action buttons */}
             <div className="flex items-end gap-2 pt-20">
               {isOwnProfile ? (
                 <motion.button
@@ -835,7 +945,6 @@ const TailorProfilePage = () => {
             </div>
           </div>
 
-          {/* Profile info */}
           <div className="mb-4 -mt-10">
             <h1 className="text-xl font-bold text-gray-900">
               {tailor.shopName}
@@ -843,7 +952,6 @@ const TailorProfilePage = () => {
 
             <ProfileStats />
 
-            {/* Bio */}
             {tailor.bio && (
               <div className="mt-2">
                 <p className="text-xs text-gray-700">{truncatedBio}</p>
@@ -858,7 +966,6 @@ const TailorProfilePage = () => {
               </div>
             )}
 
-            {/* Address */}
             {tailor.shopAddress && (
               <div className="mt-2 flex items-center text-xs text-gray-600">
                 <FaMapMarkerAlt className="text-primary mr-1 text-xs" />
@@ -872,18 +979,15 @@ const TailorProfilePage = () => {
 
         <ProfileTabs />
 
-        {/* Tab content */}
         <div className="py-3 px-4">{getTabContent()}</div>
       </div>
 
-      {/* Fixed message button - only show when viewing someone else's profile */}
       {!isOwnProfile && (
         <div className="fixed bottom-4 right-4 z-20">
           <MessageButton userId={tailorId} />
         </div>
       )}
 
-      {/* Design Detail Modal */}
       <AnimatePresence>
         {isModalOpen && selectedDesign && (
           <motion.div
@@ -891,7 +995,7 @@ const TailorProfilePage = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={closeModal}
           >
             <motion.div
@@ -899,178 +1003,212 @@ const TailorProfilePage = () => {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 50 }}
               transition={{ type: "spring", damping: 25 }}
-              className="bg-white rounded-xl overflow-hidden w-full max-w-md max-h-[90vh] flex flex-col"
+              className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modal header */}
-              <div className="relative p-3 border-b">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100">
-                    {tailor.logoUrl ? (
-                      <img
-                        src={tailor.logoUrl}
-                        alt={tailor.shopName}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary to-blue-400 flex items-center justify-center text-white text-xs font-bold">
-                        {tailor.shopName?.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-xs">{tailor.shopName}</h3>
-                    <p className="text-2xs text-gray-500">
-                      {selectedDesign.category || "Fashion Design"}
-                    </p>
-                  </div>
-                </div>
+              <div className="sticky top-0 bg-white z-10 flex justify-between items-center p-6 border-b">
+                <h2 className="text-xl font-bold text-gray-800">
+                  {selectedDesign.title || "Untitled Design"}
+                </h2>
+                <h3 className="text-lg text-primary font-bold">
+                  {selectedDesign.price ? `LKR ${selectedDesign.price}` : ""}
+                </h3>
                 <button
                   onClick={closeModal}
-                  className="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  <X className="text-gray-500" size={16} />
+                  <FaTimes className="w-4 h-4" />
                 </button>
               </div>
-
-              {/* Modal content */}
-              <div className="overflow-y-auto flex-1">
-                {/* Design image */}
-                <div className="w-full bg-gray-100 flex items-center justify-center p-4">
-                  {selectedDesign.imageUrl ? (
-                    <img
-                      src={selectedDesign.imageUrl}
-                      alt={selectedDesign.title || selectedDesign.itemName}
-                      className="object-contain w-full h-full max-h-[300px] rounded-lg"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-200 rounded-lg">
-                      <FaPalette className="text-gray-400 text-3xl" />
+              <div className="p-6 space-y-6">
+                <div className="rounded-xl overflow-hidden bg-gray-100">
+                  <img
+                    src={
+                      selectedDesign.imageUrl ||
+                      "/assets/placeholder-design.jpg"
+                    }
+                    alt={selectedDesign.title || "Design Image"}
+                    className="w-full h-auto max-h-[400px] object-contain"
+                    onError={(e) => {
+                      e.target.src = "/assets/placeholder-design.jpg";
+                      e.target.onerror = null;
+                    }}
+                  />
+                </div>
+                <div className="flex items-center justify-end space-x-3">
+                  <div className="flex items-center text-gray-500 text-xs">
+                    <span>
+                      {selectedDesign.createdAt &&
+                        `created on ${formatDate(selectedDesign.createdAt)}`}
+                      {selectedDesign.updatedAt &&
+                        selectedDesign.updatedAt !== selectedDesign.createdAt &&
+                        `edited on ${formatDate(selectedDesign.updatedAt)}`}
+                    </span>
+                  </div>
+                  {selectedDesign.createdAt &&
+                    selectedDesign.updatedAt &&
+                    new Date(selectedDesign.createdAt).getTime() !==
+                      new Date(selectedDesign.updatedAt).getTime() && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <FaEdit className="mr-1" />
+                        Edited
+                      </span>
+                    )}
+                </div>
+                <div className="border-b border-primary/10 pb-4">
+                  <p className="text-gray-600 text-sm">
+                    {selectedDesign.description || "No description available"}
+                  </p>
+                  {selectedDesign.tags && selectedDesign.tags.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {selectedDesign.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+                        >
+                          {tag}
+                        </span>
+                      ))}
                     </div>
                   )}
                 </div>
-
-                {/* Design details */}
-                <div className="p-4">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h2 className="text-lg font-bold">
-                          {selectedDesign.title || selectedDesign.itemName}
-                        </h2>
-                        <p className="text-primary font-bold text-md mt-1">
-                          LKR {selectedDesign.price}
-                        </p>
-                      </div>
-                      {!isOwnProfile && (
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="px-3 py-1.5 bg-primary text-white rounded-full text-xs font-medium flex items-center gap-1"
-                          onClick={() => {
-                            closeModal();
-                            navigate(`/chat/${tailorId}`);
-                          }}
-                        >
-                          <MessageCircleMore size={12} />
-                          <span>Message</span>
-                        </motion.button>
-                      )}
+                <div className="border-b border-primary/10 pb-4">
+                  <h3 className="text-xs text-gray-900 mb-3">Designed by</h3>
+                  {isLoading ? (
+                    <div className="flex justify-center py-4">
+                      <Loader size="small" />
                     </div>
-
-                    {/* Description */}
-                    <div>
-                      <h4 className="text-xs font-medium text-gray-700 mb-1">
-                        Description
-                      </h4>
-                      <p className="text-xs text-gray-700">
-                        {selectedDesign.description ||
-                          "No description provided for this design."}
-                      </p>
-                    </div>
-
-                    {/* Details */}
-                    <div className="grid grid-cols-2 gap-3 mt-3">
-                      <div>
-                        <h4 className="text-2xs font-medium text-gray-500 mb-0.5 uppercase tracking-wider">
-                          Category
-                        </h4>
-                        <p className="text-xs text-gray-700">
-                          {selectedDesign.category || "-"}
-                        </p>
+                  ) : tailor ? (
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+                        <img
+                          src={tailor.logoUrl || "/assets/placeholder-user.jpg"}
+                          alt={tailor.shopName}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                       <div>
-                        <h4 className="text-2xs font-medium text-gray-500 mb-0.5 uppercase tracking-wider">
-                          Fabric Type
+                        <h4 className="font-medium text-gray-800 text-sm">
+                          {tailor.shopName || "Tailor Shop"}
                         </h4>
-                        <p className="text-xs text-gray-700">
-                          {selectedDesign.fabricType || "-"}
-                        </p>
-                      </div>
-                      <div>
-                        <h4 className="text-2xs font-medium text-gray-500 mb-0.5 uppercase tracking-wider">
-                          Colors
-                        </h4>
-                        <div className="flex gap-1.5 flex-wrap">
-                          {selectedDesign.colors ? (
-                            selectedDesign.colors
-                              .split(",")
-                              .map((color, i) => (
-                                <div
-                                  key={i}
-                                  className="w-5 h-5 rounded-full border border-gray-200 shadow-sm"
-                                  style={{ backgroundColor: color.trim() }}
-                                  title={color.trim()}
-                                />
-                              ))
-                          ) : (
-                            <p className="text-xs text-gray-700">-</p>
-                          )}
+                        <div className="flex space-x-4 mt-1">
+                          <a
+                            href={`tel:${tailor.contactNumber}`}
+                            className="flex items-center text-xs text-primary hover:text-primary-dark"
+                          >
+                            <FaPhone className="mr-1" />
+                            Call
+                          </a>
+                          <a
+                            href={`mailto:${tailor.email}`}
+                            className="flex items-center text-xs text-primary hover:text-primary-dark"
+                          >
+                            <FaEnvelope className="mr-1" />
+                            Email
+                          </a>
                         </div>
                       </div>
-                      <div>
-                        <h4 className="text-2xs font-medium text-gray-500 mb-0.5 uppercase tracking-wider">
-                          Size
-                        </h4>
-                        <p className="text-xs text-gray-700">
-                          {selectedDesign.size || "One Size"}
-                        </p>
-                      </div>
                     </div>
-
-                    {/* Additional info */}
-                    {selectedDesign.additionalInfo && (
-                      <div className="mt-3">
-                        <h4 className="text-xs font-medium text-gray-700 mb-1">
-                          Additional Information
-                        </h4>
-                        <p className="text-xs text-gray-700">
-                          {selectedDesign.additionalInfo}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Modal footer - only for own profile */}
-                  {isOwnProfile && (
-                    <div className="mt-4 pt-3 border-t flex justify-end gap-1.5">
-                      <button
-                        onClick={() => {
-                          closeModal();
-                          navigate(`/edit-design/${selectedDesign.id}`);
-                        }}
-                        className="px-3 py-1.5 border border-gray-300 rounded-full text-xs font-medium hover:bg-gray-50 transition-colors flex items-center gap-1"
-                      >
-                        <Edit2 size={12} />
-                        <span>Edit</span>
-                      </button>
-                      <button className="px-3 py-1.5 bg-primary text-white rounded-full text-xs font-medium hover:bg-primary-dark transition-colors flex items-center gap-1">
-                        <MessageCircleMore size={12} />
-                        <span>Share</span>
-                      </button>
+                  ) : (
+                    <div className="text-gray-500 text-sm">
+                      Creator details not available
                     </div>
                   )}
                 </div>
+                <div className="border-b border-primary/10 pb-4">
+                  <h3 className="text-md font-semibold text-gray-900 mb-3">
+                    Reviews
+                  </h3>
+                  {isLoadingReviews ? (
+                    <div className="flex justify-center py-4">
+                      <Loader size="small" />
+                    </div>
+                  ) : reviews.length > 0 ? (
+                    <div className="space-y-4">
+                      {reviews.map((review, index) => (
+                        <ReviewItem key={index} review={review} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-gray-500 text-sm py-2">
+                      No reviews yet. Be the first to review!
+                    </div>
+                  )}
+                </div>
+                {!isOwnProfile && user ? (
+                  <div>
+                    <h3 className="text-md font-semibold text-gray-900 mb-3">
+                      Rate this Tailor
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <StarRating rating={rating} setRating={setRating} />
+                      </div>
+                      <textarea
+                        className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        rows="3"
+                        placeholder="Share your thoughts about this tailor..."
+                        value={reviewComment}
+                        onChange={(e) => setReviewComment(e.target.value)}
+                      />
+                      <CustomButton
+                        text="Submit Review"
+                        color="primary"
+                        hover_color="hoverPrimary"
+                        variant="outlined"
+                        onClick={async () => {
+                          if (!rating) {
+                            toast.error("Please provide a rating");
+                            return;
+                          }
+                          try {
+                            const reviewData = {
+                              clientId: currentUserId,
+                              rating: rating,
+                              comment: reviewComment,
+                              date: new Date(),
+                            };
+                            await createReview(tailorId, reviewData);
+                            toast.success("Thank you for your review!");
+                            setRating(0);
+                            setReviewComment("");
+                            fetchUserReviews(tailorId);
+                          } catch (error) {
+                            console.error("Error submitting review:", error);
+                            toast.error("Failed to submit review");
+                          }
+                        }}
+                        width="w-1/3"
+                        height="h-10"
+                      />
+                    </div>
+                  </div>
+                ) : isOwnProfile ? (
+                  <div className="text-center text-xs text-gray-500 italic py-2">
+                    This is your profile. You cannot leave a review on your own
+                    work.
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500 italic py-2">
+                    Please log in to leave a review.
+                  </div>
+                )}
+                {isOwnProfile && (
+                  <div className="mt-6 pt-3 border-t flex justify-end gap-1.5">
+                    <CustomButton
+                      text="Edit"
+                      color="primary"
+                      hover_color="hoverAccent"
+                      variant="filled"
+                      width="w-1/3"
+                      height="h-8"
+                      onClick={() => {
+                        closeModal();
+                        handleEditProfile();
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </motion.div>
           </motion.div>
