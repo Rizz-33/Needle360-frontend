@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import ChatPopup from "./components/chat/ChatPopUp";
 import FashionDesignTool from "./components/design/Tool";
 import { SidebarProvider } from "./components/ui/SideBarMenu";
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -147,6 +148,7 @@ function App() {
 
   return (
     <div className="max-h-screen bg-white text-black flex items-center justify-center relative overflow-hidden">
+      <ChatPopup />
       <Routes>
         <Route
           path="/"

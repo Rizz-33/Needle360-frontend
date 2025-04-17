@@ -13,7 +13,7 @@ axios.defaults.headers.common["Content-Type"] = "application/json";
 export const useServiceStore = create((set, get) => ({
   services: [],
   allServices: [],
-  predefinedServices: predefinedServices, // Initialize with imported predefinedServices
+  predefinedServices: predefinedServices,
   tailors: [],
   isLoading: false,
   error: null,
@@ -61,7 +61,27 @@ export const useServiceStore = create((set, get) => ({
     }
   },
 
-  // Add services to a tailor's service list
+  fetchTailorsByService: async (serviceName) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.get(
+        `${BASE_API_URL}/service/${encodeURIComponent(serviceName)}`
+      );
+      console.log(`Fetched tailors for ${serviceName}:`, response.data);
+      return response.data.tailors || [];
+    } catch (error) {
+      set({
+        error:
+          error.response?.data?.message ||
+          `Error fetching tailors for ${serviceName}`,
+        isLoading: false,
+      });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
   addServices: async (tailorId, services) => {
     if (!tailorId || !services || !Array.isArray(services)) {
       return set({
