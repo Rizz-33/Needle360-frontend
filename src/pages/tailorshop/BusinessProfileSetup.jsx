@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { CustomButton } from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
 import { initialProfileComponents } from "../../configs/Profile.configs";
-import { predefinedServices } from "../../configs/Services.configs"; // Adjust path as needed
+import { predefinedServices } from "../../configs/Services.configs";
 import { useAuthStore } from "../../store/Auth.store";
 import { useAvailabilityStore } from "../../store/Availability.store";
 import { useDesignStore } from "../../store/Design.store";
@@ -46,7 +46,6 @@ const BusinessProfileSetup = () => {
     addServices,
     updateServices,
     deleteServices,
-    getLocalServices,
   } = useServiceStore();
 
   const navigate = useNavigate();
@@ -71,6 +70,7 @@ const BusinessProfileSetup = () => {
     status: "available",
     image: null,
     price: "",
+    tags: [], // Added tags to state
   });
   const [editingComponent, setEditingComponent] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
@@ -167,6 +167,7 @@ const BusinessProfileSetup = () => {
           description: design.description || "",
           image: design.imageUrl || null,
           price: design.price || "",
+          tags: design.tags || [], // Added tags
         }));
       }
 
@@ -248,6 +249,7 @@ const BusinessProfileSetup = () => {
         description: item.description,
         price: item.price,
         image: item.image,
+        tags: item.tags || [], // Added tags
       });
     } else if (componentId === "offers") {
       setNewItemData({
@@ -302,7 +304,6 @@ const BusinessProfileSetup = () => {
           await deleteBulkAvailability(user._id, [itemToDelete.id]);
           await fetchTailorAvailability(user._id);
         } else if (itemToDelete.component === "services") {
-          // Use the title (actual service name) instead of the id
           await deleteServices(user._id, [itemToDelete.title]);
           await fetchServices(user._id);
         }
@@ -354,6 +355,7 @@ const BusinessProfileSetup = () => {
       status: "available",
       image: null,
       price: "",
+      tags: [], // Initialize tags
     });
   };
 
@@ -374,6 +376,7 @@ const BusinessProfileSetup = () => {
           description: newItemData.description || "",
           price: newItemData.price || "",
           imageURLs: newItemData.image ? [newItemData.image] : [],
+          tags: newItemData.tags || [], // Include tags
         };
         await createTailorDesign(user._id, newDesign);
         await fetchTailorDesignsById(user._id);
@@ -433,11 +436,12 @@ const BusinessProfileSetup = () => {
         status: "available",
         image: null,
         price: "",
+        tags: [], // Reset tags
       });
       setEditingComponent(null);
     } catch (error) {
       console.error("Error adding new item:", error);
-      setSaveError("Failed to add new item");
+      setSaveError(error.message || "Failed to add new item");
     }
   };
 
@@ -700,6 +704,19 @@ const BusinessProfileSetup = () => {
                                         ? `${item.percentage}% OFF`
                                         : `LKR ${item.price}`}
                                     </p>
+                                  )}
+                                {component.id === "designs" &&
+                                  item.tags?.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {item.tags.map((tag, idx) => (
+                                        <span
+                                          key={idx}
+                                          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+                                        >
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
                                   )}
                               </div>
                               {(component.id === "designs" ||
@@ -996,6 +1013,34 @@ const BusinessProfileSetup = () => {
                                       )}
                                     </div>
                                   )}
+                                  {field.type === "select" &&
+                                    field.multiple && (
+                                      <div className="md:col-span-2">
+                                        <select
+                                          multiple
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                          value={newItemData[field.name] || []}
+                                          onChange={(e) =>
+                                            handleNewItemChange(
+                                              field.name,
+                                              Array.from(
+                                                e.target.selectedOptions,
+                                                (option) => option.value
+                                              )
+                                            )
+                                          }
+                                        >
+                                          {field.options.map((option) => (
+                                            <option key={option} value={option}>
+                                              {option}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          Hold Ctrl/Cmd to select multiple tags
+                                        </p>
+                                      </div>
+                                    )}
                                 </div>
                               ))
                             )}
@@ -1020,6 +1065,7 @@ const BusinessProfileSetup = () => {
                                   status: "available",
                                   image: null,
                                   price: "",
+                                  tags: [],
                                 });
                               }}
                             >
@@ -1172,6 +1218,117 @@ const BusinessProfileSetup = () => {
                           Hold Ctrl/Cmd to select multiple services
                         </p>
                       </div>
+                    ) : editingComponent === "designs" ? (
+                      <>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Title
+                          </label>
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            value={newItemData.title || ""}
+                            onChange={(e) =>
+                              handleNewItemChange("title", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Price
+                          </label>
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            value={newItemData.price || ""}
+                            onChange={(e) =>
+                              handleNewItemChange("price", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Description
+                          </label>
+                          <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            rows="3"
+                            value={newItemData.description || ""}
+                            onChange={(e) =>
+                              handleNewItemChange("description", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Tags
+                          </label>
+                          <select
+                            multiple
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            value={newItemData.tags || []}
+                            onChange={(e) =>
+                              handleNewItemChange(
+                                "tags",
+                                Array.from(
+                                  e.target.selectedOptions,
+                                  (option) => option.value
+                                )
+                              )
+                            }
+                          >
+                            {predefinedServices.map((service) => (
+                              <option key={service} value={service}>
+                                {service}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Hold Ctrl/Cmd to select multiple tags
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Image
+                          </label>
+                          <div className="flex items-center">
+                            <input
+                              type="file"
+                              id="item-image-edit"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) =>
+                                handleComponentImageUpload(e, "image")
+                              }
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                document
+                                  .getElementById("item-image-edit")
+                                  .click()
+                              }
+                              className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
+                            >
+                              Change Image
+                            </button>
+                            {newItemData.image && (
+                              <span className="ml-2 text-green-600 text-sm">
+                                Image selected
+                              </span>
+                            )}
+                          </div>
+                          {newItemData.image && (
+                            <div className="mt-2 w-16 h-16 rounded overflow-hidden">
+                              <img
+                                src={newItemData.image}
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </>
                     ) : (
                       <>
                         <div>
@@ -1189,34 +1346,17 @@ const BusinessProfileSetup = () => {
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
-                            {editingComponent === "designs"
-                              ? "Price"
-                              : "Percentage Off"}
+                            Percentage Off
                           </label>
                           <input
-                            type={
-                              editingComponent === "designs" ? "text" : "number"
-                            }
+                            type="number"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                            value={
-                              editingComponent === "designs"
-                                ? newItemData.price || ""
-                                : newItemData.percentage || ""
-                            }
+                            value={newItemData.percentage || ""}
                             onChange={(e) =>
-                              handleNewItemChange(
-                                editingComponent === "designs"
-                                  ? "price"
-                                  : "percentage",
-                                e.target.value
-                              )
+                              handleNewItemChange("percentage", e.target.value)
                             }
-                            min={
-                              editingComponent === "offers" ? "0" : undefined
-                            }
-                            max={
-                              editingComponent === "offers" ? "100" : undefined
-                            }
+                            min="0"
+                            max="100"
                           />
                         </div>
                         <div>
@@ -1232,39 +1372,32 @@ const BusinessProfileSetup = () => {
                             }
                           />
                         </div>
-                        {editingComponent === "offers" && (
-                          <>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Start Date
-                              </label>
-                              <input
-                                type="date"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                                value={newItemData.startDate || ""}
-                                onChange={(e) =>
-                                  handleNewItemChange(
-                                    "startDate",
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                End Date
-                              </label>
-                              <input
-                                type="date"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                                value={newItemData.endDate || ""}
-                                onChange={(e) =>
-                                  handleNewItemChange("endDate", e.target.value)
-                                }
-                              />
-                            </div>
-                          </>
-                        )}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Start Date
+                          </label>
+                          <input
+                            type="date"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            value={newItemData.startDate || ""}
+                            onChange={(e) =>
+                              handleNewItemChange("startDate", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            End Date
+                          </label>
+                          <input
+                            type="date"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            value={newItemData.endDate || ""}
+                            onChange={(e) =>
+                              handleNewItemChange("endDate", e.target.value)
+                            }
+                          />
+                        </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
                             Image
@@ -1335,6 +1468,7 @@ const BusinessProfileSetup = () => {
                           status: "available",
                           image: null,
                           price: "",
+                          tags: [],
                         });
                       }}
                     />
@@ -1355,6 +1489,7 @@ const BusinessProfileSetup = () => {
                               price: newItemData.price,
                               imageUrl:
                                 newItemData.image || editingItem.imageUrl,
+                              tags: newItemData.tags, // Include tags
                             });
                           } else if (editingComponent === "offers") {
                             await updateOffer(user._id, editingItem.id, {
@@ -1410,10 +1545,13 @@ const BusinessProfileSetup = () => {
                             status: "available",
                             image: null,
                             price: "",
+                            tags: [],
                           });
                         } catch (error) {
                           console.error("Error updating item:", error);
-                          setSaveError("Failed to update item");
+                          setSaveError(
+                            error.message || "Failed to update item"
+                          );
                         }
                       }}
                     />
@@ -1600,6 +1738,19 @@ const BusinessProfileSetup = () => {
                                       item.comment ||
                                       ""}
                                   </p>
+                                  {component.id === "designs" &&
+                                    item.tags?.length > 0 && (
+                                      <div className="flex flex-wrap gap-1 mt-1">
+                                        {item.tags.map((tag, idx) => (
+                                          <span
+                                            key={idx}
+                                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+                                          >
+                                            {tag}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
                                   {item.rating && (
                                     <div className="flex items-center mt-1">
                                       {Array.from({
