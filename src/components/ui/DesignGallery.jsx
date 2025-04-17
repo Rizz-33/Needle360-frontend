@@ -457,9 +457,6 @@ const DesignCard = ({ design }) => {
                 {/* Tags Display in Modal */}
                 {design.tags && design.tags.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="text-xs font-semibold text-gray-900 mr-2">
-                      Tags:
-                    </span>
                     {design.tags.map((tag, index) => (
                       <span
                         key={index}
