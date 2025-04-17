@@ -1,5 +1,7 @@
 // data/profileComponentsData.js
 
+import { predefinedServices } from "./Services.configs";
+
 export const initialProfileComponents = [
   {
     id: "offers",
@@ -120,6 +122,13 @@ export const initialCustomerProfileComponents = [
     contentFields: [
       { name: "title", label: "Design Title", type: "text" },
       { name: "description", label: "Design Description", type: "textarea" },
+      {
+        name: "tags",
+        label: "Design Tags",
+        type: "select",
+        options: predefinedServices,
+        multiple: true,
+      },
       { name: "image", label: "Design Image", type: "image" },
     ],
     items: [],

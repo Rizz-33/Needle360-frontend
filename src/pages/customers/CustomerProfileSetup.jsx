@@ -32,6 +32,7 @@ const CustomerProfileSetup = () => {
   const [newItemData, setNewItemData] = useState({
     title: "",
     description: "",
+    tags: [], // Added tags field
     image: null,
   });
   const [editingComponent, setEditingComponent] = useState(null);
@@ -123,6 +124,7 @@ const CustomerProfileSetup = () => {
     setNewItemData({
       title: item.title || "",
       description: item.description || "",
+      tags: item.tags || [], // Added tags
       image: item.image || item.imageUrl || null,
     });
   };
@@ -185,6 +187,7 @@ const CustomerProfileSetup = () => {
     setNewItemData({
       title: "",
       description: "",
+      tags: [], // Initialize tags
       image: null,
     });
   };
@@ -204,6 +207,7 @@ const CustomerProfileSetup = () => {
         const designData = {
           title: newItemData.title,
           description: newItemData.description,
+          tags: newItemData.tags, // Include tags
           image: newItemData.image,
         };
         await createCustomerDesign(user._id, designData);
@@ -227,6 +231,7 @@ const CustomerProfileSetup = () => {
       setNewItemData({
         title: "",
         description: "",
+        tags: [], // Reset tags
         image: null,
       });
       setEditingComponent(null);
@@ -469,6 +474,18 @@ const CustomerProfileSetup = () => {
                                 <h4 className="font-semibold text-gray-800 text-sm">
                                   {item.title || `Item ${index + 1}`}
                                 </h4>
+                                {item.tags && item.tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 mt-1">
+                                    {item.tags.map((tag, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                               <div className="flex space-x-2">
                                 <button
@@ -564,6 +581,34 @@ const CustomerProfileSetup = () => {
                                     }
                                   ></textarea>
                                 )}
+                                {field.type === "select" && field.multiple && (
+                                  <>
+                                    <select
+                                      multiple
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                      value={newItemData[field.name] || []}
+                                      onChange={(e) =>
+                                        handleNewItemChange(
+                                          field.name,
+                                          Array.from(
+                                            e.target.selectedOptions,
+                                            (option) => option.value
+                                          )
+                                        )
+                                      }
+                                    >
+                                      {field.options.map((option) => (
+                                        <option key={option} value={option}>
+                                          {option}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      Please press CTRL/CMD to select multiple
+                                      tags.
+                                    </div>
+                                  </>
+                                )}
                                 {field.type === "image" && (
                                   <div>
                                     <div className="flex items-center">
@@ -621,6 +666,7 @@ const CustomerProfileSetup = () => {
                                 setNewItemData({
                                   title: "",
                                   description: "",
+                                  tags: [],
                                   image: null,
                                 });
                               }}
@@ -661,71 +707,102 @@ const CustomerProfileSetup = () => {
                     Edit {editingComponent === "designs" ? "Design" : "Review"}
                   </h3>
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Title
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        value={newItemData.title || ""}
-                        onChange={(e) =>
-                          handleNewItemChange("title", e.target.value)
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Description
-                      </label>
-                      <textarea
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        rows="3"
-                        value={newItemData.description || ""}
-                        onChange={(e) =>
-                          handleNewItemChange("description", e.target.value)
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Image
-                      </label>
-                      <div className="flex items-center">
-                        <input
-                          type="file"
-                          id="item-image-edit"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) =>
-                            handleComponentImageUpload(e, "image")
-                          }
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            document.getElementById("item-image-edit").click()
-                          }
-                          className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
-                        >
-                          Change Image
-                        </button>
-                        {newItemData.image && (
-                          <span className="ml-2 text-green-600 text-sm">
-                            Image selected
-                          </span>
-                        )}
-                      </div>
-                      {newItemData.image && (
-                        <div className="mt-2 w-full h-48 rounded overflow-hidden">
-                          <img
-                            src={newItemData.image}
-                            alt="Preview"
-                            className="w-full h-full object-cover"
-                          />
+                    {components
+                      .find((c) => c.id === editingComponent)
+                      ?.contentFields.map((field) => (
+                        <div key={field.name}>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            {field.label}
+                          </label>
+                          {field.type === "text" && (
+                            <input
+                              type="text"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                              value={newItemData[field.name] || ""}
+                              onChange={(e) =>
+                                handleNewItemChange(field.name, e.target.value)
+                              }
+                            />
+                          )}
+                          {field.type === "textarea" && (
+                            <textarea
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                              rows="3"
+                              value={newItemData[field.name] || ""}
+                              onChange={(e) =>
+                                handleNewItemChange(field.name, e.target.value)
+                              }
+                            />
+                          )}
+                          {field.type === "select" && field.multiple && (
+                            <>
+                              <select
+                                multiple
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                value={newItemData[field.name] || []}
+                                onChange={(e) =>
+                                  handleNewItemChange(
+                                    field.name,
+                                    Array.from(
+                                      e.target.selectedOptions,
+                                      (option) => option.value
+                                    )
+                                  )
+                                }
+                              >
+                                {field.options.map((option) => (
+                                  <option key={option} value={option}>
+                                    {option}
+                                  </option>
+                                ))}
+                              </select>
+                              <div className="text-xs text-gray-500 mt-1">
+                                Please press CTRL/CMD to select multiple tags.
+                              </div>
+                            </>
+                          )}
+                          {field.type === "image" && (
+                            <div>
+                              <div className="flex items-center">
+                                <input
+                                  type="file"
+                                  id="item-image-edit"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) =>
+                                    handleComponentImageUpload(e, field.name)
+                                  }
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    document
+                                      .getElementById("item-image-edit")
+                                      .click()
+                                  }
+                                  className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
+                                >
+                                  Change Image
+                                </button>
+                                {newItemData[field.name] && (
+                                  <span className="ml-2 text-green-600 text-sm">
+                                    Image selected
+                                  </span>
+                                )}
+                              </div>
+                              {newItemData[field.name] && (
+                                <div className="mt-2 w-full h-48 rounded overflow-hidden">
+                                  <img
+                                    src={newItemData[field.name]}
+                                    alt="Preview"
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
+                      ))}
                   </div>
                   <div className="flex justify-end space-x-2 mt-4">
                     <CustomButton
@@ -742,6 +819,7 @@ const CustomerProfileSetup = () => {
                         setNewItemData({
                           title: "",
                           description: "",
+                          tags: [],
                           image: null,
                         });
                       }}
@@ -760,6 +838,7 @@ const CustomerProfileSetup = () => {
                             const designData = {
                               title: newItemData.title,
                               description: newItemData.description,
+                              tags: newItemData.tags, // Include tags
                               image: newItemData.image,
                             };
                             await updateCustomerDesign(
@@ -792,6 +871,7 @@ const CustomerProfileSetup = () => {
                           setNewItemData({
                             title: "",
                             description: "",
+                            tags: [],
                             image: null,
                           });
                         } catch (error) {
@@ -960,6 +1040,18 @@ const CustomerProfileSetup = () => {
                                   <p className="text-sm text-gray-600 mt-1">
                                     {item.description || ""}
                                   </p>
+                                  {item.tags && item.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-1">
+                                      {item.tags.map((tag, idx) => (
+                                        <span
+                                          key={idx}
+                                          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+                                        >
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
                                   {item.rating && (
                                     <div className="flex items-center mt-1">
                                       {Array.from({
