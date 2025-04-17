@@ -128,7 +128,7 @@ const Services = ({ tailorId }) => {
 
   if (error) {
     return (
-      <div className="text-center py-8 rounded-lg bg-red-50 text-red-600 p-4 max-w-md mx-auto">
+      <div className="text-center py-8 rounded-xlg bg-red-50 text-red-600 p-4 max-w-md mx-auto">
         <p className="font-medium">Unable to load services</p>
         <p className="text-sm mt-1">{error}</p>
       </div>
@@ -211,7 +211,7 @@ const Services = ({ tailorId }) => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className={`
-                  snap-center flex-shrink-0 w-48 h-48 cursor-pointer rounded-2xl p-6 flex flex-col items-center justify-center
+                  snap-center flex-shrink-0 w-48 h-48 cursor-pointer rounded-3xl p-6 flex flex-col items-center justify-center
                   transition-all duration-300 border ${borderColor}
                   ${isSelected ? "ring-2 ring-offset-2 ring-indigo-600" : ""}
                   ${bgColor} shadow-lg hover:shadow-xl
@@ -265,7 +265,7 @@ const Services = ({ tailorId }) => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-10 p-6 bg-white rounded-2xl shadow-lg max-w-4xl mx-auto"
+          className="mt-10 p-6 bg-white rounded-3xl shadow-lg max-w-4xl mx-auto"
         >
           <h3 className="text-lg font-semibold mb-2 text-gray-800">
             {selectedService}
@@ -308,7 +308,7 @@ const Services = ({ tailorId }) => {
                     key={tailor._id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-4 bg-gray-50 rounded-xl shadow-sm flex flex-col"
+                    className="p-4 bg-gray-50 rounded-2xl shadow-sm flex flex-col"
                   >
                     <div className="flex items-center mb-3">
                       {tailor.logoUrl ? (
