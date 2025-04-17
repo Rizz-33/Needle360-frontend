@@ -94,3 +94,16 @@ export const designFeatures = [
     description: "Virtual try-on technology to visualize your designs",
   },
 ];
+
+export const predefinedServices = [
+  "School Uniforms",
+  "Saree Blouses",
+  "Wedding Attire",
+  "Office Wear",
+  "National Dress",
+  "Formal Wear",
+  "Casual Wear",
+  "Kidswear",
+  "Religious/Cultural Outfits",
+  "Custom Fashion Designs",
+];

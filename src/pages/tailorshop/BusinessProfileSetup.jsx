@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { CustomButton } from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
 import { initialProfileComponents } from "../../configs/Profile.configs";
+import { predefinedServices } from "../../configs/Services.configs"; // Adjust path as needed
 import { useAuthStore } from "../../store/Auth.store";
 import { useAvailabilityStore } from "../../store/Availability.store";
 import { useDesignStore } from "../../store/Design.store";
@@ -57,6 +58,7 @@ const BusinessProfileSetup = () => {
   const [components, setComponents] = useState(initialProfileComponents);
   const [currentStep, setCurrentStep] = useState(0);
   const [newItemData, setNewItemData] = useState({
+    selectedServices: [],
     title: "",
     description: "",
     percentage: 0,
@@ -188,19 +190,10 @@ const BusinessProfileSetup = () => {
       const servicesComp = components.find((comp) => comp.id === "services");
       if (servicesComp) {
         servicesComp.enabled = services.length > 0;
-        servicesComp.items = services.map((service, index) => {
-          if (typeof service === "string") {
-            return {
-              id: service, // Use the service string as ID
-              title: service,
-            };
-          } else {
-            return {
-              id: service.id || `service-${index}`,
-              title: service.title || "",
-            };
-          }
-        });
+        servicesComp.items = services.map((service, index) => ({
+          id: `service-${index}`,
+          title: typeof service === "string" ? service : service.title || "",
+        }));
       }
 
       setComponents(updatedComponents);
@@ -274,17 +267,27 @@ const BusinessProfileSetup = () => {
         status: item.status || "available",
       });
     } else if (componentId === "services") {
-      // Extract the service name whether it's a string or object
-      const serviceName = typeof item === "string" ? item : item.title || "";
       setNewItemData({
-        title: serviceName,
-        originalTitle: serviceName, // Keep track of original for updates
+        selectedServices: services.map((s) =>
+          typeof s === "string" ? s : s.title
+        ),
       });
     }
   };
 
   const handleDeleteItem = (itemId, componentId) => {
-    setItemToDelete({ id: itemId, component: componentId });
+    if (componentId === "services") {
+      const serviceItem = components
+        .find((comp) => comp.id === "services")
+        .items.find((item) => item.id === itemId);
+      setItemToDelete({
+        id: itemId,
+        title: serviceItem.title,
+        component: componentId,
+      });
+    } else {
+      setItemToDelete({ id: itemId, component: componentId });
+    }
     setShowDeleteConfirm(true);
   };
 
@@ -299,25 +302,12 @@ const BusinessProfileSetup = () => {
           await deleteBulkAvailability(user._id, [itemToDelete.id]);
           await fetchTailorAvailability(user._id);
         } else if (itemToDelete.component === "services") {
-          // Get the service name to delete
-          const serviceToDelete = services.find(
-            (service) =>
-              (typeof service === "string" && service === itemToDelete.id) ||
-              (typeof service === "object" && service.title === itemToDelete.id)
-          );
-
-          if (serviceToDelete) {
-            const serviceName =
-              typeof serviceToDelete === "string"
-                ? serviceToDelete
-                : serviceToDelete.title;
-
-            await deleteServices(user._id, [serviceName]);
-            await fetchServices(user._id);
-          }
-          setShowDeleteConfirm(false);
-          setItemToDelete(null);
+          // Use the title (actual service name) instead of the id
+          await deleteServices(user._id, [itemToDelete.title]);
+          await fetchServices(user._id);
         }
+        setShowDeleteConfirm(false);
+        setItemToDelete(null);
       } catch (error) {
         console.error("Error deleting item:", error);
         setSaveError("Failed to delete item");
@@ -351,6 +341,7 @@ const BusinessProfileSetup = () => {
   const startEditing = (componentId) => {
     setEditingComponent(componentId);
     setNewItemData({
+      selectedServices: [],
       title: "",
       description: "",
       percentage: 0,
@@ -384,7 +375,6 @@ const BusinessProfileSetup = () => {
           price: newItemData.price || "",
           imageURLs: newItemData.image ? [newItemData.image] : [],
         };
-
         await createTailorDesign(user._id, newDesign);
         await fetchTailorDesignsById(user._id);
       } else if (editingComponent === "offers") {
@@ -396,7 +386,6 @@ const BusinessProfileSetup = () => {
           endDate: newItemData.endDate || new Date().toISOString(),
           imageUrl: newItemData.image || null,
         };
-
         await createOffer(user._id, newOffer);
         await fetchOffersByTailorId(user._id);
       } else if (editingComponent === "availability") {
@@ -404,7 +393,6 @@ const BusinessProfileSetup = () => {
           setSaveError("Day, opening time, and closing time are required");
           return;
         }
-
         if (
           !validateTimeFormat(newItemData.from) ||
           !validateTimeFormat(newItemData.to)
@@ -414,7 +402,6 @@ const BusinessProfileSetup = () => {
           );
           return;
         }
-
         const newSlot = {
           day: newItemData.day,
           from: newItemData.from,
@@ -422,53 +409,18 @@ const BusinessProfileSetup = () => {
           isOpen: newItemData.isOpen,
           status: "available",
         };
-
         await createBulkAvailability(user._id, [newSlot]);
         await fetchTailorAvailability(user._id);
       } else if (editingComponent === "services") {
-        if (!newItemData.title.trim()) {
-          setSaveError("Service name cannot be empty");
+        if (!newItemData.selectedServices.length) {
+          setSaveError("Please select at least one service");
           return;
         }
-
-        try {
-          // Add the new service to the existing services
-          await addServices(user._id, [newItemData.title.trim()]);
-          await fetchServices(user._id);
-
-          setNewItemData({
-            title: "",
-            description: "",
-            percentage: 0,
-            startDate: "",
-            endDate: "",
-            day: "",
-            from: "09:00",
-            to: "17:00",
-            isOpen: true,
-            status: "available",
-            image: null,
-            price: "",
-          });
-          setEditingComponent(null);
-        } catch (error) {
-          console.error("Error adding service:", error);
-          setSaveError("Failed to add service");
-        }
-      } else {
-        setComponents((prevComponents) =>
-          prevComponents.map((comp) =>
-            comp.id === editingComponent
-              ? {
-                  ...comp,
-                  items: [...comp.items, { id: Date.now(), ...newItemData }],
-                }
-              : comp
-          )
-        );
+        await addServices(user._id, newItemData.selectedServices);
+        await fetchServices(user._id);
       }
-
       setNewItemData({
+        selectedServices: [],
         title: "",
         description: "",
         percentage: 0,
@@ -741,8 +693,7 @@ const BusinessProfileSetup = () => {
                                     `Item ${index + 1}`}
                                 </h4>
                                 {(component.id === "offers" ||
-                                  component.id === "designs" ||
-                                  component.id === "services") &&
+                                  component.id === "designs") &&
                                   (item.price || item.percentage) && (
                                     <p className="text-xs font-medium text-primary mt-1">
                                       {component.id === "offers"
@@ -896,6 +847,35 @@ const BusinessProfileSetup = () => {
                                   </label>
                                 </div>
                               </>
+                            ) : component.id === "services" ? (
+                              <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Select Services
+                                </label>
+                                <select
+                                  multiple
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                  value={newItemData.selectedServices}
+                                  onChange={(e) =>
+                                    handleNewItemChange(
+                                      "selectedServices",
+                                      Array.from(
+                                        e.target.selectedOptions,
+                                        (option) => option.value
+                                      )
+                                    )
+                                  }
+                                >
+                                  {predefinedServices.map((service) => (
+                                    <option key={service} value={service}>
+                                      {service}
+                                    </option>
+                                  ))}
+                                </select>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Hold Ctrl/Cmd to select multiple services
+                                </p>
+                              </div>
                             ) : (
                               component.contentFields.map((field) => (
                                 <div
@@ -1027,6 +1007,7 @@ const BusinessProfileSetup = () => {
                               onClick={() => {
                                 setEditingComponent(null);
                                 setNewItemData({
+                                  selectedServices: [],
                                   title: "",
                                   description: "",
                                   percentage: 0,
@@ -1059,7 +1040,7 @@ const BusinessProfileSetup = () => {
                                     !newItemData.from ||
                                     !newItemData.to)) ||
                                 (editingComponent === "services" &&
-                                  !newItemData.title)
+                                  !newItemData.selectedServices.length)
                               }
                             >
                               Add
@@ -1094,7 +1075,7 @@ const BusinessProfileSetup = () => {
                       ? "Offer"
                       : editingComponent === "availability"
                       ? "Availability"
-                      : "Service"}
+                      : "Services"}
                   </h3>
                   <div className="space-y-4">
                     {editingComponent === "availability" ? (
@@ -1162,6 +1143,35 @@ const BusinessProfileSetup = () => {
                           </label>
                         </div>
                       </>
+                    ) : editingComponent === "services" ? (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Select Services
+                        </label>
+                        <select
+                          multiple
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          value={newItemData.selectedServices}
+                          onChange={(e) =>
+                            handleNewItemChange(
+                              "selectedServices",
+                              Array.from(
+                                e.target.selectedOptions,
+                                (option) => option.value
+                              )
+                            )
+                          }
+                        >
+                          {predefinedServices.map((service) => (
+                            <option key={service} value={service}>
+                              {service}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Hold Ctrl/Cmd to select multiple services
+                        </p>
+                      </div>
                     ) : (
                       <>
                         <div>
@@ -1177,213 +1187,125 @@ const BusinessProfileSetup = () => {
                             }
                           />
                         </div>
-                        {editingComponent !== "services" && (
-                          <>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                {editingComponent === "designs"
-                                  ? "Price"
-                                  : "Percentage Off"}
-                              </label>
-                              <input
-                                type={
-                                  editingComponent === "designs" ||
-                                  editingComponent === "services"
-                                    ? "text"
-                                    : "number"
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                                value={
-                                  editingComponent === "designs"
-                                    ? newItemData.price || ""
-                                    : newItemData.percentage || ""
-                                }
-                                onChange={(e) =>
-                                  handleNewItemChange(
-                                    editingComponent === "designs"
-                                      ? "price"
-                                      : "percentage",
-                                    e.target.value
-                                  )
-                                }
-                                min={
-                                  editingComponent === "offers"
-                                    ? "0"
-                                    : undefined
-                                }
-                                max={
-                                  editingComponent === "offers"
-                                    ? "100"
-                                    : undefined
-                                }
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Description
-                              </label>
-                              <textarea
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                                rows="3"
-                                value={newItemData.description || ""}
-                                onChange={(e) =>
-                                  handleNewItemChange(
-                                    "description",
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </div>
-                          </>
-                        )}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            {editingComponent === "designs"
+                              ? "Price"
+                              : "Percentage Off"}
+                          </label>
+                          <input
+                            type={
+                              editingComponent === "designs" ? "text" : "number"
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            value={
+                              editingComponent === "designs"
+                                ? newItemData.price || ""
+                                : newItemData.percentage || ""
+                            }
+                            onChange={(e) =>
+                              handleNewItemChange(
+                                editingComponent === "designs"
+                                  ? "price"
+                                  : "percentage",
+                                e.target.value
+                              )
+                            }
+                            min={
+                              editingComponent === "offers" ? "0" : undefined
+                            }
+                            max={
+                              editingComponent === "offers" ? "100" : undefined
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Description
+                          </label>
+                          <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            rows="3"
+                            value={newItemData.description || ""}
+                            onChange={(e) =>
+                              handleNewItemChange("description", e.target.value)
+                            }
+                          />
+                        </div>
                         {editingComponent === "offers" && (
                           <>
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">
                                 Start Date
                               </label>
-                              <div className="relative">
-                                <input
-                                  type="date"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-sm"
-                                  value={newItemData.startDate || ""}
-                                  onChange={(e) =>
-                                    handleNewItemChange(
-                                      "startDate",
-                                      e.target.value
-                                    )
-                                  }
-                                  style={{
-                                    colorScheme: "light",
-                                  }}
-                                />
-                              </div>
+                              <input
+                                type="date"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                value={newItemData.startDate || ""}
+                                onChange={(e) =>
+                                  handleNewItemChange(
+                                    "startDate",
+                                    e.target.value
+                                  )
+                                }
+                              />
                             </div>
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">
                                 End Date
                               </label>
-                              <div className="relative">
-                                <input
-                                  type="date"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-sm"
-                                  value={newItemData.endDate || ""}
-                                  onChange={(e) =>
-                                    handleNewItemChange(
-                                      "endDate",
-                                      e.target.value
-                                    )
-                                  }
-                                  style={{
-                                    colorScheme: "light",
-                                  }}
-                                />
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap gap-2 my-2">
-                              <button
-                                type="button"
-                                className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
-                                onClick={() => {
-                                  const today = new Date();
-                                  const endDate = new Date();
-                                  endDate.setDate(today.getDate() + 7);
-                                  handleNewItemChange(
-                                    "startDate",
-                                    today.toISOString().split("T")[0]
-                                  );
-                                  handleNewItemChange(
-                                    "endDate",
-                                    endDate.toISOString().split("T")[0]
-                                  );
-                                }}
-                              >
-                                7 Days
-                              </button>
-                              <button
-                                type="button"
-                                className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
-                                onClick={() => {
-                                  const today = new Date();
-                                  const endDate = new Date();
-                                  endDate.setDate(today.getDate() + 30);
-                                  handleNewItemChange(
-                                    "startDate",
-                                    today.toISOString().split("T")[0]
-                                  );
-                                  handleNewItemChange(
-                                    "endDate",
-                                    endDate.toISOString().split("T")[0]
-                                  );
-                                }}
-                              >
-                                30 Days
-                              </button>
-                              <button
-                                type="button"
-                                className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
-                                onClick={() => {
-                                  const today = new Date();
-                                  const endDate = new Date();
-                                  endDate.setDate(today.getDate() + 90);
-                                  handleNewItemChange(
-                                    "startDate",
-                                    today.toISOString().split("T")[0]
-                                  );
-                                  handleNewItemChange(
-                                    "endDate",
-                                    endDate.toISOString().split("T")[0]
-                                  );
-                                }}
-                              >
-                                90 Days
-                              </button>
+                              <input
+                                type="date"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                value={newItemData.endDate || ""}
+                                onChange={(e) =>
+                                  handleNewItemChange("endDate", e.target.value)
+                                }
+                              />
                             </div>
                           </>
                         )}
-                        {editingComponent !== "services" && (
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                              Image
-                            </label>
-                            <div className="flex items-center">
-                              <input
-                                type="file"
-                                id="item-image-edit"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) =>
-                                  handleComponentImageUpload(e, "image")
-                                }
-                              />
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  document
-                                    .getElementById("item-image-edit")
-                                    .click()
-                                }
-                                className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
-                              >
-                                Change Image
-                              </button>
-                              {newItemData.image && (
-                                <span className="ml-2 text-green-600 text-sm">
-                                  Image selected
-                                </span>
-                              )}
-                            </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Image
+                          </label>
+                          <div className="flex items-center">
+                            <input
+                              type="file"
+                              id="item-image-edit"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) =>
+                                handleComponentImageUpload(e, "image")
+                              }
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                document
+                                  .getElementById("item-image-edit")
+                                  .click()
+                              }
+                              className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
+                            >
+                              Change Image
+                            </button>
                             {newItemData.image && (
-                              <div className="mt-2 w-full h-48 rounded overflow-hidden">
-                                <img
-                                  src={newItemData.image}
-                                  alt="Preview"
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
+                              <span className="ml-2 text-green-600 text-sm">
+                                Image selected
+                              </span>
                             )}
                           </div>
-                        )}
+                          {newItemData.image && (
+                            <div className="mt-2 w-16 h-16 rounded overflow-hidden">
+                              <img
+                                src={newItemData.image}
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                        </div>
                       </>
                     )}
                   </div>
@@ -1400,6 +1322,7 @@ const BusinessProfileSetup = () => {
                         setEditingItem(null);
                         setEditingComponent(null);
                         setNewItemData({
+                          selectedServices: [],
                           title: "",
                           description: "",
                           percentage: 0,
@@ -1453,7 +1376,6 @@ const BusinessProfileSetup = () => {
                               );
                               return;
                             }
-
                             await updateBulkAvailability(user._id, [
                               {
                                 id: editingItem.id,
@@ -1464,42 +1386,31 @@ const BusinessProfileSetup = () => {
                                 status: "available",
                               },
                             ]);
-
                             await fetchTailorAvailability(user._id);
                           } else if (editingComponent === "services") {
-                            // Create a new array with the updated services
-                            const updatedServices = services.map((service) => {
-                              if (
-                                (typeof service === "string" &&
-                                  service === editingItem.title) ||
-                                (typeof service === "object" &&
-                                  service.title === editingItem.title)
-                              ) {
-                                return newItemData.title.trim();
-                              }
-                              return service;
-                            });
-
-                            await updateServices(user._id, updatedServices);
+                            await updateServices(
+                              user._id,
+                              newItemData.selectedServices
+                            );
                             await fetchServices(user._id);
-
-                            setEditingItem(null);
-                            setEditingComponent(null);
-                            setNewItemData({
-                              title: "",
-                              description: "",
-                              percentage: 0,
-                              startDate: "",
-                              endDate: "",
-                              day: "",
-                              from: "09:00",
-                              to: "17:00",
-                              isOpen: true,
-                              status: "available",
-                              image: null,
-                              price: "",
-                            });
                           }
+                          setEditingItem(null);
+                          setEditingComponent(null);
+                          setNewItemData({
+                            selectedServices: [],
+                            title: "",
+                            description: "",
+                            percentage: 0,
+                            startDate: "",
+                            endDate: "",
+                            day: "",
+                            from: "09:00",
+                            to: "17:00",
+                            isOpen: true,
+                            status: "available",
+                            image: null,
+                            price: "",
+                          });
                         } catch (error) {
                           console.error("Error updating item:", error);
                           setSaveError("Failed to update item");
@@ -1647,70 +1558,65 @@ const BusinessProfileSetup = () => {
                           </div>
                         ) : component.items.length > 0 ? (
                           <div className="space-y-3">
-                            {component.items
-                              .filter(
-                                (item, index, self) =>
-                                  index ===
-                                  self.findIndex((i) => i.id === item.id)
-                              )
-                              .map((item) => (
-                                <div
-                                  key={item.id}
-                                  className="flex border-b pb-3 last:border-0 last:pb-0"
-                                >
-                                  {item.image && (
-                                    <div className="w-16 h-16 rounded overflow-hidden mr-3 flex-shrink-0">
-                                      <img
-                                        src={item.image}
-                                        alt=""
-                                        className="w-full h-full object-cover"
-                                      />
+                            {component.items.map((item) => (
+                              <div
+                                key={item.id}
+                                className="flex border-b pb-3 last:border-0 last:pb-0"
+                              >
+                                {item.image && (
+                                  <div className="w-16 h-16 rounded overflow-hidden mr-3 flex-shrink-0">
+                                    <img
+                                      src={item.image}
+                                      alt=""
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                )}
+                                <div className="flex-1">
+                                  <div className="flex justify-between items-start">
+                                    <h5 className="font-semibold text-sm text-gray-800">
+                                      {item.title ||
+                                        item.name ||
+                                        item.day ||
+                                        item.category ||
+                                        item.reviewer ||
+                                        item.street ||
+                                        ""}
+                                    </h5>
+                                    {(component.id === "offers" ||
+                                      component.id === "designs") &&
+                                      (item.price || item.percentage) && (
+                                        <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded-full">
+                                          {component.id === "offers"
+                                            ? `${item.percentage}% OFF`
+                                            : `LKR ${item.price}`}
+                                        </span>
+                                      )}
+                                  </div>
+                                  <p className="text-sm text-gray-600 mt-1">
+                                    {item.description ||
+                                      (component.id === "availability" &&
+                                        `${item.from} - ${item.to}`) ||
+                                      item.comment ||
+                                      ""}
+                                  </p>
+                                  {item.rating && (
+                                    <div className="flex items-center mt-1">
+                                      {Array.from({
+                                        length: parseInt(item.rating),
+                                      }).map((_, i) => (
+                                        <span
+                                          key={i}
+                                          className="text-yellow-400"
+                                        >
+                                          ⭐
+                                        </span>
+                                      ))}
                                     </div>
                                   )}
-                                  <div className="flex-1">
-                                    <div className="flex justify-between items-start">
-                                      <h5 className="font-semibold text-sm text-gray-800">
-                                        {item.title ||
-                                          item.name ||
-                                          item.day ||
-                                          item.category ||
-                                          item.reviewer ||
-                                          item.street ||
-                                          ""}
-                                      </h5>
-                                      {(component.id === "offers" ||
-                                        component.id === "designs" ||
-                                        component.id === "services") &&
-                                        item.price && (
-                                          <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded-full">
-                                            LKR {item.price}
-                                          </span>
-                                        )}
-                                    </div>
-                                    <p className="text-sm text-gray-600 mt-1">
-                                      {item.description ||
-                                        (component.id === "availability" &&
-                                          `${item.from} - ${item.to}`) ||
-                                        item.comment ||
-                                        ""}
-                                    </p>
-                                    {item.rating && (
-                                      <div className="flex items-center mt-1">
-                                        {Array.from({
-                                          length: parseInt(item.rating),
-                                        }).map((_, i) => (
-                                          <span
-                                            key={i}
-                                            className="text-yellow-400"
-                                          >
-                                            ⭐
-                                          </span>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
                                 </div>
-                              ))}
+                              </div>
+                            ))}
                           </div>
                         ) : (
                           <p className="text-gray-500 text-xs italic">

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { create } from "zustand";
+import { predefinedServices } from "../configs/Services.configs";
 
 const BASE_API_URL = `${
   import.meta.env.VITE_API_URL || "http://localhost:4000"
@@ -12,6 +13,7 @@ axios.defaults.headers.common["Content-Type"] = "application/json";
 export const useServiceStore = create((set, get) => ({
   services: [],
   allServices: [],
+  predefinedServices: predefinedServices, // Initialize with imported predefinedServices
   tailors: [],
   isLoading: false,
   error: null,
@@ -70,9 +72,16 @@ export const useServiceStore = create((set, get) => ({
 
     set({ isLoading: true, error: null });
     try {
-      const formattedServices = services.map((item) =>
-        typeof item === "string" ? item : item.title || item
-      );
+      // Ensure we're only sending valid predefined services
+      const predefinedSet = new Set(get().predefinedServices);
+
+      const formattedServices = services
+        .map((item) => (typeof item === "string" ? item : item.title || item))
+        .filter((service) => predefinedSet.has(service));
+
+      if (formattedServices.length === 0) {
+        throw new Error("No valid predefined services were selected");
+      }
 
       const response = await axios.post(`${BASE_API_URL}/${tailorId}`, {
         services: formattedServices,
@@ -107,9 +116,16 @@ export const useServiceStore = create((set, get) => ({
 
     set({ isLoading: true, error: null });
     try {
-      const formattedServices = services.map((item) =>
-        typeof item === "string" ? item : item.title || item
-      );
+      // Ensure we're only sending valid predefined services
+      const predefinedSet = new Set(get().predefinedServices);
+
+      const formattedServices = services
+        .map((item) => (typeof item === "string" ? item : item.title || item))
+        .filter((service) => predefinedSet.has(service));
+
+      if (formattedServices.length === 0) {
+        throw new Error("No valid predefined services were selected");
+      }
 
       const response = await axios.put(`${BASE_API_URL}/${tailorId}`, {
         services: formattedServices,
@@ -155,9 +171,18 @@ export const useServiceStore = create((set, get) => ({
 
     set({ isLoading: true, error: null });
     try {
-      const formattedServices = serviceArray.map((item) =>
-        typeof item === "string" ? item : item.title || item
-      );
+      // Validate against predefined services
+      const predefinedSet = new Set(get().predefinedServices);
+
+      const formattedServices = serviceArray
+        .map((item) => (typeof item === "string" ? item : item.title || item))
+        .filter((service) => predefinedSet.has(service));
+
+      if (formattedServices.length === 0) {
+        throw new Error(
+          "No valid predefined services were selected for deletion"
+        );
+      }
 
       const response = await axios.delete(`${BASE_API_URL}/${tailorId}`, {
         data: { services: formattedServices },
@@ -189,6 +214,11 @@ export const useServiceStore = create((set, get) => ({
   // Get all services without API call (from local state)
   getAllLocalServices: () => {
     return get().allServices;
+  },
+
+  // Get predefined services without API call (from local state)
+  getPredefinedServices: () => {
+    return get().predefinedServices;
   },
 
   // Get tailors without API call (from local state)
