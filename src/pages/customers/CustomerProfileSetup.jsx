@@ -604,8 +604,7 @@ const CustomerProfileSetup = () => {
                                       ))}
                                     </select>
                                     <div className="text-xs text-gray-500 mt-1">
-                                      Please press CTRL/CMD to select multiple
-                                      tags.
+                                      Hold Ctrl/Cmd to select multiple tags
                                     </div>
                                   </>
                                 )}

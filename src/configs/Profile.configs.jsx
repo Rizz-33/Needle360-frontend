@@ -27,6 +27,13 @@ export const initialProfileComponents = [
       { name: "title", label: "Design Title", type: "text" },
       { name: "price", label: "Design Price", type: "number" },
       { name: "description", label: "Design Description", type: "textarea" },
+      {
+        name: "tags",
+        label: "Design Tags",
+        type: "select",
+        options: predefinedServices,
+        multiple: true,
+      },
       { name: "image", label: "Design Image", type: "image" },
     ],
     items: [],
