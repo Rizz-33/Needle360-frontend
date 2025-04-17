@@ -107,6 +107,24 @@ const CustomerProfilePage = () => {
       // Mark as loading
       loadingReviewerIdsRef.current.add(reviewClientId);
 
+      // Try tailor
+      try {
+        const tailor = await fetchTailorById(reviewClientId);
+        if (tailor) {
+          setReviewersData((prev) => ({
+            ...prev,
+            [reviewClientId]: {
+              name: tailor.shopName || tailor.name,
+              profileImage: tailor.logoUrl,
+              type: "tailor",
+            },
+          }));
+          return;
+        }
+      } catch (error) {
+        console.error("Error fetching tailor reviewer details:", error);
+      }
+
       try {
         // First try customer
         try {
@@ -126,24 +144,6 @@ const CustomerProfilePage = () => {
           }
         } catch (error) {
           // Not a customer, continue to tailor
-        }
-
-        // Try tailor
-        try {
-          const tailor = await fetchTailorById(reviewClientId);
-          if (tailor) {
-            setReviewersData((prev) => ({
-              ...prev,
-              [reviewClientId]: {
-                name: tailor.shopName || tailor.name,
-                profileImage: tailor.logoUrl,
-                type: "tailor",
-              },
-            }));
-            return;
-          }
-        } catch (error) {
-          console.error("Error fetching tailor reviewer details:", error);
         }
       } catch (error) {
         console.error("Error fetching reviewer details:", error);
