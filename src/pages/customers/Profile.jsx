@@ -1,10 +1,13 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Edit2, MessageCircleMore, X } from "lucide-react";
+import { Edit2, X } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import {
   FaChevronLeft,
+  FaEdit,
+  FaEnvelope,
   FaPalette,
+  FaPhone,
   FaRegStar,
   FaStar,
   FaUser,
@@ -12,6 +15,7 @@ import {
 import { useNavigate, useParams } from "react-router-dom";
 import ChatPopup from "../../components/chat/ChatPopUp";
 import MessageButton from "../../components/chat/MessageButton";
+import { CustomButton } from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
 import { useAuthStore } from "../../store/Auth.store";
 import { useCustomerStore } from "../../store/Customer.store";
@@ -28,7 +32,6 @@ const formatDate = (dateString) => {
   const month = date.toLocaleString("default", { month: "long" });
   const year = date.getFullYear();
 
-  // Add ordinal suffix to day
   const suffix =
     day % 10 === 1 && day !== 11
       ? "st"
@@ -39,6 +42,93 @@ const formatDate = (dateString) => {
       : "th";
 
   return `${day}${suffix} ${month}, ${year}`;
+};
+
+const StarRating = ({ rating, setRating }) => {
+  return (
+    <div className="flex">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => setRating(star)}
+          className="focus:outline-none"
+        >
+          {star <= rating ? (
+            <FaStar className="text-yellow-400 text-lg" />
+          ) : (
+            <FaRegStar className="text-yellow-400 text-lg" />
+          )}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+const ReviewItem = ({ review, reviewersData }) => {
+  const reviewer = reviewersData[review.clientId] || {
+    name: "Anonymous User",
+    profileImage: null,
+    type: null,
+  };
+
+  return (
+    <div className="border-b border-gray-200 py-4 last:border-0">
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex items-center">
+          <div className="mr-3 w-10 h-10 rounded-full overflow-hidden">
+            {reviewer.profileImage ? (
+              <img
+                src={reviewer.profileImage}
+                alt={reviewer.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "/assets/placeholder-user.jpg";
+                }}
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                <FaUser className="text-gray-500" />
+              </div>
+            )}
+          </div>
+          <div>
+            <h4 className="font-medium text-gray-800">
+              {reviewer.name}
+              {reviewer.type && (
+                <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                  {reviewer.type === "tailor" ? "Tailor" : "Customer"}
+                </span>
+              )}
+            </h4>
+            <div className="flex items-center mt-1">
+              <div className="flex mr-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <span key={star}>
+                    {star <= review.rating ? (
+                      <FaStar className="text-yellow-400 text-xs" />
+                    ) : (
+                      <FaRegStar className="text-yellow-400 text-xs" />
+                    )}
+                  </span>
+                ))}
+              </div>
+              <span className="text-xs text-gray-500">
+                {review.rating.toFixed(0)}/5
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center text-xs text-gray-500">
+          {formatDate(review.createdAt || review.date)}
+        </div>
+      </div>
+      {review.comment && (
+        <p className="text-sm text-gray-600 mt-2">{review.comment}</p>
+      )}
+    </div>
+  );
 };
 
 const CustomerProfilePage = () => {
@@ -58,22 +148,17 @@ const CustomerProfilePage = () => {
     checkIfFollowing,
     resetState,
   } = useUserInteractionStore();
-
-  // Use the design store
   const {
     customerDesigns: designs,
     isLoading: isLoadingDesigns,
     fetchCustomerDesignsById,
   } = useDesignStore();
-
-  // Use the review store
   const {
     reviews,
     isLoading: isLoadingReviews,
     fetchUserReviews,
+    createReview,
   } = useReviewStore();
-
-  // Use shop store to fetch reviewer details
   const { fetchTailorById } = useShopStore();
 
   const [activeTab, setActiveTab] = useState("designs");
@@ -81,13 +166,14 @@ const CustomerProfilePage = () => {
   const [selectedDesign, setSelectedDesign] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [reviewersData, setReviewersData] = useState({});
+  const [rating, setRating] = useState(0);
+  const [review, setReview] = useState("");
+  const [isLoadingCreator, setIsLoadingCreator] = useState(false);
+  const [creatorDetails, setCreatorDetails] = useState(null);
   const loadingReviewerIdsRef = useRef(new Set());
 
-  // Fix for isOwnProfile - Normalize IDs for comparison
   const currentUserId = currentUser?._id || currentUser?.id;
   const profileUserId = id;
-
-  // Improved logic for determining if viewing own profile
   const isOwnProfile =
     !id ||
     (currentUserId &&
@@ -96,7 +182,6 @@ const CustomerProfilePage = () => {
 
   const loadReviewerDetails = useCallback(
     async (reviewClientId) => {
-      // Skip if already loaded or loading
       if (
         reviewersData[reviewClientId] ||
         loadingReviewerIdsRef.current.has(reviewClientId)
@@ -104,10 +189,8 @@ const CustomerProfilePage = () => {
         return;
       }
 
-      // Mark as loading
       loadingReviewerIdsRef.current.add(reviewClientId);
 
-      // Try tailor
       try {
         const tailor = await fetchTailorById(reviewClientId);
         if (tailor) {
@@ -126,33 +209,27 @@ const CustomerProfilePage = () => {
       }
 
       try {
-        // First try customer
-        try {
-          const customer = await useCustomerStore
-            .getState()
-            .fetchCustomerById(reviewClientId);
-          if (customer && customer.name) {
-            setReviewersData((prev) => ({
-              ...prev,
-              [reviewClientId]: {
-                name: customer.name,
-                profileImage: customer.profilePic,
-                type: "customer",
-              },
-            }));
-            return;
-          }
-        } catch (error) {
-          // Not a customer, continue to tailor
+        const customer = await useCustomerStore
+          .getState()
+          .fetchCustomerById(reviewClientId);
+        if (customer && customer.name) {
+          setReviewersData((prev) => ({
+            ...prev,
+            [reviewClientId]: {
+              name: customer.name,
+              profileImage: customer.profilePic,
+              type: "customer",
+            },
+          }));
+          return;
         }
       } catch (error) {
         console.error("Error fetching reviewer details:", error);
       } finally {
-        // Remove from loading, whether successful or not
         loadingReviewerIdsRef.current.delete(reviewClientId);
       }
     },
-    [reviewersData]
+    [reviewersData, fetchTailorById]
   );
 
   useEffect(() => {
@@ -168,8 +245,7 @@ const CustomerProfilePage = () => {
       resetState();
       getFollowers(profileUserId);
       getFollowing(profileUserId);
-      fetchUserReviews(profileUserId); // Fetch reviews when component mounts
-
+      fetchUserReviews(profileUserId);
       if (!isOwnProfile && currentUserId) {
         checkIfFollowing(currentUserId, profileUserId);
       }
@@ -190,7 +266,6 @@ const CustomerProfilePage = () => {
     fetchUserReviews,
   ]);
 
-  // Fetch designs when the designs tab is active
   useEffect(() => {
     if (
       activeTab === "designs" &&
@@ -202,11 +277,10 @@ const CustomerProfilePage = () => {
   }, [activeTab, fetchCustomerDesignsById, profileUserId]);
 
   useEffect(() => {
-    // Only proceed if we have reviews
     if (!reviews || reviews.length === 0) return;
 
-    // Find reviewers that need to be loaded
     const reviewersToLoad = reviews
+
       .filter((review) => review.clientId)
       .filter(
         (review) =>
@@ -215,13 +289,11 @@ const CustomerProfilePage = () => {
       )
       .map((review) => review.clientId);
 
-    // Load each reviewer
     reviewersToLoad.forEach((clientId) => {
       loadReviewerDetails(clientId);
     });
   }, [reviews, loadReviewerDetails]);
 
-  // Calculate average rating from the reviews in the store
   const avgRating =
     reviews.length > 0
       ? reviews.reduce(
@@ -236,12 +308,91 @@ const CustomerProfilePage = () => {
     setSelectedDesign(design);
     setIsModalOpen(true);
     document.body.style.overflow = "hidden";
+    fetchCreatorDetails();
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
+    setRating(0);
+    setReview("");
     document.body.style.overflow = "auto";
   };
+
+  const fetchCreatorDetails = async () => {
+    setIsLoadingCreator(true);
+    try {
+      if (selectedDesign?.customerId) {
+        const response = await useCustomerStore
+          .getState()
+          .fetchCustomerById(selectedDesign.customerId);
+        setCreatorDetails(response);
+      }
+    } catch (error) {
+      console.error("Error fetching creator details:", error);
+      toast.error("Failed to load creator details");
+    } finally {
+      setIsLoadingCreator(false);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!rating) {
+      toast.error("Please provide a rating");
+      return;
+    }
+
+    try {
+      const currentUserId = currentUser?.id || currentUser?._id;
+
+      if (!currentUserId) {
+        toast.error("You must be logged in to submit a review");
+        return;
+      }
+
+      const revieweeId = selectedDesign?.customerId;
+
+      if (!revieweeId) {
+        toast.error("Cannot determine who to review");
+        return;
+      }
+
+      if (currentUserId === revieweeId) {
+        toast.error("You cannot review your own design");
+        return;
+      }
+
+      const reviewData = {
+        clientId: currentUserId,
+        rating: rating,
+        comment: review,
+        date: new Date(),
+      };
+
+      await createReview(revieweeId, reviewData);
+      fetchUserReviews(revieweeId);
+      toast.success("Thank you for your review!");
+      setRating(0);
+      setReview("");
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      toast.error("Failed to submit review");
+    }
+  };
+
+  const formatPrice = (price) => {
+    if (price && typeof price === "number") {
+      return `LKR ${price.toFixed(2)}`;
+    } else if (price) {
+      return `LKR ${price}`;
+    }
+    return "Not For Sale";
+  };
+
+  const isEdited =
+    selectedDesign?.createdAt &&
+    selectedDesign?.updatedAt &&
+    new Date(selectedDesign.createdAt).getTime() !==
+      new Date(selectedDesign.updatedAt).getTime();
 
   const handleFollow = async () => {
     if (!isOwnProfile && currentUserId) {
@@ -413,73 +564,13 @@ const CustomerProfilePage = () => {
             <Loader />
           </div>
         ) : reviews && reviews.length > 0 ? (
-          reviews.map((review, index) => {
-            const reviewer = reviewersData[review.clientId] || {
-              name: "Anonymous User",
-              profileImage: null,
-              type: null,
-            };
-
-            return (
-              <motion.div
-                key={review._id || index}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="bg-white p-3 rounded-lg shadow-sm border border-gray-100"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center">
-                    <div className="mr-3 w-10 h-10 rounded-full overflow-hidden">
-                      {reviewer.profileImage ? (
-                        <img
-                          src={reviewer.profileImage}
-                          alt={reviewer.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                          <FaUser className="text-gray-500" />
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-gray-800 text-sm">
-                        {reviewer.name}
-                        {reviewer.type && (
-                          <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                            {reviewer.type === "tailor" ? "Tailor" : "Customer"}
-                          </span>
-                        )}
-                      </h3>
-                      <div className="flex items-center mt-1">
-                        <div className="flex mr-2">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <span key={star}>
-                              {star <= review.rating ? (
-                                <FaStar className="text-yellow-400 text-xs" />
-                              ) : (
-                                <FaRegStar className="text-yellow-400 text-xs" />
-                              )}
-                            </span>
-                          ))}
-                        </div>
-                        <span className="text-xs text-gray-500">
-                          {review.rating.toFixed(0)}/5
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center text-xs text-gray-500">
-                    {formatDate(review.createdAt || review.date)}
-                  </div>
-                </div>
-                {review.comment && (
-                  <p className="text-xs text-gray-600 mt-2">{review.comment}</p>
-                )}
-              </motion.div>
-            );
-          })
+          reviews.map((review, index) => (
+            <ReviewItem
+              key={review._id || index}
+              review={review}
+              reviewersData={reviewersData}
+            />
+          ))
         ) : (
           <div className="py-10 text-center text-gray-500 text-sm">
             <FaStar className="text-2xl mx-auto mb-2 text-gray-300" />
@@ -516,9 +607,7 @@ const CustomerProfilePage = () => {
 
   return (
     <div className="flex flex-col h-screen w-full bg-white">
-      {/* Scrollable content area */}
       <div className="flex-1 overflow-y-auto pb-16">
-        {/* Cover image with back button */}
         <div className="h-32 bg-gradient-to-r from-blue-50 to-purple-50 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent"></div>
           <motion.button
@@ -531,9 +620,7 @@ const CustomerProfilePage = () => {
           </motion.button>
         </div>
 
-        {/* Profile section */}
         <div className="px-4 relative">
-          {/* Profile image */}
           <div className="relative -mt-12 mb-3 flex justify-between">
             <div className="w-20 h-20 rounded-full border-4 border-white overflow-hidden bg-white shadow-lg">
               {customer.profilePic ? (
@@ -549,7 +636,6 @@ const CustomerProfilePage = () => {
               )}
             </div>
 
-            {/* Action buttons */}
             <div className="flex items-end gap-2 pt-20">
               {isOwnProfile ? (
                 <motion.button
@@ -581,13 +667,9 @@ const CustomerProfilePage = () => {
             </div>
           </div>
 
-          {/* Profile info */}
           <div className="mb-4 -mt-10">
             <h1 className="text-xl font-bold text-gray-900">{customer.name}</h1>
-
             <ProfileStats />
-
-            {/* Bio */}
             {customer.bio && (
               <div className="mt-2">
                 <p className="text-xs text-gray-700">{truncatedBio}</p>
@@ -605,19 +687,15 @@ const CustomerProfilePage = () => {
         </div>
 
         <ProfileTabs />
-
-        {/* Tab content */}
         <div className="py-3 px-4">{getTabContent()}</div>
       </div>
 
-      {/* Fixed message button - only show when viewing someone else's profile */}
       {!isOwnProfile && (
         <div className="fixed bottom-4 right-4 z-20">
           <MessageButton userId={profileUserId} />
         </div>
       )}
 
-      {/* Design Detail Modal */}
       <AnimatePresence>
         {isModalOpen && selectedDesign && (
           <motion.div
@@ -625,7 +703,7 @@ const CustomerProfilePage = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={closeModal}
           >
             <motion.div
@@ -633,180 +711,200 @@ const CustomerProfilePage = () => {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 50 }}
               transition={{ type: "spring", damping: 25 }}
-              className="bg-white rounded-xl overflow-hidden w-full max-w-md max-h-[90vh] flex flex-col"
+              className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modal header */}
-              <div className="relative p-3 border-b">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100">
-                    {customer.profilePic ? (
-                      <img
-                        src={customer.profilePic}
-                        alt={customer.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary to-blue-400 flex items-center justify-center text-white text-xs font-bold">
-                        {customer.name?.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-xs">{customer.name}</h3>
-                    <p className="text-2xs text-gray-500">
-                      {selectedDesign.category || "Design"}
-                    </p>
-                  </div>
-                </div>
+              <div className="sticky top-0 bg-white z-10 flex justify-between items-center p-6 border-b">
+                <h2 className="text-xl font-bold text-gray-800">
+                  {selectedDesign.title ||
+                    selectedDesign.itemName ||
+                    "Untitled Design"}
+                </h2>
+                <h3 className="text-lg text-primary font-bold">
+                  {selectedDesign.price
+                    ? formatPrice(selectedDesign.price)
+                    : ""}
+                </h3>
                 <button
                   onClick={closeModal}
-                  className="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  <X className="text-gray-500" size={16} />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
-
-              {/* Modal content */}
-              <div className="overflow-y-auto flex-1">
-                {/* Design image */}
-                <div className="w-full bg-gray-100 flex items-center justify-center p-4">
-                  {selectedDesign.imageUrl ? (
-                    <img
-                      src={selectedDesign.imageUrl}
-                      alt={selectedDesign.title || selectedDesign.itemName}
-                      className="object-contain w-full h-full max-h-[300px] rounded-lg"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-200 rounded-lg">
-                      <FaPalette className="text-gray-400 text-3xl" />
+              <div className="p-6 space-y-6">
+                <div className="rounded-xl overflow-hidden bg-gray-100">
+                  <img
+                    src={
+                      selectedDesign.imageUrl ||
+                      "/assets/placeholder-design.jpg"
+                    }
+                    alt={selectedDesign.title || selectedDesign.itemName}
+                    className="w-full h-auto max-h-[400px] object-contain"
+                    onError={(e) => {
+                      e.target.src = "/assets/placeholder-design.jpg";
+                      e.target.onerror = null;
+                    }}
+                  />
+                </div>
+                <div className="flex items-center justify-end space-x-3">
+                  <div className="flex items-center text-gray-500 text-xs">
+                    <span>
+                      {selectedDesign?.createdAt &&
+                        `created on ${formatDate(selectedDesign.createdAt)}`}
+                      {selectedDesign?.updatedAt &&
+                        selectedDesign?.updatedAt !==
+                          selectedDesign?.createdAt &&
+                        `edited on ${formatDate(selectedDesign.updatedAt)}`}
+                    </span>
+                  </div>
+                  {isEdited && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <FaEdit className="mr-1" />
+                      Edited
+                    </span>
+                  )}
+                </div>
+                <div className="border-b border-primary/10 pb-4">
+                  <p className="text-gray-600 text-sm">
+                    {selectedDesign.description || "No description available"}
+                  </p>
+                  {selectedDesign.tags && selectedDesign.tags.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {selectedDesign.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+                        >
+                          {tag}
+                        </span>
+                      ))}
                     </div>
                   )}
                 </div>
-
-                {/* Design details */}
-                <div className="p-4">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h2 className="text-lg font-bold">
-                          {selectedDesign.title || selectedDesign.itemName}
-                        </h2>
-                        {selectedDesign.price && (
-                          <p className="text-primary font-bold text-md mt-1">
-                            LKR {selectedDesign.price}
-                          </p>
-                        )}
-                      </div>
-                      {!isOwnProfile && (
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="px-3 py-1.5 bg-primary text-white rounded-full text-xs font-medium flex items-center gap-1"
-                          onClick={() => {
-                            closeModal();
-                            navigate(`/chat/${profileUserId}`);
-                          }}
-                        >
-                          <MessageCircleMore size={12} />
-                          <span>Message</span>
-                        </motion.button>
-                      )}
+                <div className="border-b border-primary/10 pb-4">
+                  <h3 className="text-xs text-gray-900 mb-3">Designed by</h3>
+                  {isLoadingCreator ? (
+                    <div className="flex justify-center py-4">
+                      <Loader size="small" />
                     </div>
-
-                    {/* Description */}
-                    <div>
-                      <h4 className="text-xs font-medium text-gray-700 mb-1">
-                        Description
-                      </h4>
-                      <p className="text-xs text-gray-700">
-                        {selectedDesign.description ||
-                          "No description provided for this design."}
-                      </p>
-                    </div>
-
-                    {/* Details */}
-                    <div className="grid grid-cols-2 gap-3 mt-3">
-                      <div>
-                        <h4 className="text-2xs font-medium text-gray-500 mb-0.5 uppercase tracking-wider">
-                          Category
-                        </h4>
-                        <p className="text-xs text-gray-700">
-                          {selectedDesign.category || "-"}
-                        </p>
+                  ) : creatorDetails ? (
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+                        <img
+                          src={
+                            creatorDetails.profilePic ||
+                            "/assets/placeholder-user.jpg"
+                          }
+                          alt={creatorDetails.name}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                       <div>
-                        <h4 className="text-2xs font-medium text-gray-500 mb-0.5 uppercase tracking-wider">
-                          Fabric Type
+                        <h4 className="font-medium text-gray-800 text-sm">
+                          {creatorDetails.name || "Customer"}
                         </h4>
-                        <p className="text-xs text-gray-700">
-                          {selectedDesign.fabricType || "-"}
-                        </p>
-                      </div>
-                      <div>
-                        <h4 className="text-2xs font-medium text-gray-500 mb-0.5 uppercase tracking-wider">
-                          Colors
-                        </h4>
-                        <div className="flex gap-1.5 flex-wrap">
-                          {selectedDesign.colors ? (
-                            selectedDesign.colors
-                              .split(",")
-                              .map((color, i) => (
-                                <div
-                                  key={i}
-                                  className="w-5 h-5 rounded-full border border-gray-200 shadow-sm"
-                                  style={{ backgroundColor: color.trim() }}
-                                  title={color.trim()}
-                                />
-                              ))
-                          ) : (
-                            <p className="text-xs text-gray-700">-</p>
-                          )}
+                        <div className="flex space-x-4 mt-1">
+                          <a
+                            href={`tel:${creatorDetails.contactNumber}`}
+                            className="flex items-center text-xs text-primary hover:text-primary-dark"
+                          >
+                            <FaPhone className="mr-1" />
+                            Call
+                          </a>
+                          <a
+                            href={`mailto:${creatorDetails.email}`}
+                            className="flex items-center text-xs text-primary hover:text-primary-dark"
+                          >
+                            <FaEnvelope className="mr-1" />
+                            Email
+                          </a>
                         </div>
                       </div>
-                      <div>
-                        <h4 className="text-2xs font-medium text-gray-500 mb-0.5 uppercase tracking-wider">
-                          Size
-                        </h4>
-                        <p className="text-xs text-gray-700">
-                          {selectedDesign.size || "One Size"}
-                        </p>
-                      </div>
                     </div>
-
-                    {/* Additional info */}
-                    {selectedDesign.additionalInfo && (
-                      <div className="mt-3">
-                        <h4 className="text-xs font-medium text-gray-700 mb-1">
-                          Additional Information
-                        </h4>
-                        <p className="text-xs text-gray-700">
-                          {selectedDesign.additionalInfo}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Modal footer - only for own profile */}
-                  {isOwnProfile && (
-                    <div className="mt-4 pt-3 border-t flex justify-end gap-1.5">
-                      <button
-                        onClick={() => {
-                          closeModal();
-                          navigate(`/edit-design/${selectedDesign.id}`);
-                        }}
-                        className="px-3 py-1.5 border border-gray-300 rounded-full text-xs font-medium hover:bg-gray-50 transition-colors flex items-center gap-1"
-                      >
-                        <Edit2 size={12} />
-                        <span>Edit</span>
-                      </button>
-                      <button className="px-3 py-1.5 bg-primary text-white rounded-full text-xs font-medium hover:bg-primary-dark transition-colors flex items-center gap-1">
-                        <MessageCircleMore size={12} />
-                        <span>Share</span>
-                      </button>
+                  ) : (
+                    <div className="text-gray-500 text-sm">
+                      Creator details not available
                     </div>
                   )}
                 </div>
+                <div className="border-b border-primary/10 pb-4">
+                  <h3 className="text-md font-semibold text-gray-900 mb-3">
+                    Reviews
+                  </h3>
+                  {isLoadingReviews ? (
+                    <div className="flex justify-center py-4">
+                      <Loader size="small" />
+                    </div>
+                  ) : reviews.length > 0 ? (
+                    <div className="space-y-4">
+                      {reviews.map((review, index) => (
+                        <ReviewItem
+                          key={index}
+                          review={review}
+                          reviewersData={reviewersData}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-gray-500 text-sm py-2">
+                      No reviews yet. Be the first to review!
+                    </div>
+                  )}
+                </div>
+                {!isOwnProfile ? (
+                  <div>
+                    <h3 className="text-md font-semibold text-gray-900 mb-3">
+                      Rate this Design
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <StarRating rating={rating} setRating={setRating} />
+                      </div>
+                      <textarea
+                        className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        rows="3"
+                        placeholder="Share your thoughts about this designer..."
+                        value={review}
+                        onChange={(e) => setReview(e.target.value)}
+                      />
+                      <CustomButton
+                        text="Submit Review"
+                        color="primary"
+                        hover_color="hoverPrimary"
+                        variant="outlined"
+                        onClick={handleSubmitReview}
+                        width="w-1/3"
+                        height="h-10"
+                      />
+                    </div>
+                  </div>
+                ) : isOwnProfile ? (
+                  <div className="text-center text-xs text-gray-500 italic py-2">
+                    This is your design. You cannot leave a review on your own
+                    work.
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500 italic py-2">
+                    Please log in to leave a review.
+                  </div>
+                )}
+                {isOwnProfile && (
+                  <div className="mt-6 pt-3 border-t flex justify-end gap-1.5">
+                    <CustomButton
+                      text="Edit"
+                      color="primary"
+                      hover_color="hoverAccent"
+                      variant="filled"
+                      width="w-1/3"
+                      height="h-8"
+                      onClick={() => {
+                        closeModal();
+                        handleEditProfile();
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </motion.div>
           </motion.div>
