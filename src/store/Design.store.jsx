@@ -1,5 +1,6 @@
 import axios from "axios";
 import { create } from "zustand";
+import { predefinedServices } from "../configs/Services.configs";
 
 const BASE_API_URL = `${
   import.meta.env.VITE_API_URL || "http://localhost:4000"
@@ -16,6 +17,26 @@ export const useDesignStore = create((set, get) => ({
   isLoading: false,
   error: null,
 
+  // Helper function to validate tags
+  validateTags: (tags) => {
+    if (!Array.isArray(tags)) {
+      return {
+        isValid: false,
+        message: "Tags must be an array.",
+      };
+    }
+    const invalidTags = tags.filter((tag) => !predefinedServices.includes(tag));
+    if (invalidTags.length > 0) {
+      return {
+        isValid: false,
+        message: `Invalid tags: ${invalidTags.join(
+          ", "
+        )}. Tags must be from predefined services.`,
+      };
+    }
+    return { isValid: true };
+  },
+
   // Helper function to transform design data
   transformDesignData: (design) => ({
     _id: design._id,
@@ -24,6 +45,7 @@ export const useDesignStore = create((set, get) => ({
     description: design.description || "",
     price: design.price,
     imageUrl: design.imageUrl || null,
+    tags: design.tags || [],
     tailorId: design.tailorId,
     customerId: design.customerId,
     userType: design.tailorId ? "tailor" : "customer",
@@ -118,6 +140,14 @@ export const useDesignStore = create((set, get) => ({
   createTailorDesign: async (tailorId, designData) => {
     set({ isLoading: true, error: null });
     try {
+      // Validate tags
+      if (designData.tags) {
+        const tagValidation = get().validateTags(designData.tags);
+        if (!tagValidation.isValid) {
+          throw new Error(tagValidation.message);
+        }
+      }
+
       const response = await axios.post(`${BASE_API_URL}/tailors/${tailorId}`, {
         design: {
           ...designData,
@@ -135,7 +165,10 @@ export const useDesignStore = create((set, get) => ({
       return newDesign;
     } catch (error) {
       set({
-        error: error.response?.data?.message || "Error creating tailor design",
+        error:
+          error.response?.data?.message ||
+          error.message ||
+          "Error creating tailor design",
         isLoading: false,
       });
       throw error;
@@ -146,6 +179,14 @@ export const useDesignStore = create((set, get) => ({
   createCustomerDesign: async (customerId, designData) => {
     set({ isLoading: true, error: null });
     try {
+      // Validate tags
+      if (designData.tags) {
+        const tagValidation = get().validateTags(designData.tags);
+        if (!tagValidation.isValid) {
+          throw new Error(tagValidation.message);
+        }
+      }
+
       const response = await axios.post(
         `${BASE_API_URL}/customers/${customerId}`,
         {
@@ -168,7 +209,9 @@ export const useDesignStore = create((set, get) => ({
     } catch (error) {
       set({
         error:
-          error.response?.data?.message || "Error creating customer design",
+          error.response?.data?.message ||
+          error.message ||
+          "Error creating customer design",
         isLoading: false,
       });
       throw error;
@@ -179,6 +222,14 @@ export const useDesignStore = create((set, get) => ({
   updateTailorDesign: async (tailorId, designId, designData) => {
     set({ isLoading: true, error: null });
     try {
+      // Validate tags
+      if (designData.tags) {
+        const tagValidation = get().validateTags(designData.tags);
+        if (!tagValidation.isValid) {
+          throw new Error(tagValidation.message);
+        }
+      }
+
       const response = await axios.put(
         `${BASE_API_URL}/tailors/${tailorId}/designs/${designId}`,
         {
@@ -203,7 +254,10 @@ export const useDesignStore = create((set, get) => ({
       return updatedDesign;
     } catch (error) {
       set({
-        error: error.response?.data?.message || "Error updating tailor design",
+        error:
+          error.response?.data?.message ||
+          error.message ||
+          "Error updating tailor design",
         isLoading: false,
       });
       throw error;
@@ -214,6 +268,14 @@ export const useDesignStore = create((set, get) => ({
   updateCustomerDesign: async (customerId, designId, designData) => {
     set({ isLoading: true, error: null });
     try {
+      // Validate tags
+      if (designData.tags) {
+        const tagValidation = get().validateTags(designData.tags);
+        if (!tagValidation.isValid) {
+          throw new Error(tagValidation.message);
+        }
+      }
+
       const response = await axios.put(
         `${BASE_API_URL}/customers/${customerId}/designs/${designId}`,
         {
@@ -240,7 +302,9 @@ export const useDesignStore = create((set, get) => ({
     } catch (error) {
       set({
         error:
-          error.response?.data?.message || "Error updating customer design",
+          error.response?.data?.message ||
+          error.message ||
+          "Error updating customer design",
         isLoading: false,
       });
       throw error;
