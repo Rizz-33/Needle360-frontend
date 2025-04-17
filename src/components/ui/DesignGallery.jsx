@@ -212,7 +212,6 @@ const DesignCard = ({ design }) => {
           .fetchTailorById(design.tailorId);
         setCreatorDetails(response);
 
-        // Check if current user is the design creator
         if (
           user &&
           (user.id === design.tailorId || user._id === design.tailorId)
@@ -225,7 +224,6 @@ const DesignCard = ({ design }) => {
           .fetchCustomerById(design.customerId);
         setCreatorDetails(response);
 
-        // Check if current user is the design creator
         if (
           user &&
           (user.id === design.customerId || user._id === design.customerId)
@@ -244,12 +242,10 @@ const DesignCard = ({ design }) => {
   const fetchDesignReviews = async () => {
     setIsLoadingReviews(true);
     try {
-      // Determine the userId for fetching reviews
       const userId = design.tailorId || design.customerId;
 
       if (userId) {
         const response = await fetchUserReviews(userId);
-        // Filter reviews related to this design if needed
         const relevantReviews = response.reviews || [];
         setDesignReviews(relevantReviews);
       }
@@ -267,7 +263,6 @@ const DesignCard = ({ design }) => {
     }
 
     try {
-      // Get the current user from auth store
       const currentUserId = user?.id || user?._id;
 
       if (!currentUserId) {
@@ -275,7 +270,6 @@ const DesignCard = ({ design }) => {
         return;
       }
 
-      // Determine who to send the review to (tailor or customer)
       const revieweeId = design.tailorId || design.customerId;
 
       if (!revieweeId) {
@@ -283,13 +277,11 @@ const DesignCard = ({ design }) => {
         return;
       }
 
-      // Check if user is reviewing their own design
       if (currentUserId === revieweeId) {
         toast.error("You cannot review your own design");
         return;
       }
 
-      // Create review data
       const reviewData = {
         clientId: currentUserId,
         rating: rating,
@@ -297,12 +289,8 @@ const DesignCard = ({ design }) => {
         date: new Date(),
       };
 
-      // Submit the review
       await createReview(revieweeId, reviewData);
-
-      // Refresh reviews
       fetchDesignReviews();
-
       toast.success("Thank you for your review!");
       setRating(0);
       setReview("");
@@ -329,7 +317,6 @@ const DesignCard = ({ design }) => {
     new Date(design.createdAt).getTime() !==
       new Date(design.updatedAt).getTime();
 
-  // Calculate average rating from design reviews
   const averageRating =
     designReviews.length > 0
       ? designReviews.reduce((sum, review) => sum + review.rating, 0) /
@@ -340,7 +327,6 @@ const DesignCard = ({ design }) => {
     <>
       {/* Design Card */}
       <div className="max-w-sm rounded-xl overflow-hidden shadow-lg bg-white transform hover:scale-105 transition-transform duration-300 ease-in-out p-4 border border-gray-100 hover:shadow-xl">
-        {/* Card Image */}
         <div className="relative">
           <img
             className="w-full h-64 object-cover rounded-lg"
@@ -359,20 +345,27 @@ const DesignCard = ({ design }) => {
           </div>
         </div>
 
-        {/* Card Body */}
         <div className="p-3">
-          {/* Design Title */}
           <h3 className="text-lg font-bold text-gray-800 mb-1 truncate">
             {design.title || "Untitled Design"}
           </h3>
-
-          {/* Design Description */}
           <p className="text-gray-600 text-sm mb-2 line-clamp-2">
             {design.description || "No description available"}
           </p>
-
+          {/* Tags Display in Card */}
+          {design.tags && design.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {design.tags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
           <div className="flex justify-between items-start mb-3 mt-2">
-            {/* Rating Section */}
             <div className="flex flex-col mr-4">
               <div className="flex">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -393,13 +386,10 @@ const DesignCard = ({ design }) => {
                   : "No ratings yet"}
               </span>
             </div>
-
-            {/* Price */}
             <div className="text-sm font-bold text-primary">
               {formatPrice(design.price)}
             </div>
           </div>
-
           <CustomButton
             text="Check It Out"
             color="primary"
@@ -417,7 +407,6 @@ const DesignCard = ({ design }) => {
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            {/* Modal Header */}
             <div className="sticky top-0 bg-white z-10 flex justify-between items-center p-6 border-b">
               <h2 className="text-xl font-bold text-gray-800">
                 {design.title || "Untitled Design"}
@@ -434,10 +423,7 @@ const DesignCard = ({ design }) => {
                 <FaTimes className="w-4 h-4" />
               </button>
             </div>
-
-            {/* Modal Body */}
             <div className="p-6 space-y-6">
-              {/* Full-width Image */}
               <div className="rounded-xl overflow-hidden bg-gray-100">
                 <img
                   src={design.imageUrl || placeholderImg}
@@ -449,8 +435,6 @@ const DesignCard = ({ design }) => {
                   }}
                 />
               </div>
-
-              {/* Date and Edited Tag */}
               <div className="flex items-center justify-end space-x-3">
                 <div className="flex items-center text-gray-500 text-xs">
                   <span>{formatDate(design.createdAt)}</span>
@@ -462,15 +446,27 @@ const DesignCard = ({ design }) => {
                   </span>
                 )}
               </div>
-
-              {/* Description */}
               <div className="border-b border-primary/10 pb-4">
                 <p className="text-gray-600 text-sm">
                   {design.description || "No description available"}
                 </p>
+                {/* Tags Display in Modal */}
+                {design.tags && design.tags.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="text-xs font-semibold text-gray-900 mr-2">
+                      Tags:
+                    </span>
+                    {design.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
-
-              {/* Creator Details */}
               <div className="border-b border-primary/10 pb-4">
                 <h3 className="text-xs text-gray-900 mb-3">Designed by</h3>
                 {isLoadingCreator ? (
@@ -522,8 +518,6 @@ const DesignCard = ({ design }) => {
                   </div>
                 )}
               </div>
-
-              {/* Reviews Display Section */}
               <div className="border-b border-primary/10 pb-4">
                 <h3 className="text-md font-semibold text-gray-900 mb-3">
                   Reviews
@@ -544,8 +538,6 @@ const DesignCard = ({ design }) => {
                   </div>
                 )}
               </div>
-
-              {/* Add Review Section - Only show if user is not the design creator */}
               {!isOwnDesign && user && (
                 <div>
                   <h3 className="text-md font-semibold text-gray-900 mb-3">
@@ -574,16 +566,12 @@ const DesignCard = ({ design }) => {
                   </div>
                 </div>
               )}
-
-              {/* Message if user is viewing their own design */}
               {isOwnDesign && (
                 <div className="text-center text-xs text-gray-500 italic py-2">
                   This is your design. You cannot leave a review on your own
                   work.
                 </div>
               )}
-
-              {/* Message if user is not logged in */}
               {!user && (
                 <div className="text-center text-gray-500 italic py-2">
                   Please log in to leave a review.
