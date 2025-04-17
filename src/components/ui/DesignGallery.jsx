@@ -437,7 +437,13 @@ const DesignCard = ({ design }) => {
               </div>
               <div className="flex items-center justify-end space-x-3">
                 <div className="flex items-center text-gray-500 text-xs">
-                  <span>{formatDate(design.createdAt)}</span>
+                  <span>
+                    {design?.createdAt &&
+                      `created on ${formatDate(design.createdAt)}`}
+                    {design?.updatedAt &&
+                      design?.updatedAt !== design?.createdAt &&
+                      `edited on ${formatDate(design.updatedAt)}`}
+                  </span>
                 </div>
                 {isEdited && (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
