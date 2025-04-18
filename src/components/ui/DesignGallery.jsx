@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
+  FaChevronDown,
+  FaChevronUp,
   FaEdit,
   FaEnvelope,
   FaPhone,
@@ -9,6 +11,7 @@ import {
   FaUser,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
+import { predefinedServices } from "../../configs/Services.configs";
 import { roleTypeNumbers } from "../../configs/User.config";
 import { useAuthStore } from "../../store/Auth.store";
 import { useCustomerStore } from "../../store/Customer.store";
@@ -71,12 +74,10 @@ const ReviewItem = ({ review }) => {
     const fetchReviewer = async () => {
       if (review.clientId) {
         try {
-          // Try to fetch as customer first
           try {
             const customer = await useCustomerStore
               .getState()
               .fetchCustomerById(review.clientId);
-
             if (customer && customer.name) {
               setReviewer({
                 name: customer.name,
@@ -86,16 +87,12 @@ const ReviewItem = ({ review }) => {
               return;
             }
           } catch (error) {
-            // If not a customer, try as tailor
             console.log("Not a customer, trying tailor");
           }
-
-          // Try to fetch as tailor
           try {
             const tailor = await useShopStore
               .getState()
               .fetchTailorById(review.clientId);
-
             if (tailor) {
               setReviewer({
                 name: tailor.shopName || tailor.name,
@@ -363,6 +360,11 @@ const DesignCard = ({ design }) => {
                   {tag}
                 </span>
               ))}
+              {design.tags.length > 3 && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                  +{design.tags.length - 3}
+                </span>
+              )}
             </div>
           )}
           <div className="flex justify-between items-start mb-3 mt-2">
@@ -391,7 +393,7 @@ const DesignCard = ({ design }) => {
             </div>
           </div>
           <CustomButton
-            text="Check It Out"
+            text="View Details"
             color="primary"
             hover_color="hoverAccent"
             variant="outlined"
@@ -597,21 +599,54 @@ const DesignGallery = () => {
     fetchAllTailorDesigns,
     fetchAllCustomerDesigns,
   } = useDesignStore();
+  const { fetchUserReviews } = useReviewStore();
+  const { fetchCustomerById } = useCustomerStore();
+  const { fetchTailorById } = useShopStore();
 
   const [activeFilter, setActiveFilter] = useState("all");
+  const [filters, setFilters] = useState({
+    type: "all",
+    priceMin: "",
+    priceMax: "",
+    tags: [],
+    address: "",
+    minRating: 0,
+    sortBy: "createdAt",
+    sortOrder: "desc",
+    dateFrom: "",
+    dateTo: "",
+  });
+  const [showFilters, setShowFilters] = useState(false);
+  const [filteredDesigns, setFilteredDesigns] = useState([]);
+  const [isFiltering, setIsFiltering] = useState(false);
 
   useEffect(() => {
-    // Fetch all designs when component mounts
     fetchAllDesigns();
   }, [fetchAllDesigns]);
 
-  const handleFilterChange = async (filter) => {
-    setActiveFilter(filter);
+  useEffect(() => {
+    // Initialize filteredDesigns with the appropriate design list
+    let designsToShow = [];
+    switch (activeFilter) {
+      case "tailor":
+        designsToShow = tailorDesigns;
+        break;
+      case "customer":
+        designsToShow = customerDesigns;
+        break;
+      default:
+        designsToShow = designs;
+    }
+    setFilteredDesigns(designsToShow);
+  }, [designs, tailorDesigns, customerDesigns, activeFilter]);
 
+  const handleFilterChange = async (type) => {
+    setActiveFilter(type);
+    setFilters((prev) => ({ ...prev, type }));
     try {
-      if (filter === "tailor") {
+      if (type === "tailor") {
         await fetchAllTailorDesigns();
-      } else if (filter === "customer") {
+      } else if (type === "customer") {
         await fetchAllCustomerDesigns();
       } else {
         await fetchAllDesigns();
@@ -621,18 +656,156 @@ const DesignGallery = () => {
     }
   };
 
-  const getDisplayedDesigns = () => {
-    switch (activeFilter) {
-      case "tailor":
-        return tailorDesigns;
-      case "customer":
-        return customerDesigns;
-      default:
-        return designs;
-    }
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-  const displayedDesigns = getDisplayedDesigns();
+  const handleTagToggle = (tag) => {
+    setFilters((prev) => {
+      const newTags = prev.tags.includes(tag)
+        ? prev.tags.filter((t) => t !== tag)
+        : [...prev.tags, tag];
+      return { ...prev, tags: newTags };
+    });
+  };
+
+  const handleRatingChange = (rating) => {
+    setFilters((prev) => ({ ...prev, minRating: rating }));
+  };
+
+  const applyFilters = async () => {
+    setIsFiltering(true);
+    let designsToFilter = [];
+    switch (filters.type) {
+      case "tailor":
+        designsToFilter = tailorDesigns;
+        break;
+      case "customer":
+        designsToFilter = customerDesigns;
+        break;
+      default:
+        designsToFilter = designs;
+    }
+
+    const filtered = await Promise.all(
+      designsToFilter.map(async (design) => {
+        let include = true;
+        const userId = design.tailorId || design.customerId;
+        let averageRating = 0;
+
+        // Fetch reviews for rating
+        try {
+          const response = await fetchUserReviews(userId);
+          const reviews = response.reviews || [];
+          averageRating =
+            reviews.length > 0
+              ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+              : 0;
+        } catch (error) {
+          console.error("Error fetching reviews for design:", error);
+        }
+
+        // Price filter
+        if (
+          filters.priceMin &&
+          (!design.price || design.price < parseFloat(filters.priceMin))
+        ) {
+          include = false;
+        }
+        if (
+          filters.priceMax &&
+          (!design.price || design.price > parseFloat(filters.priceMax))
+        ) {
+          include = false;
+        }
+
+        // Tags filter
+        if (filters.tags.length > 0 && design.tags) {
+          include = filters.tags.every((tag) => design.tags.includes(tag));
+        }
+
+        // Address filter
+        if (filters.address) {
+          let creatorDetails = null;
+          try {
+            if (design.tailorId) {
+              creatorDetails = await fetchTailorById(design.tailorId);
+            } else if (design.customerId) {
+              creatorDetails = await fetchCustomerById(design.customerId);
+            }
+            if (
+              creatorDetails &&
+              creatorDetails.address &&
+              !creatorDetails.address
+                .toLowerCase()
+                .includes(filters.address.toLowerCase())
+            ) {
+              include = false;
+            }
+          } catch (error) {
+            console.error("Error fetching creator address:", error);
+            include = false;
+          }
+        }
+
+        // Rating filter
+        if (filters.minRating > 0 && averageRating < filters.minRating) {
+          include = false;
+        }
+
+        // Date filter
+        if (filters.dateFrom) {
+          const fromDate = new Date(filters.dateFrom);
+          if (new Date(design.createdAt) < fromDate) {
+            include = false;
+          }
+        }
+        if (filters.dateTo) {
+          const toDate = new Date(filters.dateTo);
+          if (new Date(design.createdAt) > toDate) {
+            include = false;
+          }
+        }
+
+        return include ? { ...design, averageRating } : null;
+      })
+    );
+
+    let sorted = filtered.filter((d) => d !== null);
+
+    // Sorting
+    sorted.sort((a, b) => {
+      const order = filters.sortOrder === "asc" ? 1 : -1;
+      if (filters.sortBy === "price") {
+        return ((a.price || 0) - (b.price || 0)) * order;
+      } else if (filters.sortBy === "rating") {
+        return ((a.averageRating || 0) - (b.averageRating || 0)) * order;
+      } else {
+        return (new Date(a.createdAt) - new Date(b.createdAt)) * order;
+      }
+    });
+
+    setFilteredDesigns(sorted);
+  };
+
+  const resetFilters = () => {
+    setIsFiltering(false);
+    setFilters({
+      type: "all",
+      priceMin: "",
+      priceMax: "",
+      tags: [],
+      address: "",
+      minRating: 0,
+      sortBy: "createdAt",
+      sortOrder: "desc",
+      dateFrom: "",
+      dateTo: "",
+    });
+    setActiveFilter("all");
+    setFilteredDesigns(designs);
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -641,7 +814,7 @@ const DesignGallery = () => {
         <div className="flex space-x-3">
           <CustomButton
             text="Tailor Designs"
-            color={activeFilter === "tailor" ? "primary" : "hoverAccent"}
+            color={activeFilter === "tailor" ? "primary" : "gray"}
             hover_color="hoverAccent"
             variant={activeFilter === "tailor" ? "filled" : "outlined"}
             height="h-8"
@@ -650,7 +823,7 @@ const DesignGallery = () => {
           />
           <CustomButton
             text="Customer Requests"
-            color={activeFilter === "customer" ? "primary" : "hoverAccent"}
+            color={activeFilter === "customer" ? "primary" : "gray"}
             hover_color="hoverAccent"
             variant={activeFilter === "customer" ? "filled" : "outlined"}
             height="h-8"
@@ -659,15 +832,171 @@ const DesignGallery = () => {
           />
           <CustomButton
             text="All Designs"
-            color={activeFilter === "all" ? "primary" : "hoverAccent"}
+            color={activeFilter === "all" ? "primary" : "gray"}
             hover_color="hoverAccent"
             variant={activeFilter === "all" ? "filled" : "outlined"}
             height="h-8"
             width="w-20"
             onClick={() => handleFilterChange("all")}
           />
+          <CustomButton
+            text={showFilters ? "Hide Filters" : "Show Filters"}
+            color="primary"
+            hover_color="hoverAccent"
+            variant="text"
+            height="h-10"
+            width="w-28"
+            iconRight={showFilters ? <FaChevronUp /> : <FaChevronDown />}
+            onClick={() => setShowFilters(!showFilters)}
+          />
         </div>
       </div>
+
+      {showFilters && (
+        <div className="bg-gray-50 p-6 rounded-2xl shadow-md mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Price Range */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">
+                Price Range (LKR)
+              </h3>
+              <div className="flex space-x-2">
+                <input
+                  type="number"
+                  name="priceMin"
+                  placeholder="Min"
+                  value={filters.priceMin}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <input
+                  type="number"
+                  name="priceMax"
+                  placeholder="Max"
+                  value={filters.priceMax}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+
+            {/* Date Range */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">
+                Creation Date
+              </h3>
+              <div className="flex space-x-2">
+                <input
+                  type="date"
+                  name="dateFrom"
+                  value={filters.dateFrom}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <input
+                  type="date"
+                  name="dateTo"
+                  value={filters.dateTo}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+
+            {/* Address */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">
+                Creator Address
+              </h3>
+              <input
+                type="text"
+                name="address"
+                placeholder="Enter city or address"
+                value={filters.address}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            {/* Tags */}
+            <div className="md:col-span-3">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">Tags</h3>
+              <div className="flex flex-wrap gap-2">
+                {predefinedServices.map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => handleTagToggle(tag)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                      filters.tags.includes(tag)
+                        ? "bg-primary text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Minimum Rating */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">
+                Minimum Rating
+              </h3>
+              <StarRating
+                rating={filters.minRating}
+                setRating={handleRatingChange}
+              />
+            </div>
+
+            {/* Sorting */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">
+                Sort By
+              </h3>
+              <select
+                name="sortBy"
+                value={filters.sortBy}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="createdAt">Date Created</option>
+                <option value="price">Price</option>
+                <option value="rating">Rating</option>
+              </select>
+              <select
+                name="sortOrder"
+                value={filters.sortOrder}
+                onChange={handleInputChange}
+                className="w-full mt-2 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="desc">Descending</option>
+                <option value="asc">Ascending</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-6 flex justify-end space-x-3">
+            <CustomButton
+              text="Apply Filters"
+              color="primary"
+              hover_color="hoverAccent"
+              variant="filled"
+              height="h-10"
+              width="w-32"
+              onClick={applyFilters}
+            />
+            <CustomButton
+              text="Reset Filters"
+              color="primary"
+              hover_color="hoverAccent"
+              variant="outlined"
+              height="h-10"
+              width="w-32"
+              onClick={resetFilters}
+            />
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
@@ -677,9 +1006,9 @@ const DesignGallery = () => {
         <div className="text-center text-red-500 p-4">
           Error loading designs: {error}
         </div>
-      ) : displayedDesigns && displayedDesigns.length > 0 ? (
+      ) : filteredDesigns.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {displayedDesigns.map((design, index) => (
+          {filteredDesigns.map((design, index) => (
             <DesignCard
               key={design._id || design.id || index}
               design={design}
@@ -688,9 +1017,19 @@ const DesignGallery = () => {
         </div>
       ) : (
         <div className="text-center py-12">
-          <p className="text-gray-500 mb-4">
-            No designs found for the selected filter
+          <p className="text-gray-500 text-lg">
+            No designs match the selected filters.
           </p>
+          <CustomButton
+            text="Reset Filters"
+            color="primary"
+            hover_color="hoverAccent"
+            variant="outlined"
+            height="h-10"
+            width="w-32"
+            onClick={resetFilters}
+            className="mt-4"
+          />
         </div>
       )}
     </div>
