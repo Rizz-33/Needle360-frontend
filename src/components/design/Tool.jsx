@@ -6,12 +6,27 @@ import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter";
 import { OBJExporter } from "three/examples/jsm/exporters/OBJExporter";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { useAuthStore } from "../../store/Auth.store";
+import { useDesignStore } from "../../store/Design.store";
 import BlouseModel from "./3D-Models/Blouse.model";
 import DressModel from "./3D-Models/Dress.model";
 import JacketModel from "./3D-Models/Jacket.model";
 import PantsModel from "./3D-Models/Pants.model";
 import TShirtModel from "./3D-Models/Shirt.model";
 import SkirtModel from "./3D-Models/Skirt.model";
+
+const predefinedServices = [
+  "School Uniforms",
+  "Saree Blouses",
+  "Wedding Attire",
+  "Office Wear",
+  "National Dress",
+  "Formal Wear",
+  "Casual Wear",
+  "Kidswear",
+  "Religious/Cultural Outfits",
+  "Custom Fashion Designs",
+];
 
 const FashionDesignTool = () => {
   const [activeGarment, setActiveGarment] = useState("tshirt");
@@ -40,6 +55,16 @@ const FashionDesignTool = () => {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isCustomModel, setIsCustomModel] = useState(false);
   const [customModelData, setCustomModelData] = useState(null);
+  // Share modal states
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareForm, setShareForm] = useState({
+    itemName: "",
+    description: "",
+    price: "",
+    tags: ["Custom Fashion Designs"],
+  });
+  const [shareError, setShareError] = useState(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   const canvasRef = useRef(null);
   const threeContainerRef = useRef(null);
@@ -77,7 +102,6 @@ const FashionDesignTool = () => {
     { id: "collar", name: "Collars", type: "structure" },
     { id: "pocket", name: "Pockets", type: "structure" },
   ];
-
   const backgroundColorPresets = [
     { name: "Light Gray", value: "#f0f0f0" },
     { name: "White", value: "#ffffff" },
@@ -85,6 +109,9 @@ const FashionDesignTool = () => {
     { name: "Light Blue", value: "#e6f7ff" },
     { name: "Light Pink", value: "#fff1f0" },
   ];
+
+  const { user, checkAuth } = useAuthStore();
+  const { createCustomerDesign } = useDesignStore();
 
   const getStyleOptions = () => {
     switch (activeGarment) {
@@ -101,7 +128,7 @@ const FashionDesignTool = () => {
       case "jacket":
         return ["bomber", "blazer", "denim", "leather", "cropped"];
       case "custom":
-        return ["imported"]; // Single style for custom models
+        return ["imported"];
       default:
         return ["regular"];
     }
@@ -146,9 +173,13 @@ const FashionDesignTool = () => {
         const img = new Image();
         img.src = designState.canvasData;
         img.onload = () => {
-          const ctx = canvasRef.current.getContext("2d");
-          ctx.drawImage(img, 0, 0);
-          stopDrawing();
+          if (canvasRef.current) {
+            const ctx = canvasRef.current.getContext("2d");
+            if (ctx) {
+              ctx.drawImage(img, 0, 0);
+              stopDrawing();
+            }
+          }
         };
       }
 
@@ -197,12 +228,90 @@ const FashionDesignTool = () => {
     reader.readAsArrayBuffer(file);
   };
 
-  const exportDesign = (format) => {
+  const captureScreenshots = async () => {
+    if (
+      !rendererRef.current ||
+      !sceneRef.current ||
+      !cameraRef.current ||
+      !threeContainerRef.current
+    ) {
+      console.error(
+        "Cannot capture screenshot: Renderer, scene, camera, or container not initialized."
+      );
+      return [];
+    }
+
+    if (!modelRef.current) {
+      console.error("Cannot capture screenshot: 3D model not loaded.");
+      return [];
+    }
+
+    try {
+      if (!rendererRef.current.getContext()) {
+        console.error("WebGL context is lost or not supported.");
+        return [];
+      }
+
+      const container = threeContainerRef.current;
+      const originalDisplay = container.style.display;
+      const originalVisibility = container.style.visibility;
+      if (
+        container.offsetParent === null ||
+        container.clientWidth === 0 ||
+        container.clientHeight === 0
+      ) {
+        console.warn(
+          "Container is not visible, attempting to make it visible..."
+        );
+        container.style.display = "block";
+        container.style.visibility = "visible";
+      }
+
+      let width = container.clientWidth;
+      let height = container.clientHeight;
+      if (width <= 0 || height <= 0) {
+        console.warn(
+          `Invalid container size (${width}x${height}), using fallback size.`
+        );
+        width = 400;
+        height = 300;
+      }
+
+      rendererRef.current.setSize(width, height);
+      cameraRef.current.aspect = width / height;
+      cameraRef.current.updateProjectionMatrix();
+
+      rendererRef.current.render(sceneRef.current, cameraRef.current);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      rendererRef.current.render(sceneRef.current, cameraRef.current);
+
+      const dataURL = rendererRef.current.domElement.toDataURL("image/png");
+
+      container.style.display = originalDisplay;
+      container.style.visibility = originalVisibility;
+
+      if (!dataURL || !dataURL.startsWith("data:image/png")) {
+        console.error("Invalid screenshot captured:", dataURL);
+        return [];
+      }
+
+      return [dataURL];
+    } catch (error) {
+      console.error("Error capturing screenshot:", error);
+      return [];
+    }
+  };
+
+  const exportDesign = async (format) => {
     if (!modelRef.current || !rendererRef.current) return;
 
     if (format === "screenshot") {
-      rendererRef.current.render(sceneRef.current, cameraRef.current);
-      const dataURL = rendererRef.current.domElement.toDataURL("image/png");
+      const screenshots = await captureScreenshots();
+      if (screenshots.length === 0) {
+        alert("Failed to capture screenshot. Please try again.");
+        return;
+      }
+      const dataURL = screenshots[0];
       const link = document.createElement("a");
       link.href = dataURL;
       link.download = "design-screenshot.png";
@@ -300,10 +409,19 @@ const FashionDesignTool = () => {
       const img = new Image();
       img.src = state.canvasData;
       img.onload = () => {
-        const ctx = canvasRef.current.getContext("2d");
-        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        ctx.drawImage(img, 0, 0);
-        stopDrawing();
+        if (canvasRef.current) {
+          const ctx = canvasRef.current.getContext("2d");
+          if (ctx) {
+            ctx.clearRect(
+              0,
+              0,
+              canvasRef.current.width,
+              canvasRef.current.height
+            );
+            ctx.drawImage(img, 0, 0);
+            stopDrawing();
+          }
+        }
       };
     }
 
@@ -322,7 +440,7 @@ const FashionDesignTool = () => {
     const camera = new THREE.PerspectiveCamera(
       75,
       threeContainerRef.current.clientWidth /
-        threeContainerRef.current.clientHeight,
+        threeContainerRef.current.clientHeight || 1,
       0.1,
       1000
     );
@@ -330,14 +448,22 @@ const FashionDesignTool = () => {
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(
-      threeContainerRef.current.clientWidth,
-      threeContainerRef.current.clientHeight
-    );
+    const width = threeContainerRef.current.clientWidth || 800;
+    const height = threeContainerRef.current.clientHeight || 600;
+    renderer.setSize(width, height);
     renderer.physicallyCorrectLights = true;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
     renderer.outputEncoding = THREE.sRGBEncoding;
+
+    if (!renderer.getContext()) {
+      console.error("WebGL not supported or context lost");
+      alert(
+        "Your browser does not support WebGL. Please use a compatible browser."
+      );
+      return;
+    }
+
     threeContainerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -371,23 +497,21 @@ const FashionDesignTool = () => {
         !rendererRef.current
       )
         return;
-      cameraRef.current.aspect =
-        threeContainerRef.current.clientWidth /
-        threeContainerRef.current.clientHeight;
+      const width = threeContainerRef.current.clientWidth || 800;
+      const height = threeContainerRef.current.clientHeight || 600;
+      cameraRef.current.aspect = width / height;
       cameraRef.current.updateProjectionMatrix();
-      rendererRef.current.setSize(
-        threeContainerRef.current.clientWidth,
-        threeContainerRef.current.clientHeight
-      );
+      rendererRef.current.setSize(width, height);
     };
 
     window.addEventListener("resize", handleResize);
     loadDesign();
+    checkAuth();
 
     return () => {
       window.removeEventListener("resize", handleResize);
       if (threeContainerRef.current && rendererRef.current) {
-        threeContainerRef.current.removeChild(rendererRef.current.domElement);
+        threeContainerRef.current.removeChild(renderer.domElement);
       }
     };
   }, []);
@@ -397,15 +521,12 @@ const FashionDesignTool = () => {
 
     const resizeTimeout = setTimeout(() => {
       if (rendererRef.current && threeContainerRef.current) {
-        rendererRef.current.setSize(
-          threeContainerRef.current.clientWidth,
-          threeContainerRef.current.clientHeight
-        );
+        const width = threeContainerRef.current.clientWidth || 800;
+        const height = threeContainerRef.current.clientHeight || 600;
+        rendererRef.current.setSize(width, height);
 
         if (cameraRef.current) {
-          cameraRef.current.aspect =
-            threeContainerRef.current.clientWidth /
-            threeContainerRef.current.clientHeight;
+          cameraRef.current.aspect = width / height;
           cameraRef.current.updateProjectionMatrix();
         }
       }
@@ -743,6 +864,157 @@ const FashionDesignTool = () => {
     setIsFullScreen(!isFullScreen);
   };
 
+  const openShareModal = () => {
+    if (!user) {
+      alert("Please log in to share your design.");
+      return;
+    }
+    setShowShareModal(true);
+    setShareError(null);
+    setShareForm({
+      itemName: "",
+      description: "",
+      price: "",
+      tags: ["Custom Fashion Designs"],
+    });
+  };
+
+  const closeShareModal = () => {
+    setShowShareModal(false);
+    setShareError(null);
+  };
+
+  const handleShareFormChange = (e) => {
+    const { name, value } = e.target;
+    setShareForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleTagToggle = (tag) => {
+    setShareForm((prev) => {
+      const tags = prev.tags.includes(tag)
+        ? prev.tags.filter((t) => t !== tag)
+        : [...prev.tags, tag];
+      if (!tags.includes("Custom Fashion Designs")) {
+        tags.push("Custom Fashion Designs");
+      }
+      return { ...prev, tags };
+    });
+  };
+
+  const handleShareSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!user) {
+      setShareError("You must be logged in to share a design.");
+      console.error("User not authenticated");
+      return;
+    }
+
+    if (!shareForm.itemName || !shareForm.price) {
+      setShareError("Item name and price are required.");
+      console.error("Missing itemName or price");
+      return;
+    }
+
+    if (isNaN(shareForm.price) || Number(shareForm.price) <= 0) {
+      setShareError("Price must be a valid positive number.");
+      console.error("Invalid price:", shareForm.price);
+      return;
+    }
+
+    if (!modelRef.current) {
+      setShareError(
+        "No 3D model loaded. Please select a garment and try again."
+      );
+      console.error("No 3D model loaded");
+      return;
+    }
+
+    setIsSharing(true);
+    setShareError(null);
+
+    try {
+      const screenshots = await captureScreenshots();
+
+      if (screenshots.length === 0) {
+        throw new Error(
+          "Failed to capture screenshot of the 3D model. Please try again."
+        );
+      }
+
+      // Store screenshot in localStorage with a temporary key
+      const tempImageKey = `temp_design_image_${Date.now()}`;
+      localStorage.setItem(tempImageKey, screenshots[0]);
+
+      const designData = {
+        title: shareForm.itemName,
+        description: shareForm.description,
+        price: Number(shareForm.price),
+        image: screenshots[0],
+        imageUrl: screenshots[0],
+        imageURLs: screenshots,
+        tags: shareForm.tags,
+      };
+
+      let response;
+      try {
+        response = await createCustomerDesign(user.id, designData);
+      } catch (backendError) {
+        console.error("Backend error:", backendError);
+        throw new Error(
+          `Backend failed to process the request: ${backendError.message}`
+        );
+      }
+
+      if (!response || typeof response !== "object") {
+        console.error("Invalid backend response:", response);
+        throw new Error("Received an invalid response from the backend.");
+      }
+
+      // Store screenshot in localStorage with design ID
+      if (response._id) {
+        localStorage.setItem(`design_${response._id}_image`, screenshots[0]);
+        localStorage.removeItem(tempImageKey);
+      }
+
+      // Check for image fields in response
+      const returnedImage =
+        response.image ||
+        response.imageUrl ||
+        (response.imageURLs && response.imageURLs[0]);
+      if (!returnedImage) {
+        console.warn(
+          "Backend did not return valid image, imageUrl, or imageURLs. Using local screenshot as fallback.",
+          "Response image:",
+          response.image,
+          "Response imageUrl:",
+          response.imageUrl,
+          "Response imageURLs:",
+          response.imageURLs
+        );
+        response.image = screenshots[0];
+        alert(
+          "Design shared successfully, but the server did not save the image. The design will use the locally captured image. Please check your profile."
+        );
+      } else {
+        alert("Design shared successfully!");
+      }
+
+      closeShareModal();
+      saveDesign();
+    } catch (error) {
+      console.error("Error sharing design:", error);
+      setShareError(
+        error.message || "Failed to share design. Please try again."
+      );
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   useEffect(() => {
     const handleResize = () => {
       if (
@@ -753,10 +1025,10 @@ const FashionDesignTool = () => {
         return;
       const width = isFullScreen
         ? window.innerWidth
-        : threeContainerRef.current.clientWidth;
+        : threeContainerRef.current.clientWidth || 800;
       const height = isFullScreen
         ? window.innerHeight
-        : threeContainerRef.current.clientHeight;
+        : threeContainerRef.current.clientHeight || 600;
       cameraRef.current.aspect = width / height;
       cameraRef.current.updateProjectionMatrix();
       rendererRef.current.setSize(width, height);
@@ -784,6 +1056,113 @@ const FashionDesignTool = () => {
             </button>
           </div>
           <div className="w-full h-full" ref={threeContainerRef}></div>
+        </div>
+      )}
+
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold">Share Your Design</h2>
+              <button
+                onClick={closeShareModal}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+            {shareError && (
+              <div className="mb-4 p-2 bg-red-100 text-red-700 rounded text-sm">
+                {shareError}
+              </div>
+            )}
+            <form onSubmit={handleShareSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Item Name
+                </label>
+                <input
+                  type="text"
+                  name="itemName"
+                  value={shareForm.itemName}
+                  onChange={handleShareFormChange}
+                  className="w-full p-2 border rounded text-sm"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={shareForm.description}
+                  onChange={handleShareFormChange}
+                  className="w-full p-2 border rounded text-sm"
+                  rows={4}
+                ></textarea>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Price (LKR)
+                </label>
+                <input
+                  type="number"
+                  name="price"
+                  value={shareForm.price}
+                  onChange={handleShareFormChange}
+                  className="w-full p-2 border rounded text-sm"
+                  min="0"
+                  step="0.01"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Tags
+                </label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {predefinedServices.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      className={`px-2 py-1 text-xs rounded-full ${
+                        shareForm.tags.includes(tag)
+                          ? "bg-secondary text-primary"
+                          : "bg-secondary/15 text-gray-900"
+                      } ${
+                        tag === "Custom Fashion Designs"
+                          ? "cursor-not-allowed opacity-50"
+                          : ""
+                      }`}
+                      onClick={() => handleTagToggle(tag)}
+                      disabled={tag === "Custom Fashion Designs"}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={closeShareModal}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-full text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSharing}
+                  className={`px-4 py-2 bg-primary text-white rounded-full text-sm ${
+                    isSharing ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                >
+                  {isSharing ? "Sharing..." : "Share Design"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -1242,13 +1621,19 @@ const FashionDesignTool = () => {
 
           <div className="mt-6">
             <h3 className="text-sm font-bold text-gray-900 mb-3">
-              Export Options
+              Export & Share
             </h3>
             <button
               className="w-full px-3 py-2 bg-primary text-white text-xs rounded-full mb-2"
               onClick={saveDesign}
             >
               Save Design
+            </button>
+            <button
+              className="w-full px-3 py-2 bg-primary text-white text-xs rounded-full mb-2"
+              onClick={openShareModal}
+            >
+              Share with Community
             </button>
             <label className="w-full px-3 py-2 bg-transparent text-primary text-xs rounded-full border border-primary flex items-center justify-center cursor-pointer mb-2">
               Import Design
