@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { FaChevronLeft } from "react-icons/fa";
+import { FaChevronLeft, FaCompress } from "react-icons/fa";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
@@ -15,22 +15,24 @@ const FashionDesignTool = () => {
   const [garmentStyle, setGarmentStyle] = useState("regular");
   const [fabricTexture, setFabricTexture] = useState("cotton");
   const [garmentColor, setGarmentColor] = useState("#ffffff");
-  const [backgroundColor, setBackgroundColor] = useState("#f0f0f0"); // New state for background color
+  const [backgroundColor, setBackgroundColor] = useState("#f0f0f0");
   const [garmentSize, setGarmentSize] = useState("medium");
   const [accessories, setAccessories] = useState([]);
   const [customText, setCustomText] = useState("");
   const [textProperties, setTextProperties] = useState({
-    position: { x: 0, y: 0, z: 0 },
+    position: { x: 0, y: 0, z: 0.1 },
     rotation: 0,
     fontSize: 0.2,
     color: "#000000",
   });
-  const [showCanvas, setShowCanvas] = useState(false);
+  const [showCanvas, setShowCanvas] = useState(true);
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawColor, setDrawColor] = useState("#000000");
   const [brushSize, setBrushSize] = useState(2);
   const [showRemoveAccessoriesPanel, setShowRemoveAccessoriesPanel] =
     useState(false);
+  const [drawingMode, setDrawingMode] = useState("pattern");
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   const canvasRef = useRef(null);
   const threeContainerRef = useRef(null);
@@ -47,6 +49,33 @@ const FashionDesignTool = () => {
     "pants",
     "skirt",
     "jacket",
+  ];
+  const fabricTypes = [
+    "cotton",
+    "silk",
+    "denim",
+    "leather",
+    "linen",
+    "wool",
+    "chiffon",
+  ];
+  const sizeOptions = ["small", "medium", "large", "xlarge"];
+  const accessoryOptions = [
+    { id: "button", name: "Buttons", type: "basic" },
+    { id: "zipper", name: "Zippers", type: "basic" },
+    { id: "stone", name: "Rhinestones", type: "decoration" },
+    { id: "sequin", name: "Sequins", type: "decoration" },
+    { id: "patch", name: "Patches", type: "decoration" },
+    { id: "collar", name: "Collars", type: "structure" },
+    { id: "pocket", name: "Pockets", type: "structure" },
+  ];
+
+  const backgroundColorPresets = [
+    { name: "Light Gray", value: "#f0f0f0" },
+    { name: "White", value: "#ffffff" },
+    { name: "Black", value: "#000000" },
+    { name: "Light Blue", value: "#e6f7ff" },
+    { name: "Light Pink", value: "#fff1f0" },
   ];
 
   const getStyleOptions = () => {
@@ -68,40 +97,10 @@ const FashionDesignTool = () => {
     }
   };
 
-  const fabricTypes = [
-    "cotton",
-    "silk",
-    "denim",
-    "leather",
-    "linen",
-    "wool",
-    "chiffon",
-  ];
-  const sizeOptions = ["small", "medium", "large", "xlarge"];
-  const accessoryOptions = [
-    { id: "button", name: "Buttons", type: "basic" },
-    { id: "zipper", name: "Zippers", type: "basic" },
-    { id: "stone", name: "Rhinestones", type: "decoration" },
-    { id: "sequin", name: "Sequins", type: "decoration" },
-    { id: "patch", name: "Patches", type: "decoration" },
-    { id: "collar", name: "Collars", type: "structure" },
-    { id: "pocket", name: "Pockets", type: "structure" },
-  ];
-
-  // Background color presets
-  const backgroundColorPresets = [
-    { name: "Light Gray", value: "#f0f0f0" },
-    { name: "White", value: "#ffffff" },
-    { name: "Black", value: "#000000" },
-    { name: "Light Blue", value: "#e6f7ff" },
-    { name: "Light Pink", value: "#fff1f0" },
-  ];
-
   useEffect(() => {
     if (!threeContainerRef.current) return;
 
     const scene = new THREE.Scene();
-    // Use the backgroundColor state instead of hardcoded value
     scene.background = new THREE.Color(backgroundColor);
     sceneRef.current = scene;
 
@@ -120,26 +119,20 @@ const FashionDesignTool = () => {
       threeContainerRef.current.clientWidth,
       threeContainerRef.current.clientHeight
     );
-    // Enable physically correct lighting to improve color accuracy
     renderer.physicallyCorrectLights = true;
-    // Improve color rendering with tone mapping and encoding
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
     renderer.outputEncoding = THREE.sRGBEncoding;
-
     threeContainerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Increase ambient light to prevent colors from appearing too dark
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
 
-    // Add multiple lights for better illumination from different angles
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(0, 1, 1);
     scene.add(directionalLight);
 
-    // Add a second directional light from opposite direction to avoid shadows
     const backLight = new THREE.DirectionalLight(0xffffff, 0.5);
     backLight.position.set(0, 0, -1);
     scene.add(backLight);
@@ -183,7 +176,30 @@ const FashionDesignTool = () => {
     };
   }, []);
 
-  // Update background color when it changes
+  // Resize renderer on container size change
+  useEffect(() => {
+    if (!threeContainerRef.current || !rendererRef.current) return;
+
+    // Use a slight delay to ensure the container has finished resizing
+    const resizeTimeout = setTimeout(() => {
+      if (rendererRef.current && threeContainerRef.current) {
+        rendererRef.current.setSize(
+          threeContainerRef.current.clientWidth,
+          threeContainerRef.current.clientHeight
+        );
+
+        if (cameraRef.current) {
+          cameraRef.current.aspect =
+            threeContainerRef.current.clientWidth /
+            threeContainerRef.current.clientHeight;
+          cameraRef.current.updateProjectionMatrix();
+        }
+      }
+    }, 100);
+
+    return () => clearTimeout(resizeTimeout);
+  }, [showCanvas]);
+
   useEffect(() => {
     if (sceneRef.current) {
       sceneRef.current.background = new THREE.Color(backgroundColor);
@@ -202,11 +218,8 @@ const FashionDesignTool = () => {
     if (modelRef.current) updateGarmentProperties();
   }, [fabricTexture, garmentColor, garmentSize]);
 
-  // Helper function to convert hex color to THREE.Color
   const getThreeColor = (hexColor) => {
-    const color = new THREE.Color(hexColor);
-    // Adjust gamma to compensate for WebGL rendering which tends to darken colors
-    return color;
+    return new THREE.Color(hexColor);
   };
 
   const loadGarmentModel = (garmentType, style) => {
@@ -245,43 +258,27 @@ const FashionDesignTool = () => {
   const updateGarmentProperties = () => {
     if (!modelRef.current) return;
 
-    // Use the improved color conversion
     const threeColor = getThreeColor(garmentColor);
 
     modelRef.current.traverse((child) => {
       if (child.isMesh && child.material && !child.name.includes("accessory")) {
-        // Create more accurate materials for better color representation
-        if (Array.isArray(child.material)) {
-          child.material.forEach((mat) => {
-            // Clone the material to prevent affecting other instances
-            const newMaterial = new THREE.MeshStandardMaterial({
-              color: threeColor,
-              metalness: 0.1,
-              roughness: 0.8,
-              emissive: threeColor.clone().multiplyScalar(0.1), // Slight emissive effect to brighten
-            });
+        const newMaterial = new THREE.MeshStandardMaterial({
+          color: threeColor,
+          metalness: 0.1,
+          roughness: 0.8,
+          emissive: threeColor.clone().multiplyScalar(0.1),
+          side: THREE.DoubleSide,
+        });
 
-            // Preserve any textures from the original material
-            if (mat.map) newMaterial.map = mat.map;
-
-            // Replace the material
-            child.material = newMaterial;
-          });
-        } else {
-          // Clone the material to prevent affecting other instances
-          const newMaterial = new THREE.MeshStandardMaterial({
-            color: threeColor,
-            metalness: 0.1,
-            roughness: 0.8,
-            emissive: threeColor.clone().multiplyScalar(0.1), // Slight emissive effect to brighten
-          });
-
-          // Preserve any textures from the original material
-          if (child.material.map) newMaterial.map = child.material.map;
-
-          // Replace the material
-          child.material = newMaterial;
+        if (child.material.map) {
+          newMaterial.map = child.material.map;
+          newMaterial.transparent = true;
+          newMaterial.needsUpdate = true;
         }
+
+        child.material = Array.isArray(child.material)
+          ? [newMaterial]
+          : newMaterial;
       }
     });
 
@@ -388,12 +385,15 @@ const FashionDesignTool = () => {
           curveSegments: 12,
         });
 
-        // Use MeshStandardMaterial for consistent look with other elements
         const material = new THREE.MeshStandardMaterial({
           color: new THREE.Color(textProperties.color),
           metalness: 0.1,
           roughness: 0.7,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 1.0,
         });
+
         const textMesh = new THREE.Mesh(geometry, material);
         textMesh.name = `text_${Date.now()}`;
         textMesh.position.set(
@@ -419,10 +419,10 @@ const FashionDesignTool = () => {
 
     const ctx = canvas.getContext("2d");
     canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
+    canvas.height = 240;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.fillStyle = "rgba(0, 0, 0, 0)"; // Transparent background
+    ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   };
 
@@ -443,7 +443,7 @@ const FashionDesignTool = () => {
     const rect = canvas.getBoundingClientRect();
     lastPointRef.current = {
       x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      y: e.clientY - rect.top + canvas.parentElement.scrollTop,
     };
   };
 
@@ -455,7 +455,7 @@ const FashionDesignTool = () => {
     const rect = canvas.getBoundingClientRect();
     const currentPoint = {
       x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      y: e.clientY - rect.top + canvas.parentElement.scrollTop,
     };
 
     ctx.beginPath();
@@ -471,23 +471,28 @@ const FashionDesignTool = () => {
     const canvas = canvasRef.current;
     if (canvas && modelRef.current) {
       const texture = new THREE.CanvasTexture(canvas);
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(4, 4); // Adjust repeat for pattern density
+      texture.flipY = false;
+
+      if (drawingMode === "pattern") {
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(4, 4);
+      } else {
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.repeat.set(1, 1);
+      }
 
       modelRef.current.traverse((child) => {
         if (child.isMesh && !child.name.includes("accessory")) {
-          let material = Array.isArray(child.material)
-            ? child.material[0]
-            : child.material;
-
-          // Create new material with proper color and texture
           const newMaterial = new THREE.MeshStandardMaterial({
             color: getThreeColor(garmentColor),
             metalness: 0.1,
             roughness: 0.8,
             map: texture,
             transparent: true,
+            opacity: 1.0,
+            side: THREE.DoubleSide,
           });
 
           newMaterial.needsUpdate = true;
@@ -499,9 +504,54 @@ const FashionDesignTool = () => {
 
   const toggleCanvas = () => setShowCanvas(!showCanvas);
 
+  const toggleFullScreen = () => {
+    setIsFullScreen(!isFullScreen);
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (
+        !threeContainerRef.current ||
+        !cameraRef.current ||
+        !rendererRef.current
+      )
+        return;
+      const width = isFullScreen
+        ? window.innerWidth
+        : threeContainerRef.current.clientWidth;
+      const height = isFullScreen
+        ? window.innerHeight
+        : threeContainerRef.current.clientHeight;
+      cameraRef.current.aspect = width / height;
+      cameraRef.current.updateProjectionMatrix();
+      rendererRef.current.setSize(width, height);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [isFullScreen]);
+
   return (
     <div className="h-screen w-full flex flex-col overflow-hidden">
-      {/* Mobile Warning Banner */}
+      {isFullScreen && (
+        <div className="fixed inset-0 z-50 bg-black">
+          <div className="absolute top-4 right-4">
+            <button
+              className="p-2 bg-gray-800 text-white rounded-full"
+              onClick={toggleFullScreen}
+              title="Exit Full Screen"
+            >
+              <FaCompress className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="w-full h-full" ref={threeContainerRef}></div>
+        </div>
+      )}
+
       <div className="md:hidden bg-yellow-100 p-3 text-center">
         <p className="text-sm font-medium text-yellow-800">
           For the best experience, please use a laptop or desktop computer.
@@ -624,7 +674,6 @@ const FashionDesignTool = () => {
               />
             </div>
 
-            {/* New section for background color */}
             <div>
               <h3 className="text-xs mb-1 text-gray-600">Background Color</h3>
               <input
@@ -680,6 +729,43 @@ const FashionDesignTool = () => {
               </button>
             </div>
 
+            {showCanvas && (
+              <div>
+                <h3 className="text-xs mb-1 text-gray-600">Drawing Tools</h3>
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-xs">Color:</span>
+                  <input
+                    type="color"
+                    className="flex-1 h-6"
+                    value={drawColor}
+                    onChange={(e) => setDrawColor(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-xs">Size:</span>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={brushSize}
+                    onChange={(e) => setBrushSize(parseInt(e.target.value))}
+                    className="flex-1 accent-primary h-1"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs">Mode:</span>
+                  <select
+                    className="flex-1 p-1 border text-xs rounded-2xl"
+                    value={drawingMode}
+                    onChange={(e) => setDrawingMode(e.target.value)}
+                  >
+                    <option value="pattern">Pattern</option>
+                    <option value="single">Single Element</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
             <div>
               <h3 className="text-xs mb-1 text-gray-600">Add Text</h3>
               <input
@@ -727,42 +813,19 @@ const FashionDesignTool = () => {
                 Add 3D Text
               </button>
             </div>
-
-            {showCanvas && (
-              <div>
-                <h3 className="text-xs mb-1 text-gray-600">Drawing Tools</h3>
-                <div className="flex items-center gap-1 mb-1">
-                  <span className="text-xs">Color:</span>
-                  <input
-                    type="color"
-                    className="flex-1 h-6"
-                    value={drawColor}
-                    onChange={(e) => setDrawColor(e.target.value)}
-                  />
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-xs">Size:</span>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    value={brushSize}
-                    onChange={(e) => setBrushSize(parseInt(e.target.value))}
-                    className="flex-1"
-                  />
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* 3D Model Container */}
-          <div className="flex-1 relative" ref={threeContainerRef}>
+        <div className="flex-1 flex flex-col overflow-y-auto relative">
+          {/* 3D Model Container - Key change here to make it responsive */}
+          <div
+            className={`relative ${showCanvas ? "flex-1" : "h-full"}`}
+            ref={threeContainerRef}
+          >
             {/* Floating Remove Accessories Panel */}
             {showRemoveAccessoriesPanel && accessories.length > 0 && (
-              <div className="absolute top-4 right-4 bg-white p-3 rounded-lg shadow-lg z-10 w-64 max-h-96 overflow-y-auto">
+              <div className="absolute top-4 right-12 bg-white p-3 rounded-lg shadow-lg z-40 w-64 max-h-screen overflow-y-auto">
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-sm font-bold">Manage Accessories</h3>
                   <button
@@ -802,7 +865,7 @@ const FashionDesignTool = () => {
             )}
           </div>
 
-          {/* Drawing Canvas (Optional) */}
+          {/* Canvas Section */}
           {showCanvas && (
             <div className="h-48 border-t border-b relative">
               <canvas
@@ -846,7 +909,7 @@ const FashionDesignTool = () => {
                 <h4 className="text-xs mb-1 text-gray-600">
                   Applied Accessories: {accessories.length}
                 </h4>
-                <div className="space-y-1 max-h-24 overflow-y-auto">
+                <div className="space-y-1 max-h-24 overflow-hidden">
                   {accessories.slice(0, 3).map((acc, idx) => (
                     <div
                       key={idx}
@@ -897,7 +960,6 @@ const FashionDesignTool = () => {
           </div>
         </div>
 
-        {/* Right Sidebar - Design Details */}
         <div className="w-64 bg-gray-100 p-4 overflow-y-auto flex-shrink-0">
           <h2 className="text-sm font-bold text-gray-900 mb-4">
             Design Details
