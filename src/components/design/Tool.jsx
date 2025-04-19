@@ -6,6 +6,21 @@ import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter";
 import { OBJExporter } from "three/examples/jsm/exporters/OBJExporter";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import {
+  accessoryOptions,
+  backgroundColorPresets,
+  blouseTypes,
+  customTypes,
+  dressTypes,
+  fabricTypes,
+  garmentTypes,
+  jacketTypes,
+  pantsTypes,
+  sizeOptions,
+  skirtTypes,
+  tshirtTypes,
+} from "../../configs/Design.configs";
+import { predefinedServices } from "../../configs/Services.configs";
 import { useAuthStore } from "../../store/Auth.store";
 import { useDesignStore } from "../../store/Design.store";
 import BlouseModel from "./3D-Models/Blouse.model";
@@ -14,19 +29,6 @@ import JacketModel from "./3D-Models/Jacket.model";
 import PantsModel from "./3D-Models/Pants.model";
 import TShirtModel from "./3D-Models/Shirt.model";
 import SkirtModel from "./3D-Models/Skirt.model";
-
-const predefinedServices = [
-  "School Uniforms",
-  "Saree Blouses",
-  "Wedding Attire",
-  "Office Wear",
-  "National Dress",
-  "Formal Wear",
-  "Casual Wear",
-  "Kidswear",
-  "Religious/Cultural Outfits",
-  "Custom Fashion Designs",
-];
 
 const FashionDesignTool = () => {
   const [activeGarment, setActiveGarment] = useState("tshirt");
@@ -74,61 +76,25 @@ const FashionDesignTool = () => {
   const modelRef = useRef(null);
   const lastPointRef = useRef(null);
 
-  const garmentTypes = [
-    "tshirt",
-    "blouse",
-    "dress",
-    "pants",
-    "skirt",
-    "jacket",
-    "custom",
-  ];
-  const fabricTypes = [
-    "cotton",
-    "silk",
-    "denim",
-    "leather",
-    "linen",
-    "wool",
-    "chiffon",
-  ];
-  const sizeOptions = ["small", "medium", "large", "xlarge"];
-  const accessoryOptions = [
-    { id: "button", name: "Buttons", type: "basic" },
-    { id: "zipper", name: "Zippers", type: "basic" },
-    { id: "stone", name: "Rhinestones", type: "decoration" },
-    { id: "sequin", name: "Sequins", type: "decoration" },
-    { id: "patch", name: "Patches", type: "decoration" },
-    { id: "collar", name: "Collars", type: "structure" },
-    { id: "pocket", name: "Pockets", type: "structure" },
-  ];
-  const backgroundColorPresets = [
-    { name: "Light Gray", value: "#f0f0f0" },
-    { name: "White", value: "#ffffff" },
-    { name: "Black", value: "#000000" },
-    { name: "Light Blue", value: "#e6f7ff" },
-    { name: "Light Pink", value: "#fff1f0" },
-  ];
-
   const { user, checkAuth } = useAuthStore();
   const { createCustomerDesign } = useDesignStore();
 
   const getStyleOptions = () => {
     switch (activeGarment) {
       case "tshirt":
-        return ["regular", "v-neck", "crew-neck", "sleeveless", "long-sleeve"];
+        return tshirtTypes;
       case "blouse":
-        return ["regular", "sleeveless", "long-sleeve", "ruffle", "crop-top"];
+        return blouseTypes;
       case "dress":
-        return ["a-line", "bodycon", "maxi", "midi", "flare"];
+        return dressTypes;
       case "pants":
-        return ["straight", "skinny", "bootcut", "wide-leg", "jogger"];
+        return pantsTypes;
       case "skirt":
-        return ["a-line", "pencil", "pleated", "mini", "maxi"];
+        return skirtTypes;
       case "jacket":
-        return ["bomber", "blazer", "denim", "leather", "cropped"];
+        return jacketTypes;
       case "custom":
-        return ["imported"];
+        return customTypes;
       default:
         return ["regular"];
     }
