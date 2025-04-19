@@ -6,6 +6,7 @@ import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter";
 import { OBJExporter } from "three/examples/jsm/exporters/OBJExporter";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { predefinedServices } from "../../configs/Services.configs";
 import { useAuthStore } from "../../store/Auth.store";
 import { useDesignStore } from "../../store/Design.store";
 import BlouseModel from "./3D-Models/Blouse.model";
@@ -14,19 +15,6 @@ import JacketModel from "./3D-Models/Jacket.model";
 import PantsModel from "./3D-Models/Pants.model";
 import TShirtModel from "./3D-Models/Shirt.model";
 import SkirtModel from "./3D-Models/Skirt.model";
-
-const predefinedServices = [
-  "School Uniforms",
-  "Saree Blouses",
-  "Wedding Attire",
-  "Office Wear",
-  "National Dress",
-  "Formal Wear",
-  "Casual Wear",
-  "Kidswear",
-  "Religious/Cultural Outfits",
-  "Custom Fashion Designs",
-];
 
 const FashionDesignTool = () => {
   const [activeGarment, setActiveGarment] = useState("tshirt");
