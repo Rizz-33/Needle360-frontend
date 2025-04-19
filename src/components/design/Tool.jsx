@@ -1,8 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { FaChevronLeft } from "react-icons/fa";
+import { FaChevronLeft, FaCompress, FaRedo, FaUndo } from "react-icons/fa";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter";
+import { OBJExporter } from "three/examples/jsm/exporters/OBJExporter";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import BlouseModel from "./3D-Models/Blouse.model";
 import DressModel from "./3D-Models/Dress.model";
 import JacketModel from "./3D-Models/Jacket.model";
@@ -15,22 +18,28 @@ const FashionDesignTool = () => {
   const [garmentStyle, setGarmentStyle] = useState("regular");
   const [fabricTexture, setFabricTexture] = useState("cotton");
   const [garmentColor, setGarmentColor] = useState("#ffffff");
-  const [backgroundColor, setBackgroundColor] = useState("#f0f0f0"); // New state for background color
+  const [backgroundColor, setBackgroundColor] = useState("#f0f0f0");
   const [garmentSize, setGarmentSize] = useState("medium");
   const [accessories, setAccessories] = useState([]);
   const [customText, setCustomText] = useState("");
   const [textProperties, setTextProperties] = useState({
-    position: { x: 0, y: 0, z: 0 },
+    position: { x: 0, y: 0, z: 0.1 },
     rotation: 0,
     fontSize: 0.2,
     color: "#000000",
   });
-  const [showCanvas, setShowCanvas] = useState(false);
+  const [showCanvas, setShowCanvas] = useState(true);
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawColor, setDrawColor] = useState("#000000");
   const [brushSize, setBrushSize] = useState(2);
   const [showRemoveAccessoriesPanel, setShowRemoveAccessoriesPanel] =
     useState(false);
+  const [drawingMode, setDrawingMode] = useState("pattern");
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isCustomModel, setIsCustomModel] = useState(false);
+  const [customModelData, setCustomModelData] = useState(null);
 
   const canvasRef = useRef(null);
   const threeContainerRef = useRef(null);
@@ -47,27 +56,8 @@ const FashionDesignTool = () => {
     "pants",
     "skirt",
     "jacket",
+    "custom",
   ];
-
-  const getStyleOptions = () => {
-    switch (activeGarment) {
-      case "tshirt":
-        return ["regular", "v-neck", "crew-neck", "sleeveless", "long-sleeve"];
-      case "blouse":
-        return ["regular", "sleeveless", "long-sleeve", "ruffle", "crop-top"];
-      case "dress":
-        return ["a-line", "bodycon", "maxi", "midi", "flare"];
-      case "pants":
-        return ["straight", "skinny", "bootcut", "wide-leg", "jogger"];
-      case "skirt":
-        return ["a-line", "pencil", "pleated", "mini", "maxi"];
-      case "jacket":
-        return ["bomber", "blazer", "denim", "leather", "cropped"];
-      default:
-        return ["regular"];
-    }
-  };
-
   const fabricTypes = [
     "cotton",
     "silk",
@@ -88,7 +78,6 @@ const FashionDesignTool = () => {
     { id: "pocket", name: "Pockets", type: "structure" },
   ];
 
-  // Background color presets
   const backgroundColorPresets = [
     { name: "Light Gray", value: "#f0f0f0" },
     { name: "White", value: "#ffffff" },
@@ -97,11 +86,236 @@ const FashionDesignTool = () => {
     { name: "Light Pink", value: "#fff1f0" },
   ];
 
+  const getStyleOptions = () => {
+    switch (activeGarment) {
+      case "tshirt":
+        return ["regular", "v-neck", "crew-neck", "sleeveless", "long-sleeve"];
+      case "blouse":
+        return ["regular", "sleeveless", "long-sleeve", "ruffle", "crop-top"];
+      case "dress":
+        return ["a-line", "bodycon", "maxi", "midi", "flare"];
+      case "pants":
+        return ["straight", "skinny", "bootcut", "wide-leg", "jogger"];
+      case "skirt":
+        return ["a-line", "pencil", "pleated", "mini", "maxi"];
+      case "jacket":
+        return ["bomber", "blazer", "denim", "leather", "cropped"];
+      case "custom":
+        return ["imported"]; // Single style for custom models
+      default:
+        return ["regular"];
+    }
+  };
+
+  const saveDesign = () => {
+    const designState = {
+      activeGarment,
+      garmentStyle,
+      fabricTexture,
+      garmentColor,
+      backgroundColor,
+      garmentSize,
+      accessories,
+      customText,
+      textProperties,
+      canvasData: canvasRef.current?.toDataURL(),
+      isCustomModel,
+      customModelData: isCustomModel ? customModelData : null,
+    };
+    localStorage.setItem("savedDesign", JSON.stringify(designState));
+    alert("Design saved successfully!");
+  };
+
+  const loadDesign = () => {
+    const savedDesign = localStorage.getItem("savedDesign");
+    if (savedDesign) {
+      const designState = JSON.parse(savedDesign);
+      setActiveGarment(designState.activeGarment);
+      setGarmentStyle(designState.garmentStyle);
+      setFabricTexture(designState.fabricTexture);
+      setGarmentColor(designState.garmentColor);
+      setBackgroundColor(designState.backgroundColor);
+      setGarmentSize(designState.garmentSize);
+      setAccessories(designState.accessories);
+      setCustomText(designState.customText);
+      setTextProperties(designState.textProperties);
+      setIsCustomModel(designState.isCustomModel || false);
+      setCustomModelData(designState.customModelData || null);
+
+      if (designState.canvasData && canvasRef.current) {
+        const img = new Image();
+        img.src = designState.canvasData;
+        img.onload = () => {
+          const ctx = canvasRef.current.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          stopDrawing();
+        };
+      }
+
+      if (designState.isCustomModel && designState.customModelData) {
+        loadGarmentModel("custom", designState.garmentStyle);
+      }
+    }
+  };
+
+  const importDesign = (event) => {
+    const file = event.target.files[0];
+    if (!file || !file.name.match(/\.(gltf|glb)$/)) {
+      alert("Please select a valid GLTF or GLB file.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const loader = new GLTFLoader();
+      loader.parse(
+        e.target.result,
+        "",
+        (gltf) => {
+          if (!sceneRef.current || !modelRef.current) return;
+
+          sceneRef.current.remove(modelRef.current);
+
+          const model = gltf.scene;
+          modelRef.current = model;
+          sceneRef.current.add(model);
+
+          setIsCustomModel(true);
+          setCustomModelData(e.target.result);
+          setActiveGarment("custom");
+          setGarmentStyle("imported");
+
+          updateGarmentProperties();
+          saveStateToHistory();
+        },
+        (error) => {
+          console.error("Error loading GLTF:", error);
+          alert("Failed to load GLTF file.");
+        }
+      );
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const exportDesign = (format) => {
+    if (!modelRef.current || !rendererRef.current) return;
+
+    if (format === "screenshot") {
+      rendererRef.current.render(sceneRef.current, cameraRef.current);
+      const dataURL = rendererRef.current.domElement.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = dataURL;
+      link.download = "design-screenshot.png";
+      link.click();
+      return;
+    }
+
+    const exporter = format === "gltf" ? new GLTFExporter() : new OBJExporter();
+    const options = format === "gltf" ? { binary: true } : {};
+
+    exporter.parse(
+      modelRef.current,
+      (result) => {
+        let output;
+        let mimeType;
+        let extension;
+
+        if (format === "gltf") {
+          output =
+            result instanceof ArrayBuffer ? result : JSON.stringify(result);
+          mimeType =
+            result instanceof ArrayBuffer
+              ? "application/octet-stream"
+              : "application/json";
+          extension = result instanceof ArrayBuffer ? "glb" : "gltf";
+        } else {
+          output = result;
+          mimeType = "text/plain";
+          extension = "obj";
+        }
+
+        const blob = new Blob([output], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `design.${extension}`;
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      options
+    );
+  };
+
+  const saveStateToHistory = () => {
+    const currentState = {
+      activeGarment,
+      garmentStyle,
+      fabricTexture,
+      garmentColor,
+      backgroundColor,
+      garmentSize,
+      accessories,
+      customText,
+      textProperties,
+      canvasData: canvasRef.current?.toDataURL(),
+      isCustomModel,
+      customModelData: isCustomModel ? customModelData : null,
+    };
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(currentState);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  };
+
+  const undo = () => {
+    if (historyIndex <= 0) return;
+    const prevIndex = historyIndex - 1;
+    const prevState = history[prevIndex];
+    applyState(prevState);
+    setHistoryIndex(prevIndex);
+  };
+
+  const redo = () => {
+    if (historyIndex >= history.length - 1) return;
+    const nextIndex = historyIndex + 1;
+    const nextState = history[nextIndex];
+    applyState(nextState);
+    setHistoryIndex(nextIndex);
+  };
+
+  const applyState = (state) => {
+    setActiveGarment(state.activeGarment);
+    setGarmentStyle(state.garmentStyle);
+    setFabricTexture(state.fabricTexture);
+    setGarmentColor(state.garmentColor);
+    setBackgroundColor(state.backgroundColor);
+    setGarmentSize(state.garmentSize);
+    setAccessories(state.accessories);
+    setCustomText(state.customText);
+    setTextProperties(state.textProperties);
+    setIsCustomModel(state.isCustomModel || false);
+    setCustomModelData(state.customModelData || null);
+
+    if (state.canvasData && canvasRef.current) {
+      const img = new Image();
+      img.src = state.canvasData;
+      img.onload = () => {
+        const ctx = canvasRef.current.getContext("2d");
+        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        ctx.drawImage(img, 0, 0);
+        stopDrawing();
+      };
+    }
+
+    if (sceneRef.current) {
+      loadGarmentModel(state.activeGarment, state.garmentStyle);
+    }
+  };
+
   useEffect(() => {
     if (!threeContainerRef.current) return;
 
     const scene = new THREE.Scene();
-    // Use the backgroundColor state instead of hardcoded value
     scene.background = new THREE.Color(backgroundColor);
     sceneRef.current = scene;
 
@@ -120,26 +334,20 @@ const FashionDesignTool = () => {
       threeContainerRef.current.clientWidth,
       threeContainerRef.current.clientHeight
     );
-    // Enable physically correct lighting to improve color accuracy
     renderer.physicallyCorrectLights = true;
-    // Improve color rendering with tone mapping and encoding
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
     renderer.outputEncoding = THREE.sRGBEncoding;
-
     threeContainerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Increase ambient light to prevent colors from appearing too dark
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
 
-    // Add multiple lights for better illumination from different angles
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(0, 1, 1);
     scene.add(directionalLight);
 
-    // Add a second directional light from opposite direction to avoid shadows
     const backLight = new THREE.DirectionalLight(0xffffff, 0.5);
     backLight.position.set(0, 0, -1);
     scene.add(backLight);
@@ -174,6 +382,7 @@ const FashionDesignTool = () => {
     };
 
     window.addEventListener("resize", handleResize);
+    loadDesign();
 
     return () => {
       window.removeEventListener("resize", handleResize);
@@ -183,15 +392,38 @@ const FashionDesignTool = () => {
     };
   }, []);
 
-  // Update background color when it changes
+  useEffect(() => {
+    if (!threeContainerRef.current || !rendererRef.current) return;
+
+    const resizeTimeout = setTimeout(() => {
+      if (rendererRef.current && threeContainerRef.current) {
+        rendererRef.current.setSize(
+          threeContainerRef.current.clientWidth,
+          threeContainerRef.current.clientHeight
+        );
+
+        if (cameraRef.current) {
+          cameraRef.current.aspect =
+            threeContainerRef.current.clientWidth /
+            threeContainerRef.current.clientHeight;
+          cameraRef.current.updateProjectionMatrix();
+        }
+      }
+    }, 100);
+
+    return () => clearTimeout(resizeTimeout);
+  }, [showCanvas]);
+
   useEffect(() => {
     if (sceneRef.current) {
       sceneRef.current.background = new THREE.Color(backgroundColor);
+      saveStateToHistory();
     }
   }, [backgroundColor]);
 
   useEffect(() => {
     if (sceneRef.current) loadGarmentModel(activeGarment, garmentStyle);
+    saveStateToHistory();
   }, [activeGarment, garmentStyle]);
 
   useEffect(() => {
@@ -200,13 +432,11 @@ const FashionDesignTool = () => {
 
   useEffect(() => {
     if (modelRef.current) updateGarmentProperties();
+    saveStateToHistory();
   }, [fabricTexture, garmentColor, garmentSize]);
 
-  // Helper function to convert hex color to THREE.Color
   const getThreeColor = (hexColor) => {
-    const color = new THREE.Color(hexColor);
-    // Adjust gamma to compensate for WebGL rendering which tends to darken colors
-    return color;
+    return new THREE.Color(hexColor);
   };
 
   const loadGarmentModel = (garmentType, style) => {
@@ -214,6 +444,17 @@ const FashionDesignTool = () => {
     if (modelRef.current) sceneRef.current.remove(modelRef.current);
 
     let model;
+    if (garmentType === "custom" && isCustomModel && customModelData) {
+      const loader = new GLTFLoader();
+      loader.parse(customModelData, "", (gltf) => {
+        model = gltf.scene;
+        modelRef.current = model;
+        sceneRef.current.add(model);
+        updateGarmentProperties();
+      });
+      return;
+    }
+
     switch (garmentType) {
       case "tshirt":
         model = TShirtModel(style, garmentColor, fabricTexture);
@@ -239,49 +480,35 @@ const FashionDesignTool = () => {
 
     sceneRef.current.add(model);
     modelRef.current = model;
+    setIsCustomModel(false);
+    setCustomModelData(null);
     updateGarmentProperties();
   };
 
   const updateGarmentProperties = () => {
     if (!modelRef.current) return;
 
-    // Use the improved color conversion
     const threeColor = getThreeColor(garmentColor);
 
     modelRef.current.traverse((child) => {
       if (child.isMesh && child.material && !child.name.includes("accessory")) {
-        // Create more accurate materials for better color representation
-        if (Array.isArray(child.material)) {
-          child.material.forEach((mat) => {
-            // Clone the material to prevent affecting other instances
-            const newMaterial = new THREE.MeshStandardMaterial({
-              color: threeColor,
-              metalness: 0.1,
-              roughness: 0.8,
-              emissive: threeColor.clone().multiplyScalar(0.1), // Slight emissive effect to brighten
-            });
+        const newMaterial = new THREE.MeshStandardMaterial({
+          color: threeColor,
+          metalness: 0.1,
+          roughness: 0.8,
+          emissive: threeColor.clone().multiplyScalar(0.1),
+          side: THREE.DoubleSide,
+        });
 
-            // Preserve any textures from the original material
-            if (mat.map) newMaterial.map = mat.map;
-
-            // Replace the material
-            child.material = newMaterial;
-          });
-        } else {
-          // Clone the material to prevent affecting other instances
-          const newMaterial = new THREE.MeshStandardMaterial({
-            color: threeColor,
-            metalness: 0.1,
-            roughness: 0.8,
-            emissive: threeColor.clone().multiplyScalar(0.1), // Slight emissive effect to brighten
-          });
-
-          // Preserve any textures from the original material
-          if (child.material.map) newMaterial.map = child.material.map;
-
-          // Replace the material
-          child.material = newMaterial;
+        if (child.material.map) {
+          newMaterial.map = child.material.map;
+          newMaterial.transparent = true;
+          newMaterial.needsUpdate = true;
         }
+
+        child.material = Array.isArray(child.material)
+          ? [newMaterial]
+          : newMaterial;
       }
     });
 
@@ -346,6 +573,7 @@ const FashionDesignTool = () => {
         rotation: 0,
       },
     ]);
+    saveStateToHistory();
   };
 
   const removeAccessory = (index) => {
@@ -356,6 +584,7 @@ const FashionDesignTool = () => {
     if (mesh) modelRef.current.remove(mesh);
 
     setAccessories((prev) => prev.filter((_, i) => i !== index));
+    saveStateToHistory();
   };
 
   const removeAllAccessories = () => {
@@ -368,6 +597,7 @@ const FashionDesignTool = () => {
 
     setAccessories([]);
     setShowRemoveAccessoriesPanel(false);
+    saveStateToHistory();
   };
 
   const toggleRemoveAccessoriesPanel = () => {
@@ -388,12 +618,15 @@ const FashionDesignTool = () => {
           curveSegments: 12,
         });
 
-        // Use MeshStandardMaterial for consistent look with other elements
         const material = new THREE.MeshStandardMaterial({
           color: new THREE.Color(textProperties.color),
           metalness: 0.1,
           roughness: 0.7,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 1.0,
         });
+
         const textMesh = new THREE.Mesh(geometry, material);
         textMesh.name = `text_${Date.now()}`;
         textMesh.position.set(
@@ -405,6 +638,7 @@ const FashionDesignTool = () => {
 
         modelRef.current.add(textMesh);
         setCustomText("");
+        saveStateToHistory();
       },
       undefined,
       (error) => {
@@ -419,10 +653,10 @@ const FashionDesignTool = () => {
 
     const ctx = canvas.getContext("2d");
     canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
+    canvas.height = 240;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.fillStyle = "rgba(0, 0, 0, 0)"; // Transparent background
+    ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   };
 
@@ -443,7 +677,7 @@ const FashionDesignTool = () => {
     const rect = canvas.getBoundingClientRect();
     lastPointRef.current = {
       x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      y: e.clientY - rect.top + canvas.parentElement.scrollTop,
     };
   };
 
@@ -455,7 +689,7 @@ const FashionDesignTool = () => {
     const rect = canvas.getBoundingClientRect();
     const currentPoint = {
       x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      y: e.clientY - rect.top + canvas.parentElement.scrollTop,
     };
 
     ctx.beginPath();
@@ -471,23 +705,28 @@ const FashionDesignTool = () => {
     const canvas = canvasRef.current;
     if (canvas && modelRef.current) {
       const texture = new THREE.CanvasTexture(canvas);
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(4, 4); // Adjust repeat for pattern density
+      texture.flipY = false;
+
+      if (drawingMode === "pattern") {
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(4, 4);
+      } else {
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.repeat.set(1, 1);
+      }
 
       modelRef.current.traverse((child) => {
         if (child.isMesh && !child.name.includes("accessory")) {
-          let material = Array.isArray(child.material)
-            ? child.material[0]
-            : child.material;
-
-          // Create new material with proper color and texture
           const newMaterial = new THREE.MeshStandardMaterial({
             color: getThreeColor(garmentColor),
             metalness: 0.1,
             roughness: 0.8,
             map: texture,
             transparent: true,
+            opacity: 1.0,
+            side: THREE.DoubleSide,
           });
 
           newMaterial.needsUpdate = true;
@@ -495,13 +734,59 @@ const FashionDesignTool = () => {
         }
       });
     }
+    saveStateToHistory();
   };
 
   const toggleCanvas = () => setShowCanvas(!showCanvas);
 
+  const toggleFullScreen = () => {
+    setIsFullScreen(!isFullScreen);
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (
+        !threeContainerRef.current ||
+        !cameraRef.current ||
+        !rendererRef.current
+      )
+        return;
+      const width = isFullScreen
+        ? window.innerWidth
+        : threeContainerRef.current.clientWidth;
+      const height = isFullScreen
+        ? window.innerHeight
+        : threeContainerRef.current.clientHeight;
+      cameraRef.current.aspect = width / height;
+      cameraRef.current.updateProjectionMatrix();
+      rendererRef.current.setSize(width, height);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [isFullScreen]);
+
   return (
     <div className="h-screen w-full flex flex-col overflow-hidden">
-      {/* Mobile Warning Banner */}
+      {isFullScreen && (
+        <div className="fixed inset-0 z-50 bg-black">
+          <div className="absolute top-4 right-4">
+            <button
+              className="p-2 bg-gray-800 text-white rounded-full"
+              onClick={toggleFullScreen}
+              title="Exit Full Screen"
+            >
+              <FaCompress className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="w-full h-full" ref={threeContainerRef}></div>
+        </div>
+      )}
+
       <div className="md:hidden bg-yellow-100 p-3 text-center">
         <p className="text-sm font-medium text-yellow-800">
           For the best experience, please use a laptop or desktop computer.
@@ -520,36 +805,27 @@ const FashionDesignTool = () => {
         <h1 className="text-xs font-semibold pl-4 text-primary/80">
           Design Studio
         </h1>
+        <div className="ml-auto flex gap-2">
+          <button
+            className="p-2 bg-gray-200 rounded-full disabled:opacity-50"
+            onClick={undo}
+            disabled={historyIndex <= 0}
+            title="Undo"
+          >
+            <FaUndo className="h-4 w-4" />
+          </button>
+          <button
+            className="p-2 bg-gray-200 rounded-full disabled:opacity-50"
+            onClick={redo}
+            disabled={historyIndex >= history.length - 1}
+            title="Redo"
+          >
+            <FaRedo className="h-4 w-4" />
+          </button>
+        </div>
       </header>
 
-      {/* Alternative mobile view */}
-      <div className="md:hidden flex-1 flex flex-col items-center justify-center p-4 text-center">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-16 w-16 text-gray-400 mb-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-          />
-        </svg>
-        <h2 className="text-lg font-bold text-gray-800 mb-2">
-          Limited Mobile Experience
-        </h2>
-        <p className="text-gray-600 mb-6">
-          Our 3D Design Studio requires a larger screen for the best experience.
-          Please switch to a laptop or desktop computer to access all features.
-        </p>
-      </div>
-
-      {/* Main content - only visible on larger screens */}
       <div className="hidden md:flex flex-1 overflow-hidden">
-        {/* Left Sidebar - Design Options */}
         <div className="w-64 bg-gray-100 p-4 overflow-y-auto flex-shrink-0">
           <h2 className="text-sm font-bold text-gray-900 mb-4">
             Design Options
@@ -624,7 +900,6 @@ const FashionDesignTool = () => {
               />
             </div>
 
-            {/* New section for background color */}
             <div>
               <h3 className="text-xs mb-1 text-gray-600">Background Color</h3>
               <input
@@ -680,6 +955,43 @@ const FashionDesignTool = () => {
               </button>
             </div>
 
+            {showCanvas && (
+              <div>
+                <h3 className="text-xs mb-1 text-gray-600">Drawing Tools</h3>
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-xs">Color:</span>
+                  <input
+                    type="color"
+                    className="flex-1 h-6"
+                    value={drawColor}
+                    onChange={(e) => setDrawColor(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-xs">Size:</span>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={brushSize}
+                    onChange={(e) => setBrushSize(parseInt(e.target.value))}
+                    className="flex-1 accent-primary h-1"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs">Mode:</span>
+                  <select
+                    className="flex-1 p-1 border text-xs rounded-2xl"
+                    value={drawingMode}
+                    onChange={(e) => setDrawingMode(e.target.value)}
+                  >
+                    <option value="pattern">Pattern</option>
+                    <option value="single">Single Element</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
             <div>
               <h3 className="text-xs mb-1 text-gray-600">Add Text</h3>
               <input
@@ -727,42 +1039,16 @@ const FashionDesignTool = () => {
                 Add 3D Text
               </button>
             </div>
-
-            {showCanvas && (
-              <div>
-                <h3 className="text-xs mb-1 text-gray-600">Drawing Tools</h3>
-                <div className="flex items-center gap-1 mb-1">
-                  <span className="text-xs">Color:</span>
-                  <input
-                    type="color"
-                    className="flex-1 h-6"
-                    value={drawColor}
-                    onChange={(e) => setDrawColor(e.target.value)}
-                  />
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-xs">Size:</span>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    value={brushSize}
-                    onChange={(e) => setBrushSize(parseInt(e.target.value))}
-                    className="flex-1"
-                  />
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* 3D Model Container */}
-          <div className="flex-1 relative" ref={threeContainerRef}>
-            {/* Floating Remove Accessories Panel */}
+        <div className="flex-1 flex flex-col overflow-y-auto relative">
+          <div
+            className={`relative ${showCanvas ? "flex-1" : "h-full"}`}
+            ref={threeContainerRef}
+          >
             {showRemoveAccessoriesPanel && accessories.length > 0 && (
-              <div className="absolute top-4 right-4 bg-white p-3 rounded-lg shadow-lg z-10 w-64 max-h-96 overflow-y-auto">
+              <div className="absolute top-4 right-12 bg-white p-3 rounded-lg shadow-lg z-40 w-64 max-h-screen overflow-y-auto">
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-sm font-bold">Manage Accessories</h3>
                   <button
@@ -802,7 +1088,6 @@ const FashionDesignTool = () => {
             )}
           </div>
 
-          {/* Drawing Canvas (Optional) */}
           {showCanvas && (
             <div className="h-48 border-t border-b relative">
               <canvas
@@ -816,7 +1101,6 @@ const FashionDesignTool = () => {
             </div>
           )}
 
-          {/* Accessories Footer */}
           <div className="p-2 bg-gray-100 border-t">
             <div className="flex justify-between items-center mb-1">
               <h3 className="text-xs text-gray-600">Accessories</h3>
@@ -846,7 +1130,7 @@ const FashionDesignTool = () => {
                 <h4 className="text-xs mb-1 text-gray-600">
                   Applied Accessories: {accessories.length}
                 </h4>
-                <div className="space-y-1 max-h-24 overflow-y-auto">
+                <div className="space-y-1 max-h-24 overflow-hidden">
                   {accessories.slice(0, 3).map((acc, idx) => (
                     <div
                       key={idx}
@@ -871,6 +1155,7 @@ const FashionDesignTool = () => {
                             if (mesh)
                               mesh.scale.setScalar(newAccessories[idx].scale);
                             setAccessories(newAccessories);
+                            saveStateToHistory();
                           }}
                           className="w-16 accent-primary h-1"
                         />
@@ -897,7 +1182,6 @@ const FashionDesignTool = () => {
           </div>
         </div>
 
-        {/* Right Sidebar - Design Details */}
         <div className="w-64 bg-gray-100 p-4 overflow-y-auto flex-shrink-0">
           <h2 className="text-sm font-bold text-gray-900 mb-4">
             Design Details
@@ -960,12 +1244,41 @@ const FashionDesignTool = () => {
             <h3 className="text-sm font-bold text-gray-900 mb-3">
               Export Options
             </h3>
-            <button className="w-full px-3 py-2 bg-primary text-white text-xs rounded-full mb-2">
+            <button
+              className="w-full px-3 py-2 bg-primary text-white text-xs rounded-full mb-2"
+              onClick={saveDesign}
+            >
               Save Design
             </button>
-            <button className="w-full px-3 py-2 bg-transparent text-primary text-xs rounded-full border border-primary">
-              Export 3D Model
-            </button>
+            <label className="w-full px-3 py-2 bg-transparent text-primary text-xs rounded-full border border-primary flex items-center justify-center cursor-pointer mb-2">
+              Import Design
+              <input
+                type="file"
+                accept=".gltf,.glb"
+                className="hidden"
+                onChange={importDesign}
+              />
+            </label>
+            <div className="space-y-2">
+              <button
+                className="w-full px-3 py-2 bg-transparent text-primary text-xs rounded-full border border-primary"
+                onClick={() => exportDesign("gltf")}
+              >
+                Export as GLTF
+              </button>
+              <button
+                className="w-full px-3 py-2 bg-transparent text-primary text-xs rounded-full border border-primary"
+                onClick={() => exportDesign("obj")}
+              >
+                Export as OBJ
+              </button>
+              <button
+                className="w-full px-3 py-2 bg-transparent text-primary text-xs rounded-full border border-primary"
+                onClick={() => exportDesign("screenshot")}
+              >
+                Export as Screenshot
+              </button>
+            </div>
           </div>
         </div>
       </div>
