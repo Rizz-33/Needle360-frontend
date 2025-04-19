@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { FaChevronLeft, FaCompress } from "react-icons/fa";
+import { FaChevronLeft, FaCompress, FaRedo, FaUndo } from "react-icons/fa";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter";
+import { OBJExporter } from "three/examples/jsm/exporters/OBJExporter";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
 import BlouseModel from "./3D-Models/Blouse.model";
 import DressModel from "./3D-Models/Dress.model";
@@ -33,6 +35,8 @@ const FashionDesignTool = () => {
     useState(false);
   const [drawingMode, setDrawingMode] = useState("pattern");
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   const canvasRef = useRef(null);
   const threeContainerRef = useRef(null);
@@ -94,6 +98,160 @@ const FashionDesignTool = () => {
         return ["bomber", "blazer", "denim", "leather", "cropped"];
       default:
         return ["regular"];
+    }
+  };
+
+  // Save design to localStorage
+  const saveDesign = () => {
+    const designState = {
+      activeGarment,
+      garmentStyle,
+      fabricTexture,
+      garmentColor,
+      backgroundColor,
+      garmentSize,
+      accessories,
+      customText,
+      textProperties,
+      canvasData: canvasRef.current?.toDataURL(),
+    };
+    localStorage.setItem("savedDesign", JSON.stringify(designState));
+    alert("Design saved successfully!");
+  };
+
+  // Load design from localStorage
+  const loadDesign = () => {
+    const savedDesign = localStorage.getItem("savedDesign");
+    if (savedDesign) {
+      const designState = JSON.parse(savedDesign);
+      setActiveGarment(designState.activeGarment);
+      setGarmentStyle(designState.garmentStyle);
+      setFabricTexture(designState.fabricTexture);
+      setGarmentColor(designState.garmentColor);
+      setBackgroundColor(designState.backgroundColor);
+      setGarmentSize(designState.garmentSize);
+      setAccessories(designState.accessories);
+      setCustomText(designState.customText);
+      setTextProperties(designState.textProperties);
+
+      if (designState.canvasData && canvasRef.current) {
+        const img = new Image();
+        img.src = designState.canvasData;
+        img.onload = () => {
+          const ctx = canvasRef.current.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          stopDrawing();
+        };
+      }
+    }
+  };
+
+  // Export design
+  const exportDesign = (format) => {
+    if (!modelRef.current || !rendererRef.current) return;
+
+    if (format === "screenshot") {
+      rendererRef.current.render(sceneRef.current, cameraRef.current);
+      const dataURL = rendererRef.current.domElement.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = dataURL;
+      link.download = "design-screenshot.png";
+      link.click();
+      return;
+    }
+
+    const exporter = format === "gltf" ? new GLTFExporter() : new OBJExporter();
+    const options = format === "gltf" ? { binary: true } : {};
+
+    exporter.parse(
+      modelRef.current,
+      (result) => {
+        let output;
+        let mimeType;
+        let extension;
+
+        if (format === "gltf") {
+          output =
+            result instanceof ArrayBuffer ? result : JSON.stringify(result);
+          mimeType =
+            result instanceof ArrayBuffer
+              ? "application/octet-stream"
+              : "application/json";
+          extension = result instanceof ArrayBuffer ? "glb" : "gltf";
+        } else {
+          output = result;
+          mimeType = "text/plain";
+          extension = "obj";
+        }
+
+        const blob = new Blob([output], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `design.${extension}`;
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      options
+    );
+  };
+
+  // Undo/Redo
+  const saveStateToHistory = () => {
+    const currentState = {
+      activeGarment,
+      garmentStyle,
+      fabricTexture,
+      garmentColor,
+      backgroundColor,
+      garmentSize,
+      accessories,
+      customText,
+      textProperties,
+      canvasData: canvasRef.current?.toDataURL(),
+    };
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(currentState);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  };
+
+  const undo = () => {
+    if (historyIndex <= 0) return;
+    const prevIndex = historyIndex - 1;
+    const prevState = history[prevIndex];
+    applyState(prevState);
+    setHistoryIndex(prevIndex);
+  };
+
+  const redo = () => {
+    if (historyIndex >= history.length - 1) return;
+    const nextIndex = historyIndex + 1;
+    const nextState = history[nextIndex];
+    applyState(nextState);
+    setHistoryIndex(nextIndex);
+  };
+
+  const applyState = (state) => {
+    setActiveGarment(state.activeGarment);
+    setGarmentStyle(state.garmentStyle);
+    setFabricTexture(state.fabricTexture);
+    setGarmentColor(state.garmentColor);
+    setBackgroundColor(state.backgroundColor);
+    setGarmentSize(state.garmentSize);
+    setAccessories(state.accessories);
+    setCustomText(state.customText);
+    setTextProperties(state.textProperties);
+
+    if (state.canvasData && canvasRef.current) {
+      const img = new Image();
+      img.src = state.canvasData;
+      img.onload = () => {
+        const ctx = canvasRef.current.getContext("2d");
+        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        ctx.drawImage(img, 0, 0);
+        stopDrawing();
+      };
     }
   };
 
@@ -168,6 +326,9 @@ const FashionDesignTool = () => {
 
     window.addEventListener("resize", handleResize);
 
+    // Load saved design
+    loadDesign();
+
     return () => {
       window.removeEventListener("resize", handleResize);
       if (threeContainerRef.current && rendererRef.current) {
@@ -176,11 +337,9 @@ const FashionDesignTool = () => {
     };
   }, []);
 
-  // Resize renderer on container size change
   useEffect(() => {
     if (!threeContainerRef.current || !rendererRef.current) return;
 
-    // Use a slight delay to ensure the container has finished resizing
     const resizeTimeout = setTimeout(() => {
       if (rendererRef.current && threeContainerRef.current) {
         rendererRef.current.setSize(
@@ -203,11 +362,13 @@ const FashionDesignTool = () => {
   useEffect(() => {
     if (sceneRef.current) {
       sceneRef.current.background = new THREE.Color(backgroundColor);
+      saveStateToHistory();
     }
   }, [backgroundColor]);
 
   useEffect(() => {
     if (sceneRef.current) loadGarmentModel(activeGarment, garmentStyle);
+    saveStateToHistory();
   }, [activeGarment, garmentStyle]);
 
   useEffect(() => {
@@ -216,6 +377,7 @@ const FashionDesignTool = () => {
 
   useEffect(() => {
     if (modelRef.current) updateGarmentProperties();
+    saveStateToHistory();
   }, [fabricTexture, garmentColor, garmentSize]);
 
   const getThreeColor = (hexColor) => {
@@ -343,6 +505,7 @@ const FashionDesignTool = () => {
         rotation: 0,
       },
     ]);
+    saveStateToHistory();
   };
 
   const removeAccessory = (index) => {
@@ -353,6 +516,7 @@ const FashionDesignTool = () => {
     if (mesh) modelRef.current.remove(mesh);
 
     setAccessories((prev) => prev.filter((_, i) => i !== index));
+    saveStateToHistory();
   };
 
   const removeAllAccessories = () => {
@@ -365,6 +529,7 @@ const FashionDesignTool = () => {
 
     setAccessories([]);
     setShowRemoveAccessoriesPanel(false);
+    saveStateToHistory();
   };
 
   const toggleRemoveAccessoriesPanel = () => {
@@ -405,6 +570,7 @@ const FashionDesignTool = () => {
 
         modelRef.current.add(textMesh);
         setCustomText("");
+        saveStateToHistory();
       },
       undefined,
       (error) => {
@@ -500,6 +666,7 @@ const FashionDesignTool = () => {
         }
       });
     }
+    saveStateToHistory();
   };
 
   const toggleCanvas = () => setShowCanvas(!showCanvas);
@@ -570,36 +737,27 @@ const FashionDesignTool = () => {
         <h1 className="text-xs font-semibold pl-4 text-primary/80">
           Design Studio
         </h1>
+        <div className="ml-auto flex gap-2">
+          <button
+            className="p-2 bg-gray-200 rounded-full disabled:opacity-50"
+            onClick={undo}
+            disabled={historyIndex <= 0}
+            title="Undo"
+          >
+            <FaUndo className="h-4 w-4" />
+          </button>
+          <button
+            className="p-2 bg-gray-200 rounded-full disabled:opacity-50"
+            onClick={redo}
+            disabled={historyIndex >= history.length - 1}
+            title="Redo"
+          >
+            <FaRedo className="h-4 w-4" />
+          </button>
+        </div>
       </header>
 
-      {/* Alternative mobile view */}
-      <div className="md:hidden flex-1 flex flex-col items-center justify-center p-4 text-center">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-16 w-16 text-gray-400 mb-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-          />
-        </svg>
-        <h2 className="text-lg font-bold text-gray-800 mb-2">
-          Limited Mobile Experience
-        </h2>
-        <p className="text-gray-600 mb-6">
-          Our 3D Design Studio requires a larger screen for the best experience.
-          Please switch to a laptop or desktop computer to access all features.
-        </p>
-      </div>
-
-      {/* Main content - only visible on larger screens */}
       <div className="hidden md:flex flex-1 overflow-hidden">
-        {/* Left Sidebar - Design Options */}
         <div className="w-64 bg-gray-100 p-4 overflow-y-auto flex-shrink-0">
           <h2 className="text-sm font-bold text-gray-900 mb-4">
             Design Options
@@ -816,14 +974,11 @@ const FashionDesignTool = () => {
           </div>
         </div>
 
-        {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-y-auto relative">
-          {/* 3D Model Container - Key change here to make it responsive */}
           <div
             className={`relative ${showCanvas ? "flex-1" : "h-full"}`}
             ref={threeContainerRef}
           >
-            {/* Floating Remove Accessories Panel */}
             {showRemoveAccessoriesPanel && accessories.length > 0 && (
               <div className="absolute top-4 right-12 bg-white p-3 rounded-lg shadow-lg z-40 w-64 max-h-screen overflow-y-auto">
                 <div className="flex justify-between items-center mb-2">
@@ -865,7 +1020,6 @@ const FashionDesignTool = () => {
             )}
           </div>
 
-          {/* Canvas Section */}
           {showCanvas && (
             <div className="h-48 border-t border-b relative">
               <canvas
@@ -879,7 +1033,6 @@ const FashionDesignTool = () => {
             </div>
           )}
 
-          {/* Accessories Footer */}
           <div className="p-2 bg-gray-100 border-t">
             <div className="flex justify-between items-center mb-1">
               <h3 className="text-xs text-gray-600">Accessories</h3>
@@ -934,6 +1087,7 @@ const FashionDesignTool = () => {
                             if (mesh)
                               mesh.scale.setScalar(newAccessories[idx].scale);
                             setAccessories(newAccessories);
+                            saveStateToHistory();
                           }}
                           className="w-16 accent-primary h-1"
                         />
@@ -1022,12 +1176,32 @@ const FashionDesignTool = () => {
             <h3 className="text-sm font-bold text-gray-900 mb-3">
               Export Options
             </h3>
-            <button className="w-full px-3 py-2 bg-primary text-white text-xs rounded-full mb-2">
+            <button
+              className="w-full px-3 py-2 bg-primary text-white text-xs rounded-full mb-2"
+              onClick={saveDesign}
+            >
               Save Design
             </button>
-            <button className="w-full px-3 py-2 bg-transparent text-primary text-xs rounded-full border border-primary">
-              Export 3D Model
-            </button>
+            <div className="space-y-2">
+              <button
+                className="w-full px-3 py-2 bg-transparent text-primary text-xs rounded-full border border-primary"
+                onClick={() => exportDesign("gltf")}
+              >
+                Export as GLTF
+              </button>
+              <button
+                className="w-full px-3 py-2 bg-transparent text-primary text-xs rounded-full border border-primary"
+                onClick={() => exportDesign("obj")}
+              >
+                Export as OBJ
+              </button>
+              <button
+                className="w-full px-3 py-2 bg-transparent text-primary text-xs rounded-full border border-primary"
+                onClick={() => exportDesign("screenshot")}
+              >
+                Export as Screenshot
+              </button>
+            </div>
           </div>
         </div>
       </div>
