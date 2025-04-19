@@ -5,6 +5,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter";
 import { OBJExporter } from "three/examples/jsm/exporters/OBJExporter";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import BlouseModel from "./3D-Models/Blouse.model";
 import DressModel from "./3D-Models/Dress.model";
 import JacketModel from "./3D-Models/Jacket.model";
@@ -37,6 +38,8 @@ const FashionDesignTool = () => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [history, setHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isCustomModel, setIsCustomModel] = useState(false);
+  const [customModelData, setCustomModelData] = useState(null);
 
   const canvasRef = useRef(null);
   const threeContainerRef = useRef(null);
@@ -53,6 +56,7 @@ const FashionDesignTool = () => {
     "pants",
     "skirt",
     "jacket",
+    "custom",
   ];
   const fabricTypes = [
     "cotton",
@@ -96,12 +100,13 @@ const FashionDesignTool = () => {
         return ["a-line", "pencil", "pleated", "mini", "maxi"];
       case "jacket":
         return ["bomber", "blazer", "denim", "leather", "cropped"];
+      case "custom":
+        return ["imported"]; // Single style for custom models
       default:
         return ["regular"];
     }
   };
 
-  // Save design to localStorage
   const saveDesign = () => {
     const designState = {
       activeGarment,
@@ -114,12 +119,13 @@ const FashionDesignTool = () => {
       customText,
       textProperties,
       canvasData: canvasRef.current?.toDataURL(),
+      isCustomModel,
+      customModelData: isCustomModel ? customModelData : null,
     };
     localStorage.setItem("savedDesign", JSON.stringify(designState));
     alert("Design saved successfully!");
   };
 
-  // Load design from localStorage
   const loadDesign = () => {
     const savedDesign = localStorage.getItem("savedDesign");
     if (savedDesign) {
@@ -133,6 +139,8 @@ const FashionDesignTool = () => {
       setAccessories(designState.accessories);
       setCustomText(designState.customText);
       setTextProperties(designState.textProperties);
+      setIsCustomModel(designState.isCustomModel || false);
+      setCustomModelData(designState.customModelData || null);
 
       if (designState.canvasData && canvasRef.current) {
         const img = new Image();
@@ -143,10 +151,52 @@ const FashionDesignTool = () => {
           stopDrawing();
         };
       }
+
+      if (designState.isCustomModel && designState.customModelData) {
+        loadGarmentModel("custom", designState.garmentStyle);
+      }
     }
   };
 
-  // Export design
+  const importDesign = (event) => {
+    const file = event.target.files[0];
+    if (!file || !file.name.match(/\.(gltf|glb)$/)) {
+      alert("Please select a valid GLTF or GLB file.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const loader = new GLTFLoader();
+      loader.parse(
+        e.target.result,
+        "",
+        (gltf) => {
+          if (!sceneRef.current || !modelRef.current) return;
+
+          sceneRef.current.remove(modelRef.current);
+
+          const model = gltf.scene;
+          modelRef.current = model;
+          sceneRef.current.add(model);
+
+          setIsCustomModel(true);
+          setCustomModelData(e.target.result);
+          setActiveGarment("custom");
+          setGarmentStyle("imported");
+
+          updateGarmentProperties();
+          saveStateToHistory();
+        },
+        (error) => {
+          console.error("Error loading GLTF:", error);
+          alert("Failed to load GLTF file.");
+        }
+      );
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
   const exportDesign = (format) => {
     if (!modelRef.current || !rendererRef.current) return;
 
@@ -196,7 +246,6 @@ const FashionDesignTool = () => {
     );
   };
 
-  // Undo/Redo
   const saveStateToHistory = () => {
     const currentState = {
       activeGarment,
@@ -209,6 +258,8 @@ const FashionDesignTool = () => {
       customText,
       textProperties,
       canvasData: canvasRef.current?.toDataURL(),
+      isCustomModel,
+      customModelData: isCustomModel ? customModelData : null,
     };
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push(currentState);
@@ -242,6 +293,8 @@ const FashionDesignTool = () => {
     setAccessories(state.accessories);
     setCustomText(state.customText);
     setTextProperties(state.textProperties);
+    setIsCustomModel(state.isCustomModel || false);
+    setCustomModelData(state.customModelData || null);
 
     if (state.canvasData && canvasRef.current) {
       const img = new Image();
@@ -252,6 +305,10 @@ const FashionDesignTool = () => {
         ctx.drawImage(img, 0, 0);
         stopDrawing();
       };
+    }
+
+    if (sceneRef.current) {
+      loadGarmentModel(state.activeGarment, state.garmentStyle);
     }
   };
 
@@ -325,8 +382,6 @@ const FashionDesignTool = () => {
     };
 
     window.addEventListener("resize", handleResize);
-
-    // Load saved design
     loadDesign();
 
     return () => {
@@ -389,6 +444,17 @@ const FashionDesignTool = () => {
     if (modelRef.current) sceneRef.current.remove(modelRef.current);
 
     let model;
+    if (garmentType === "custom" && isCustomModel && customModelData) {
+      const loader = new GLTFLoader();
+      loader.parse(customModelData, "", (gltf) => {
+        model = gltf.scene;
+        modelRef.current = model;
+        sceneRef.current.add(model);
+        updateGarmentProperties();
+      });
+      return;
+    }
+
     switch (garmentType) {
       case "tshirt":
         model = TShirtModel(style, garmentColor, fabricTexture);
@@ -414,6 +480,8 @@ const FashionDesignTool = () => {
 
     sceneRef.current.add(model);
     modelRef.current = model;
+    setIsCustomModel(false);
+    setCustomModelData(null);
     updateGarmentProperties();
   };
 
@@ -1182,6 +1250,15 @@ const FashionDesignTool = () => {
             >
               Save Design
             </button>
+            <label className="w-full px-3 py-2 bg-transparent text-primary text-xs rounded-full border border-primary flex items-center justify-center cursor-pointer mb-2">
+              Import Design
+              <input
+                type="file"
+                accept=".gltf,.glb"
+                className="hidden"
+                onChange={importDesign}
+              />
+            </label>
             <div className="space-y-2">
               <button
                 className="w-full px-3 py-2 bg-transparent text-primary text-xs rounded-full border border-primary"
