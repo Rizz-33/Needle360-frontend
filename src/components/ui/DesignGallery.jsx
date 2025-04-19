@@ -50,7 +50,6 @@ const formatDate = (dateString) => {
   const month = date.toLocaleString("default", { month: "long" });
   const year = date.getFullYear();
 
-  // Add ordinal suffix to day
   const suffix =
     day % 10 === 1 && day !== 11
       ? "st"
@@ -74,38 +73,34 @@ const ReviewItem = ({ review }) => {
     const fetchReviewer = async () => {
       if (review.clientId) {
         try {
-          try {
-            const customer = await useCustomerStore
-              .getState()
-              .fetchCustomerById(review.clientId);
-            if (customer && customer.name) {
-              setReviewer({
-                name: customer.name,
-                profileImage: customer.profilePic,
-                type: "customer",
-              });
-              return;
-            }
-          } catch (error) {
-            console.log("Not a customer, trying tailor");
-          }
-          try {
-            const tailor = await useShopStore
-              .getState()
-              .fetchTailorById(review.clientId);
-            if (tailor) {
-              setReviewer({
-                name: tailor.shopName || tailor.name,
-                profileImage: tailor.logoUrl,
-                type: "tailor",
-              });
-              return;
-            }
-          } catch (error) {
-            console.error("Error fetching tailor reviewer details:", error);
+          const customer = await useCustomerStore
+            .getState()
+            .fetchCustomerById(review.clientId);
+          if (customer && customer.name) {
+            setReviewer({
+              name: customer.name,
+              profileImage: customer.profilePic,
+              type: "customer",
+            });
+            return;
           }
         } catch (error) {
-          console.error("Error fetching reviewer details:", error);
+          console.log("Not a customer, trying tailor");
+        }
+        try {
+          const tailor = await useShopStore
+            .getState()
+            .fetchTailorById(review.clientId);
+          if (tailor) {
+            setReviewer({
+              name: tailor.shopName || tailor.name,
+              profileImage: tailor.logoUrl,
+              type: "tailor",
+            });
+            return;
+          }
+        } catch (error) {
+          console.error("Error fetching tailor reviewer details:", error);
         }
       }
     };
@@ -314,15 +309,11 @@ const DesignCard = ({ design }) => {
     new Date(design.createdAt).getTime() !==
       new Date(design.updatedAt).getTime();
 
-  const averageRating =
-    designReviews.length > 0
-      ? designReviews.reduce((sum, review) => sum + review.rating, 0) /
-        designReviews.length
-      : design.rating || 0;
+  const averageRating = design.averageRating || 0;
+  const reviewCount = design.reviewCount || 0;
 
   return (
     <>
-      {/* Design Card */}
       <div className="max-w-sm rounded-xl overflow-hidden shadow-lg bg-white transform hover:scale-105 transition-transform duration-300 ease-in-out p-4 border border-gray-100 hover:shadow-xl">
         <div className="relative">
           <img
@@ -349,7 +340,6 @@ const DesignCard = ({ design }) => {
           <p className="text-gray-600 text-sm mb-2 line-clamp-2">
             {design.description || "No description available"}
           </p>
-          {/* Tags Display in Card */}
           {design.tags && design.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
               {design.tags.map((tag, index) => (
@@ -382,9 +372,9 @@ const DesignCard = ({ design }) => {
               </div>
               <span className="text-xs text-gray-500 mt-1">
                 {averageRating > 0
-                  ? `${averageRating.toFixed(1)}/5 (${
-                      designReviews.length
-                    } review${designReviews.length !== 1 ? "s" : ""})`
+                  ? `${averageRating.toFixed(0)}/5 (${reviewCount} review${
+                      reviewCount !== 1 ? "s" : ""
+                    })`
                   : "No ratings yet"}
               </span>
             </div>
@@ -405,7 +395,6 @@ const DesignCard = ({ design }) => {
         </div>
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -456,7 +445,6 @@ const DesignCard = ({ design }) => {
                 <p className="text-gray-600 text-sm">
                   {design.description || "No description available"}
                 </p>
-                {/* Tags Display in Modal */}
                 {design.tags && design.tags.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {design.tags.map((tag, index) => (
@@ -591,8 +579,6 @@ const DesignCard = ({ design }) => {
 const DesignGallery = () => {
   const {
     designs,
-    tailorDesigns,
-    customerDesigns,
     isLoading,
     error,
     fetchAllDesigns,
@@ -619,26 +605,89 @@ const DesignGallery = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [filteredDesigns, setFilteredDesigns] = useState([]);
   const [isFiltering, setIsFiltering] = useState(false);
+  const [creatorCache, setCreatorCache] = useState({});
+  const [reviewCache, setReviewCache] = useState({}); // Cache for reviews
 
   useEffect(() => {
-    fetchAllDesigns();
+    const loadDesigns = async () => {
+      try {
+        await fetchAllDesigns();
+      } catch (err) {
+        console.error("Error fetching designs:", err);
+        toast.error("Failed to load designs");
+      }
+    };
+    loadDesigns();
   }, [fetchAllDesigns]);
 
   useEffect(() => {
-    // Initialize filteredDesigns with the appropriate design list
-    let designsToShow = [];
-    switch (activeFilter) {
-      case "tailor":
-        designsToShow = tailorDesigns;
-        break;
-      case "customer":
-        designsToShow = customerDesigns;
-        break;
-      default:
-        designsToShow = designs;
-    }
-    setFilteredDesigns(designsToShow);
-  }, [designs, tailorDesigns, customerDesigns, activeFilter]);
+    const enrichDesigns = async () => {
+      if (!designs || designs.length === 0) {
+        setFilteredDesigns([]);
+        return;
+      }
+
+      let designsToShow = designs;
+      if (activeFilter === "tailor") {
+        designsToShow = designs.filter(
+          (design) =>
+            design.userType === "tailor" ||
+            design.role === roleTypeNumbers.tailor
+        );
+      } else if (activeFilter === "customer") {
+        designsToShow = designs.filter(
+          (design) =>
+            design.userType !== "tailor" &&
+            design.role !== roleTypeNumbers.tailor
+        );
+      }
+
+      const enrichedDesigns = await Promise.all(
+        designsToShow.map(async (design) => {
+          const userId = design.tailorId || design.customerId;
+          let averageRating = 0;
+          let reviewCount = 0;
+
+          // Check if reviews are already cached
+          if (reviewCache[userId]) {
+            const reviews = reviewCache[userId];
+            reviewCount = reviews.length;
+            averageRating =
+              reviews.length > 0
+                ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+                : 0;
+          } else {
+            try {
+              const response = await fetchUserReviews(userId);
+              const reviews = response.reviews || [];
+              reviewCount = reviews.length;
+              averageRating =
+                reviews.length > 0
+                  ? reviews.reduce((sum, r) => sum + r.rating, 0) /
+                    reviews.length
+                  : 0;
+              setReviewCache((prev) => ({ ...prev, [userId]: reviews }));
+            } catch (error) {
+              console.error(
+                `Error fetching reviews for design ${design._id}:`,
+                error
+              );
+            }
+          }
+
+          return {
+            ...design,
+            averageRating,
+            reviewCount,
+          };
+        })
+      );
+
+      setFilteredDesigns(enrichedDesigns);
+    };
+
+    enrichDesigns();
+  }, [designs, activeFilter, reviewCache]);
 
   const handleFilterChange = async (type) => {
     setActiveFilter(type);
@@ -653,6 +702,7 @@ const DesignGallery = () => {
       }
     } catch (err) {
       console.error("Error fetching designs:", err);
+      toast.error("Failed to load designs");
     }
   };
 
@@ -674,66 +724,108 @@ const DesignGallery = () => {
     setFilters((prev) => ({ ...prev, minRating: rating }));
   };
 
-  const applyFilters = async () => {
-    setIsFiltering(true);
-    let designsToFilter = [];
-    switch (filters.type) {
-      case "tailor":
-        designsToFilter = tailorDesigns;
-        break;
-      case "customer":
-        designsToFilter = customerDesigns;
-        break;
-      default:
-        designsToFilter = designs;
+  const fetchCreatorDetails = async (design) => {
+    const userId = design.tailorId || design.customerId;
+    if (creatorCache[userId]) {
+      return creatorCache[userId];
     }
 
-    const filtered = await Promise.all(
-      designsToFilter.map(async (design) => {
-        let include = true;
-        const userId = design.tailorId || design.customerId;
-        let averageRating = 0;
+    try {
+      let creatorDetails = null;
+      if (design.tailorId) {
+        creatorDetails = await fetchTailorById(design.tailorId);
+      } else if (design.customerId) {
+        creatorDetails = await fetchCustomerById(design.customerId);
+      }
+      setCreatorCache((prev) => ({ ...prev, [userId]: creatorDetails }));
+      return creatorDetails;
+    } catch (error) {
+      console.error("Error fetching creator details:", error);
+      return null;
+    }
+  };
 
-        // Fetch reviews for rating
-        try {
-          const response = await fetchUserReviews(userId);
-          const reviews = response.reviews || [];
-          averageRating =
-            reviews.length > 0
-              ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-              : 0;
-        } catch (error) {
-          console.error("Error fetching reviews for design:", error);
-        }
+  const applyFilters = async () => {
+    setIsFiltering(true);
+    try {
+      let designsToFilter = designs;
+      if (filters.type === "tailor") {
+        designsToFilter = designs.filter(
+          (design) =>
+            design.userType === "tailor" ||
+            design.role === roleTypeNumbers.tailor
+        );
+      } else if (filters.type === "customer") {
+        designsToFilter = designs.filter(
+          (design) =>
+            design.userType !== "tailor" &&
+            design.role !== roleTypeNumbers.tailor
+        );
+      }
 
-        // Price filter
-        if (
-          filters.priceMin &&
-          (!design.price || design.price < parseFloat(filters.priceMin))
-        ) {
-          include = false;
-        }
-        if (
-          filters.priceMax &&
-          (!design.price || design.price > parseFloat(filters.priceMax))
-        ) {
-          include = false;
-        }
+      const enrichedDesigns = await Promise.all(
+        designsToFilter.map(async (design) => {
+          const userId = design.tailorId || design.customerId;
+          let averageRating = 0;
+          let reviewCount = 0;
 
-        // Tags filter
-        if (filters.tags.length > 0 && design.tags) {
-          include = filters.tags.every((tag) => design.tags.includes(tag));
-        }
-
-        // Address filter
-        if (filters.address) {
-          let creatorDetails = null;
-          try {
-            if (design.tailorId) {
-              creatorDetails = await fetchTailorById(design.tailorId);
-            } else if (design.customerId) {
-              creatorDetails = await fetchCustomerById(design.customerId);
+          // Use cached reviews
+          if (reviewCache[userId]) {
+            const reviews = reviewCache[userId];
+            reviewCount = reviews.length;
+            averageRating =
+              reviews.length > 0
+                ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+                : 0;
+          } else {
+            try {
+              const response = await fetchUserReviews(userId);
+              const reviews = response.reviews || [];
+              reviewCount = reviews.length;
+              averageRating =
+                reviews.length > 0
+                  ? reviews.reduce((sum, r) => sum + r.rating, 0) /
+                    reviews.length
+                  : 0;
+              setReviewCache((prev) => ({ ...prev, [userId]: reviews }));
+            } catch (error) {
+              console.error(
+                `Error fetching reviews for design ${design._id}:`,
+                error
+              );
             }
+          }
+
+          return { ...design, averageRating, reviewCount };
+        })
+      );
+
+      const filtered = await Promise.all(
+        enrichedDesigns.map(async (design) => {
+          let include = true;
+
+          // Price filter
+          if (
+            filters.priceMin &&
+            (!design.price || design.price < parseFloat(filters.priceMin))
+          ) {
+            include = false;
+          }
+          if (
+            filters.priceMax &&
+            (!design.price || design.price > parseFloat(filters.priceMax))
+          ) {
+            include = false;
+          }
+
+          // Tags filter
+          if (filters.tags.length > 0 && design.tags) {
+            include = filters.tags.every((tag) => design.tags.includes(tag));
+          }
+
+          // Address filter
+          if (filters.address) {
+            const creatorDetails = await fetchCreatorDetails(design);
             if (
               creatorDetails &&
               creatorDetails.address &&
@@ -742,54 +834,61 @@ const DesignGallery = () => {
                 .includes(filters.address.toLowerCase())
             ) {
               include = false;
+            } else if (!creatorDetails || !creatorDetails.address) {
+              include = false;
             }
-          } catch (error) {
-            console.error("Error fetching creator address:", error);
+          }
+
+          // Rating filter
+          if (
+            filters.minRating > 0 &&
+            (design.averageRating || 0) < filters.minRating
+          ) {
             include = false;
           }
-        }
 
-        // Rating filter
-        if (filters.minRating > 0 && averageRating < filters.minRating) {
-          include = false;
-        }
-
-        // Date filter
-        if (filters.dateFrom) {
-          const fromDate = new Date(filters.dateFrom);
-          if (new Date(design.createdAt) < fromDate) {
-            include = false;
+          // Date filter
+          if (filters.dateFrom) {
+            const fromDate = new Date(filters.dateFrom);
+            if (new Date(design.createdAt) < fromDate) {
+              include = false;
+            }
           }
-        }
-        if (filters.dateTo) {
-          const toDate = new Date(filters.dateTo);
-          if (new Date(design.createdAt) > toDate) {
-            include = false;
+          if (filters.dateTo) {
+            const toDate = new Date(filters.dateTo);
+            if (new Date(design.createdAt) > toDate) {
+              include = false;
+            }
           }
-        }
 
-        return include ? { ...design, averageRating } : null;
-      })
-    );
+          return include ? design : null;
+        })
+      );
 
-    let sorted = filtered.filter((d) => d !== null);
+      const sorted = filtered
+        .filter((d) => d !== null)
+        .sort((a, b) => {
+          const order = filters.sortOrder === "asc" ? 1 : -1;
+          if (filters.sortBy === "price") {
+            return ((a.price || 0) - (b.price || 0)) * order;
+          } else if (filters.sortBy === "rating") {
+            return ((a.averageRating || 0) - (b.averageRating || 0)) * order;
+          } else {
+            return (new Date(a.createdAt) - new Date(b.createdAt)) * order;
+          }
+        });
 
-    // Sorting
-    sorted.sort((a, b) => {
-      const order = filters.sortOrder === "asc" ? 1 : -1;
-      if (filters.sortBy === "price") {
-        return ((a.price || 0) - (b.price || 0)) * order;
-      } else if (filters.sortBy === "rating") {
-        return ((a.averageRating || 0) - (b.averageRating || 0)) * order;
-      } else {
-        return (new Date(a.createdAt) - new Date(b.createdAt)) * order;
-      }
-    });
-
-    setFilteredDesigns(sorted);
+      setFilteredDesigns(sorted);
+      toast.success("Filters applied successfully");
+    } catch (error) {
+      console.error("Error applying filters:", error);
+      toast.error("Failed to apply filters");
+    } finally {
+      setIsFiltering(false);
+    }
   };
 
-  const resetFilters = () => {
+  const resetFilters = async () => {
     setIsFiltering(false);
     setFilters({
       type: "all",
@@ -804,7 +903,13 @@ const DesignGallery = () => {
       dateTo: "",
     });
     setActiveFilter("all");
-    setFilteredDesigns(designs);
+    try {
+      await fetchAllDesigns(); // Explicitly fetch all designs
+      toast.success("Filters reset and all designs loaded");
+    } catch (err) {
+      console.error("Error resetting filters:", err);
+      toast.error("Failed to reset filters");
+    }
   };
 
   return (
@@ -855,7 +960,6 @@ const DesignGallery = () => {
       {showFilters && (
         <div className="bg-gray-50 p-6 rounded-2xl shadow-md mb-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Price Range */}
             <div>
               <h3 className="text-sm font-semibold text-gray-800 mb-2">
                 Price Range (LKR)
@@ -880,7 +984,6 @@ const DesignGallery = () => {
               </div>
             </div>
 
-            {/* Date Range */}
             <div>
               <h3 className="text-sm font-semibold text-gray-800 mb-2">
                 Creation Date
@@ -903,7 +1006,6 @@ const DesignGallery = () => {
               </div>
             </div>
 
-            {/* Address */}
             <div>
               <h3 className="text-sm font-semibold text-gray-800 mb-2">
                 Creator Address
@@ -918,7 +1020,6 @@ const DesignGallery = () => {
               />
             </div>
 
-            {/* Tags */}
             <div className="md:col-span-3">
               <h3 className="text-sm font-semibold text-gray-800 mb-2">Tags</h3>
               <div className="flex flex-wrap gap-2">
@@ -938,7 +1039,6 @@ const DesignGallery = () => {
               </div>
             </div>
 
-            {/* Minimum Rating */}
             <div>
               <h3 className="text-sm font-semibold text-gray-800 mb-2">
                 Minimum Rating
@@ -949,7 +1049,6 @@ const DesignGallery = () => {
               />
             </div>
 
-            {/* Sorting */}
             <div>
               <h3 className="text-sm font-semibold text-gray-800 mb-2">
                 Sort By
@@ -977,16 +1076,17 @@ const DesignGallery = () => {
           </div>
           <div className="mt-6 flex justify-end space-x-3">
             <CustomButton
-              text="Apply Filters"
+              text={isFiltering ? "Applying Filters..." : "Apply Filters"}
               color="primary"
               hover_color="hoverAccent"
               variant="filled"
               height="h-10"
               width="w-32"
               onClick={applyFilters}
+              disabled={isFiltering}
             />
             <CustomButton
-              text="Reset Filters"
+              text={isLoading ? "Resetting Filters..." : "Reset Filters"}
               color="primary"
               hover_color="hoverAccent"
               variant="outlined"
@@ -1017,19 +1117,7 @@ const DesignGallery = () => {
         </div>
       ) : (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">
-            No designs match the selected filters.
-          </p>
-          <CustomButton
-            text="Reset Filters"
-            color="primary"
-            hover_color="hoverAccent"
-            variant="outlined"
-            height="h-10"
-            width="w-32"
-            onClick={resetFilters}
-            className="mt-4"
-          />
+          <Loader />
         </div>
       )}
     </div>
