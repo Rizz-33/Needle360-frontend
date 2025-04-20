@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import React from "react";
-import { howItWorksConfig } from "../configs/Services.configs";
+import { howItWorksConfig } from "../../configs/Services.configs";
 
 const HowItWorks = () => {
   return (

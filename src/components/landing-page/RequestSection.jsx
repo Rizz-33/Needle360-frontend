@@ -1,8 +1,8 @@
 import { ChevronRight } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "../store/Auth.store";
-import { CustomButton } from "./ui/Button";
+import { useAuthStore } from "../../store/Auth.store";
+import { CustomButton } from "../ui/Button";
 
 const RequestSection = () => {
   const { user } = useAuthStore();
