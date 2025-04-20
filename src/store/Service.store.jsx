@@ -1,6 +1,7 @@
 import axios from "axios";
 import { create } from "zustand";
 import { predefinedServices } from "../configs/Services.configs";
+import { useShopStore } from "./Shop.store"; // Import useShopStore
 
 const BASE_API_URL = `${
   import.meta.env.VITE_API_URL || "http://localhost:4000"
@@ -15,6 +16,7 @@ export const useServiceStore = create((set, get) => ({
   allServices: [],
   predefinedServices: predefinedServices,
   tailors: [],
+  serviceSpecificTailors: [],
   isLoading: false,
   error: null,
 
@@ -23,6 +25,7 @@ export const useServiceStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await axios.get(`${BASE_API_URL}`);
+      console.log("fetchAllServices response:", response.data);
       set({
         allServices: response.data.services || [],
         tailors: response.data.tailors || [],
@@ -30,6 +33,7 @@ export const useServiceStore = create((set, get) => ({
       });
       return response.data;
     } catch (error) {
+      console.error("Error fetching all services:", error);
       set({
         error: error.response?.data?.message || "Error fetching all services",
         isLoading: false,
@@ -50,9 +54,11 @@ export const useServiceStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await axios.get(`${BASE_API_URL}/${tailorId}`);
+      console.log(`fetchServices for tailor ${tailorId}:`, response.data);
       set({ services: response.data.services || [], isLoading: false });
       return response.data;
     } catch (error) {
+      console.error("Error fetching services:", error);
       set({
         error: error.response?.data?.message || "Error fetching services",
         isLoading: false,
@@ -61,27 +67,76 @@ export const useServiceStore = create((set, get) => ({
     }
   },
 
+  // Fetch tailors by service
   fetchTailorsByService: async (serviceName) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(
-        `${BASE_API_URL}/service/${encodeURIComponent(serviceName)}`
-      );
-      console.log(`Fetched tailors for ${serviceName}:`, response.data);
-      return response.data.tailors || [];
+      // Normalize service name
+      const normalizedServiceName = serviceName.trim();
+      console.log(`Fetching tailors for service: ${normalizedServiceName}`);
+
+      // Try backend API
+      let serviceTailors = [];
+      try {
+        const response = await axios.get(
+          `${BASE_API_URL}/service/${encodeURIComponent(normalizedServiceName)}`
+        );
+        console.log(
+          `Backend response for ${normalizedServiceName}:`,
+          response.data
+        );
+        serviceTailors = response.data.tailors || [];
+      } catch (apiError) {
+        console.warn(
+          `Backend API failed for ${normalizedServiceName}, falling back to client-side filtering`,
+          apiError
+        );
+      }
+
+      // Fallback to client-side filtering if backend returns no tailors
+      if (!serviceTailors || serviceTailors.length === 0) {
+        console.log("Performing client-side filtering");
+        const shopStore = useShopStore.getState();
+        let tailors = shopStore.tailors;
+
+        if (!tailors || tailors.length === 0) {
+          console.log("Fetching all tailors from useShopStore");
+          tailors = await shopStore.fetchTailors();
+        }
+
+        // Filter tailors by service (case-insensitive)
+        serviceTailors = tailors.filter((tailor) =>
+          tailor.services?.some(
+            (service) =>
+              service.trim().toLowerCase() ===
+              normalizedServiceName.toLowerCase()
+          )
+        );
+        console.log(
+          `Client-side filtered tailors for ${normalizedServiceName}:`,
+          serviceTailors
+        );
+      }
+
+      set({
+        serviceSpecificTailors: serviceTailors,
+        isLoading: false,
+      });
+      return serviceTailors;
     } catch (error) {
+      console.error(`Error fetching tailors for ${serviceName}:`, error);
       set({
         error:
           error.response?.data?.message ||
           `Error fetching tailors for ${serviceName}`,
         isLoading: false,
+        serviceSpecificTailors: [],
       });
       throw error;
-    } finally {
-      set({ isLoading: false });
     }
   },
 
+  // Add services to a tailor's services list
   addServices: async (tailorId, services) => {
     if (!tailorId || !services || !Array.isArray(services)) {
       return set({
@@ -92,11 +147,11 @@ export const useServiceStore = create((set, get) => ({
 
     set({ isLoading: true, error: null });
     try {
-      // Ensure we're only sending valid predefined services
       const predefinedSet = new Set(get().predefinedServices);
-
       const formattedServices = services
-        .map((item) => (typeof item === "string" ? item : item.title || item))
+        .map((item) =>
+          typeof item === "string" ? item.trim() : item.title?.trim() || item
+        )
         .filter((service) => predefinedSet.has(service));
 
       if (formattedServices.length === 0) {
@@ -112,11 +167,10 @@ export const useServiceStore = create((set, get) => ({
         isLoading: false,
       });
 
-      // Refresh all services after adding new ones
       get().fetchAllServices();
-
       return response.data;
     } catch (error) {
+      console.error("Error adding services:", error);
       set({
         error: error.response?.data?.message || "Error adding services",
         isLoading: false,
@@ -125,7 +179,7 @@ export const useServiceStore = create((set, get) => ({
     }
   },
 
-  // Update all services for a tailor (replace entire list)
+  // Update all services for a tailor
   updateServices: async (tailorId, services) => {
     if (!tailorId || !Array.isArray(services)) {
       return set({
@@ -136,11 +190,11 @@ export const useServiceStore = create((set, get) => ({
 
     set({ isLoading: true, error: null });
     try {
-      // Ensure we're only sending valid predefined services
       const predefinedSet = new Set(get().predefinedServices);
-
       const formattedServices = services
-        .map((item) => (typeof item === "string" ? item : item.title || item))
+        .map((item) =>
+          typeof item === "string" ? item.trim() : item.title?.trim() || item
+        )
         .filter((service) => predefinedSet.has(service));
 
       if (formattedServices.length === 0) {
@@ -156,11 +210,10 @@ export const useServiceStore = create((set, get) => ({
         isLoading: false,
       });
 
-      // Refresh all services after updating
       get().fetchAllServices();
-
       return response.data;
     } catch (error) {
+      console.error("Error updating services:", error);
       set({
         error: error.response?.data?.message || "Error updating services",
         isLoading: false,
@@ -191,11 +244,11 @@ export const useServiceStore = create((set, get) => ({
 
     set({ isLoading: true, error: null });
     try {
-      // Validate against predefined services
       const predefinedSet = new Set(get().predefinedServices);
-
       const formattedServices = serviceArray
-        .map((item) => (typeof item === "string" ? item : item.title || item))
+        .map((item) =>
+          typeof item === "string" ? item.trim() : item.title?.trim() || item
+        )
         .filter((service) => predefinedSet.has(service));
 
       if (formattedServices.length === 0) {
@@ -213,11 +266,10 @@ export const useServiceStore = create((set, get) => ({
         isLoading: false,
       });
 
-      // Refresh all services after deleting
       get().fetchAllServices();
-
       return response.data;
     } catch (error) {
+      console.error("Error deleting services:", error);
       set({
         error: error.response?.data?.message || "Error deleting services",
         isLoading: false,
@@ -226,23 +278,9 @@ export const useServiceStore = create((set, get) => ({
     }
   },
 
-  // Get services without API call (from local state)
-  getLocalServices: () => {
-    return get().services;
-  },
-
-  // Get all services without API call (from local state)
-  getAllLocalServices: () => {
-    return get().allServices;
-  },
-
-  // Get predefined services without API call (from local state)
-  getPredefinedServices: () => {
-    return get().predefinedServices;
-  },
-
-  // Get tailors without API call (from local state)
-  getLocalTailors: () => {
-    return get().tailors;
-  },
+  getLocalServices: () => get().services,
+  getAllLocalServices: () => get().allServices,
+  getPredefinedServices: () => get().predefinedServices,
+  getLocalTailors: () => get().tailors,
+  getServiceSpecificTailors: () => get().serviceSpecificTailors,
 }));
