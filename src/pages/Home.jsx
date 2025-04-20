@@ -2,12 +2,12 @@
 
 import React from "react";
 import FeaturedTailorsCarousel from "../components/FeaturedTailors";
-import HowItWorks from "../components/HowItWorks";
 import BentoGrid from "../components/landing-page/BentoGrid";
 import { DesignScroll } from "../components/landing-page/DesignScroll";
 import HeroSection from "../components/landing-page/Hero";
+import HowItWorks from "../components/landing-page/HowItWorks";
 import LogoMarquee from "../components/landing-page/LogoMarquee";
-import RequestSection from "../components/RequestSection";
+import RequestSection from "../components/landing-page/RequestSection";
 import Footer from "../components/ui/Footer";
 import NavbarMenu from "../components/ui/Navbar-menu";
 

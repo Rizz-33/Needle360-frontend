@@ -74,10 +74,13 @@ const ScrollCard = ({ rotate, scale, children }) => {
         boxShadow:
           "0 0 #0000004d, 0 9px 20px #0000004a, 0 37px 37px #00000042, 0 84px 50px #00000026, 0 149px 60px #0000000a, 0 233px 65px #00000003",
       }}
-      className="max-w-5xl -mt-12 mx-auto h-[30rem] md:h-[40rem] w-full border-4 border-[#6C6C6C] p-2 md:p-6 bg-[#222222] rounded-[30px] shadow-2xl"
+      className="max-w-5xl -mt-12 mx-auto h-[40rem] md:h-[30rem] w-[60rem] border-4 border-[#6C6C6C] p-2 md:p-6 bg-[#222222] rounded-[30px] shadow-2xl"
     >
       <div className="h-full w-full overflow-hidden rounded-2xl bg-gray-100 dark:bg-zinc-900 md:rounded-2xl md:p-4">
-        {children}
+        {/* Add a container div for the image */}
+        <div className="h-full w-full flex items-center justify-center">
+          {children}
+        </div>
       </div>
     </motion.div>
   );
@@ -86,17 +89,17 @@ const ScrollCard = ({ rotate, scale, children }) => {
 // DesignScroll Component
 export function DesignScroll() {
   return (
-    <div className="flex flex-col overflow-hidden">
+    <div className="flex flex-col mb-[-180px] overflow-hidden">
       <ScrollContainer
         titleComponent={
           <>
-            <h1 className="text-4xl font-semibold text-black dark:text-white">
+            <h1 className="text-4xl font-semibold text-black mt-[-180px] dark:text-white">
               Craft Your Own <br />
               <span className="text-4xl md:text-[6rem] font-bold mt-1 leading-none">
                 Custom Designs
               </span>
             </h1>
-            <p className="mt-4 mb-6 text-xs text-secondary dark:text-gray-300">
+            <p className="mt-4 mb-12 text-xs text-secondary dark:text-gray-300">
               Turn your ideas into reality with tailor-made outfits. Personalize
               every stitch, every color, and every fabric choice.
             </p>
@@ -104,9 +107,9 @@ export function DesignScroll() {
         }
       >
         <img
-          src="/custom-design.webp"
+          src="/designStudio.webp"
           alt="tailor shop hero"
-          className="mx-auto rounded-2xl object-cover h-full object-left-top"
+          className="rounded-2xl object-contain h-full w-full"
         />
       </ScrollContainer>
     </div>
