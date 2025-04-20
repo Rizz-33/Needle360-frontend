@@ -859,7 +859,7 @@ const TailorProfilePage = () => {
                 onClick={() => navigate(`/leave-review/${tailorId}`)}
                 className="mt-3 px-4 py-2 bg-primary text-white rounded-full text-xs font-medium hover:bg-primary-dark transition-colors"
               >
-                Leave a Review
+                Leave a Review About the Designer
               </button>
             )}
           </div>
@@ -1117,7 +1117,7 @@ const TailorProfilePage = () => {
                 </div>
                 <div className="border-b border-primary/10 pb-4">
                   <h3 className="text-md font-semibold text-gray-900 mb-3">
-                    Reviews
+                    Designer Reviews
                   </h3>
                   {isLoadingReviews ? (
                     <div className="flex justify-center py-4">
