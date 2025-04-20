@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { CustomButton } from "../components/ui/Button";
-import { useChatStore } from "../store/Chat.store"; // Import useChatStore
+import { useChatStore } from "../store/Chat.store";
+import { useDesignStore } from "../store/Design.store";
 import { useServiceStore } from "../store/Service.store";
 import Loader from "./ui/Loader";
 
@@ -27,13 +28,28 @@ const Services = ({ tailorId }) => {
     fetchTailorsByService,
     isLoading,
     error,
+    serviceSpecificTailors, // Use the new state property
   } = useServiceStore();
-  const { startNewConversation, setChatOpen } = useChatStore(); // Access chat store functions
+
+  const {
+    fetchAllDesigns,
+    designs,
+    isLoading: designsLoading,
+  } = useDesignStore();
+  const { startNewConversation, setChatOpen } = useChatStore();
+
   const [displayedServices, setDisplayedServices] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
   const [filteredTailors, setFilteredTailors] = useState([]);
+  const [visibleTailors, setVisibleTailors] = useState([]);
+  const [visibleDesigns, setVisibleDesigns] = useState([]);
+  const [recentDesigns, setRecentDesigns] = useState([]);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [tailorLimit, setTailorLimit] = useState(3);
+  const [designLimit, setDesignLimit] = useState(5);
+  const [servicesLoaded, setServicesLoaded] = useState(false);
+
   const scrollContainerRef = useRef(null);
 
   const checkScrollPosition = () => {
@@ -54,53 +70,94 @@ const Services = ({ tailorId }) => {
     }
   }, [displayedServices]);
 
+  // Load services once
   useEffect(() => {
-    const loadServices = async () => {
-      try {
-        let result;
-        if (tailorId) {
-          result = await fetchServices(tailorId);
-          console.log("Tailor services:", result);
-          if (result && result.services) {
-            setDisplayedServices(result.services);
+    if (!servicesLoaded) {
+      const loadServices = async () => {
+        try {
+          let result;
+          if (tailorId) {
+            result = await fetchServices(tailorId);
+            if (result && result.services) {
+              setDisplayedServices(result.services);
+            }
+          } else {
+            result = await fetchAllServices();
+            if (result && result.services) {
+              setDisplayedServices(result.services);
+            }
           }
-        } else {
-          result = await fetchAllServices();
-          console.log("All services:", result);
-          if (result && result.services) {
-            setDisplayedServices(result.services);
-          }
+          setServicesLoaded(true);
+        } catch (error) {
+          console.error("Error loading services:", error);
         }
-      } catch (error) {
-        console.error("Error loading services:", error);
-      }
-    };
-    loadServices();
-  }, [tailorId, fetchServices, fetchAllServices]);
+      };
+      loadServices();
+    }
+  }, [tailorId, fetchServices, fetchAllServices, servicesLoaded]);
 
+  // Load tailors when a service is selected
   useEffect(() => {
     const loadTailorsForService = async () => {
       if (selectedService) {
         try {
-          const serviceTailors = await fetchTailorsByService(selectedService);
-          console.log(`Tailors for ${selectedService}:`, serviceTailors);
-          setFilteredTailors(serviceTailors);
+          console.log(`Loading tailors for service: ${selectedService}`);
+          await fetchTailorsByService(selectedService);
+          console.log("serviceSpecificTailors:", serviceSpecificTailors);
         } catch (error) {
           console.error(
             `Error fetching tailors for ${selectedService}:`,
             error
           );
           setFilteredTailors([]);
+          setVisibleTailors([]);
         }
       } else {
         setFilteredTailors([]);
+        setVisibleTailors([]);
       }
     };
     loadTailorsForService();
   }, [selectedService, fetchTailorsByService]);
 
+  // Update filtered tailors whenever serviceSpecificTailors changes
+  useEffect(() => {
+    console.log("Updating filteredTailors:", serviceSpecificTailors);
+    setFilteredTailors(serviceSpecificTailors || []);
+  }, [serviceSpecificTailors]);
+
+  // Load designs (both tailor and customer)
+  useEffect(() => {
+    const loadDesigns = async () => {
+      if (selectedService) {
+        try {
+          await fetchAllDesigns(); // Fetch all designs (tailor and customer)
+        } catch (error) {
+          console.error("Error fetching designs:", error);
+        }
+      }
+    };
+    loadDesigns();
+  }, [selectedService, fetchAllDesigns]);
+
+  // Filter designs based on selected service
+  useEffect(() => {
+    if (selectedService && designs && designs.length > 0) {
+      const filteredDesigns = designs
+        .filter(
+          (design) => design.tags && design.tags.includes(selectedService)
+        )
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      setRecentDesigns(filteredDesigns);
+      setVisibleDesigns(filteredDesigns.slice(0, designLimit));
+    } else {
+      setRecentDesigns([]);
+      setVisibleDesigns([]);
+    }
+  }, [selectedService, designs, designLimit]);
+
   const handleServiceClick = (service) => {
-    console.log(`Service clicked: ${service}`);
     setSelectedService(service === selectedService ? null : service);
   };
 
@@ -113,12 +170,40 @@ const Services = ({ tailorId }) => {
   };
 
   const handleMessageTailor = (tailor) => {
-    console.log(`Starting chat with tailor: ${tailor._id}`);
-    startNewConversation(tailor._id); // Start a new conversation with the tailor
-    setChatOpen(true); // Open the ChatPopup
+    startNewConversation(tailor._id);
+    setChatOpen(true);
   };
 
-  if (isLoading) {
+  const loadMoreTailors = () => {
+    setTailorLimit((prev) => prev + 3);
+  };
+
+  const loadMoreDesigns = () => {
+    setDesignLimit((prev) => prev + 5);
+  };
+
+  // Format price safely
+  const formatPrice = (price) => {
+    if (price === undefined || price === null) return "";
+
+    // Check if price is a number or can be converted to a number
+    const numPrice = Number(price);
+    if (isNaN(numPrice)) return price.toString();
+
+    return numPrice.toFixed(2);
+  };
+
+  // Update visible tailors when tailorLimit changes or filtered tailors change
+  useEffect(() => {
+    setVisibleTailors(filteredTailors.slice(0, tailorLimit));
+  }, [filteredTailors, tailorLimit]);
+
+  // Update visible designs when designLimit changes or recent designs change
+  useEffect(() => {
+    setVisibleDesigns(recentDesigns.slice(0, designLimit));
+  }, [recentDesigns, designLimit]);
+
+  if (isLoading && !servicesLoaded) {
     return (
       <div className="flex justify-center items-center py-12">
         <Loader />
@@ -207,7 +292,7 @@ const Services = ({ tailorId }) => {
 
             return (
               <motion.div
-                key={`service-${index}`}
+                key={`${serviceName}-${index}`} // Use a combination of serviceName and index to ensure uniqueness
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className={`
@@ -297,73 +382,177 @@ const Services = ({ tailorId }) => {
             />
           </div>
 
+          {/* Tailors Section */}
           <div className="mt-8">
             <h4 className="text-md font-semibold text-gray-800 mb-4">
               Tailors Specializing in {selectedService}
             </h4>
-            {filteredTailors.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredTailors.map((tailor) => (
-                  <motion.div
-                    key={tailor._id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-4 bg-gray-50 rounded-2xl shadow-sm flex flex-col"
-                  >
-                    <div className="flex items-center mb-3">
-                      {tailor.logoUrl ? (
-                        <img
-                          src={tailor.logoUrl}
-                          alt={`${tailor.shopName} logo`}
-                          className="w-12 h-12 rounded-full mr-3 object-cover"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
-                          <Scissors className="h-6 w-6 text-indigo-600" />
-                        </div>
-                      )}
-                      <div>
-                        <h5 className="text-sm font-semibold text-gray-800">
-                          {tailor.shopName || tailor.name || "Unknown"}
-                        </h5>
-                        <p className="text-xs text-gray-500">
-                          {tailor.shopAddress || "Address not provided"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      {tailor.contactNumber && (
-                        <a
-                          href={`tel:${tailor.contactNumber}`}
-                          className="p-2 bg-indigo-100 text-indigo-800 rounded-full hover:bg-indigo-200 transition-colors"
-                          title="Call"
-                        >
-                          <Phone className="h-4 w-4" />
-                        </a>
-                      )}
-                      {tailor.email && (
-                        <a
-                          href={`mailto:${tailor.email}`}
-                          className="p-2 bg-indigo-100 text-indigo-800 rounded-full hover:bg-indigo-200 transition-colors"
-                          title="Email"
-                        >
-                          <Mail className="h-4 w-4" />
-                        </a>
-                      )}
-                      <button
-                        onClick={() => handleMessageTailor(tailor)}
-                        className="p-2 bg-indigo-100 text-indigo-800 rounded-full hover:bg-indigo-200 transition-colors"
-                        title="Message"
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
+            {isLoading ? (
+              <div className="flex justify-center py-4">
+                <Loader />
               </div>
+            ) : filteredTailors && filteredTailors.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {visibleTailors.map((tailor) => (
+                    <motion.div
+                      key={tailor._id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 bg-gray-50 rounded-2xl shadow-sm flex flex-col"
+                    >
+                      <div className="flex items-center mb-3">
+                        {tailor.logoUrl ? (
+                          <img
+                            src={tailor.logoUrl}
+                            alt={`${tailor.shopName} logo`}
+                            className="w-12 h-12 rounded-full mr-3 object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
+                            <Scissors className="h-6 w-6 text-indigo-600" />
+                          </div>
+                        )}
+                        <div>
+                          <h5 className="text-sm font-semibold text-gray-800">
+                            {tailor.shopName || tailor.name || "Unknown"}
+                          </h5>
+                          <p className="text-xs text-gray-500">
+                            {tailor.shopAddress || "Address not provided"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        {tailor.contactNumber && (
+                          <a
+                            href={`tel:${tailor.contactNumber}`}
+                            className="p-2 bg-indigo-100 text-indigo-800 rounded-full hover:bg-indigo-200 transition-colors"
+                            title="Call"
+                          >
+                            <Phone className="h-4 w-4" />
+                          </a>
+                        )}
+                        {tailor.email && (
+                          <a
+                            href={`mailto:${tailor.email}`}
+                            className="p-2 bg-indigo-100 text-indigo-800 rounded-full hover:bg-indigo-200 transition-colors"
+                            title="Email"
+                          >
+                            <Mail className="h-4 w-4" />
+                          </a>
+                        )}
+                        <button
+                          onClick={() => handleMessageTailor(tailor)}
+                          className="p-2 bg-indigo-100 text-indigo-800 rounded-full hover:bg-indigo-200 transition-colors"
+                          title="Message"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Load More Tailors Button */}
+                {visibleTailors.length < filteredTailors.length && (
+                  <div className="mt-4 text-center">
+                    <button
+                      onClick={loadMoreTailors}
+                      className="px-4 py-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                    >
+                      Load More Tailors
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <p className="text-gray-500 text-sm">
                 No tailors currently offer {selectedService}. Check back later!
+              </p>
+            )}
+          </div>
+
+          {/* Recent Designs Section */}
+          <div className="mt-10">
+            <h4 className="text-md font-semibold text-gray-800 mb-4">
+              Recent {selectedService} Designs
+            </h4>
+            {designsLoading ? (
+              <div className="flex justify-center py-4">
+                <Loader />
+              </div>
+            ) : visibleDesigns && visibleDesigns.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                  {visibleDesigns.map((design) => (
+                    <motion.div
+                      key={design._id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="overflow-hidden rounded-xl shadow-sm bg-white border border-gray-100"
+                    >
+                      <div className="h-40 bg-gray-100 relative">
+                        {design.imageUrl ? (
+                          <img
+                            src={design.imageUrl}
+                            alt={design.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <PenTool className="h-8 w-8 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-3">
+                        <h5 className="text-sm font-medium text-gray-800 truncate">
+                          {design.title}
+                        </h5>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {design.tags &&
+                            design.tags.slice(0, 2).map((tag, idx) => (
+                              <span
+                                key={idx}
+                                className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          {design.tags && design.tags.length > 2 && (
+                            <span className="text-xs text-gray-500">
+                              +{design.tags.length - 2}
+                            </span>
+                          )}
+                        </div>
+                        {design.price !== undefined &&
+                          design.price !== null && (
+                            <p className="mt-2 text-sm font-medium text-indigo-600">
+                              LKR {formatPrice(design.price)}
+                            </p>
+                          )}
+                        <p className="text-xs text-gray-500 mt-1">
+                          {design.userType === "tailor" ? "Tailor" : "Customer"}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Load More Designs Button */}
+                {visibleDesigns.length < recentDesigns.length && (
+                  <div className="mt-4 text-center">
+                    <button
+                      onClick={loadMoreDesigns}
+                      className="px-4 py-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                    >
+                      Load More Designs
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-gray-500 text-sm">
+                No designs found for {selectedService}. Check back soon!
               </p>
             )}
           </div>
