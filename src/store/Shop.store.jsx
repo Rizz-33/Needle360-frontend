@@ -41,6 +41,7 @@ export const useShopStore = create((set, get) => ({
           logoUrl: tailor.logoUrl,
           shopAddress: tailor.shopAddress,
           role: tailor.role,
+          services: tailor.services || [],
         }))
         .filter((tailor) => tailor.email); // Filtering out any null or undefined emails
 
