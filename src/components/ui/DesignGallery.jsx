@@ -372,7 +372,9 @@ const DesignCard = ({ design }) => {
               </div>
               <span className="text-xs text-gray-500 mt-1">
                 {averageRating > 0
-                  ? `${averageRating.toFixed(0)}/5 (${reviewCount} review${
+                  ? `${averageRating.toFixed(
+                      0
+                    )}/5 (${reviewCount} designer review${
                       reviewCount !== 1 ? "s" : ""
                     })`
                   : "No ratings yet"}
@@ -511,7 +513,7 @@ const DesignCard = ({ design }) => {
               </div>
               <div className="border-b border-primary/10 pb-4">
                 <h3 className="text-md font-semibold text-gray-900 mb-3">
-                  Reviews
+                  Designer Reviews
                 </h3>
                 {isLoadingReviews ? (
                   <div className="flex justify-center py-4">
