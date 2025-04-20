@@ -14,7 +14,6 @@ const Design = () => {
         <div className="w-full min-h-screen bg-grid-gray-200/[0.2] pt-24">
           <NavbarMenu />
           <div className="w-full">
-            {/* <DesignerCanvas /> */}
             <HeroSection />
             <Services />
             <DesignGallery />
