@@ -47,6 +47,40 @@ export const useOrderStore = create((set, get) => ({
     }
   },
 
+  getCustomerOrdersById: async (filters = {}) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { status, page = 1, limit = 10 } = filters;
+
+      // Build query params
+      const params = new URLSearchParams();
+      if (status) params.append("status", status);
+      params.append("page", page);
+      params.append("limit", limit);
+
+      const response = await axios.get(
+        `${BASE_API_URL}/customer?${params.toString()}`
+      );
+
+      set({
+        orders: response.data.orders,
+        total: response.data.total,
+        currentPage: response.data.page,
+        limit: response.data.limit,
+        isLoading: false,
+      });
+
+      return response.data;
+    } catch (error) {
+      set({
+        error:
+          error.response?.data?.message || "Error fetching customer orders",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
   createOrder: async (orderData) => {
     set({ isLoading: true, error: null });
     try {
