@@ -9,6 +9,7 @@ import {
   FaPalette,
   FaPhone,
   FaRegStar,
+  FaShoppingCart,
   FaStar,
   FaUser,
 } from "react-icons/fa";
@@ -20,6 +21,7 @@ import Loader from "../../components/ui/Loader";
 import { useAuthStore } from "../../store/Auth.store";
 import { useCustomerStore } from "../../store/Customer.store";
 import { useDesignStore } from "../../store/Design.store";
+import { useOrderStore } from "../../store/Order.store";
 import { useReviewStore } from "../../store/Review.store";
 import { useShopStore } from "../../store/Shop.store";
 import { useUserInteractionStore } from "../../store/UserInteraction.store";
@@ -131,6 +133,52 @@ const ReviewItem = ({ review, reviewersData }) => {
   );
 };
 
+const OrderItem = ({ order }) => {
+  const statusStyles = {
+    pending: "bg-yellow-100 text-yellow-800",
+    confirmed: "bg-green-100 text-green-800",
+    cancelled: "bg-red-100 text-red-800",
+    completed: "bg-blue-100 text-blue-800",
+  };
+
+  return (
+    <div className="border-b border-gray-200 py-4 last:border-0">
+      <div className="flex justify-between items-start mb-2">
+        <div>
+          <h4 className="font-medium text-primary">Order #{order._id}</h4>
+          <p className="text-xs text-gray-600 mt-1">
+            Placed on {formatDate(order.createdAt)}
+          </p>
+          <p className="text-sm text-gray-600">
+            Total: LKR {order.totalAmount?.toFixed(2) || "N/A"}
+          </p>
+        </div>
+        <div className="flex items-center">
+          <span
+            className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+              statusStyles[order.status] || "bg-gray-100 text-gray-800"
+            }`}
+          >
+            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+          </span>
+        </div>
+      </div>
+      {order.items && order.items.length > 0 && (
+        <div className="text-sm text-gray-600 mt-2">
+          <p>Items:</p>
+          <ul className="list-disc list-inside">
+            {order.items.map((item, index) => (
+              <li key={index}>
+                {item.name || "Item"} (Qty: {item.quantity})
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const CustomerProfilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -159,6 +207,11 @@ const CustomerProfilePage = () => {
     fetchUserReviews,
     createReview,
   } = useReviewStore();
+  const {
+    orders,
+    isLoading: isLoadingOrders,
+    getCustomerOrdersById,
+  } = useOrderStore();
   const { fetchTailorById } = useShopStore();
 
   const [activeTab, setActiveTab] = useState("designs");
@@ -249,6 +302,9 @@ const CustomerProfilePage = () => {
       if (!isOwnProfile && currentUserId) {
         checkIfFollowing(currentUserId, profileUserId);
       }
+      if (isOwnProfile) {
+        getCustomerOrdersById({ page: 1, limit: 10 });
+      }
     }
 
     return () => {
@@ -264,6 +320,7 @@ const CustomerProfilePage = () => {
     getFollowing,
     checkIfFollowing,
     fetchUserReviews,
+    getCustomerOrdersById,
   ]);
 
   useEffect(() => {
@@ -280,7 +337,6 @@ const CustomerProfilePage = () => {
     if (!reviews || reviews.length === 0) return;
 
     const reviewersToLoad = reviews
-
       .filter((review) => review.clientId)
       .filter(
         (review) =>
@@ -476,29 +532,42 @@ const CustomerProfilePage = () => {
     </div>
   );
 
-  const ProfileTabs = () => (
-    <div className="px-4 border-t sticky top-0 bg-white z-10">
-      <div className="flex">
-        {[
-          { id: "designs", label: "Designs", icon: <FaPalette size={14} /> },
-          { id: "reviews", label: "Reviews", icon: <FaStar size={14} /> },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 py-3 flex flex-col items-center ${
-              activeTab === tab.id
-                ? "text-primary border-b-2 border-primary"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {tab.icon}
-            <span className="text-xs mt-1">{tab.label}</span>
-          </button>
-        ))}
+  const ProfileTabs = () => {
+    const tabs = [
+      { id: "designs", label: "Designs", icon: <FaPalette size={14} /> },
+      { id: "reviews", label: "Reviews", icon: <FaStar size={14} /> },
+    ];
+
+    // Only include Orders tab if isOwnProfile is true
+    if (isOwnProfile) {
+      tabs.push({
+        id: "orders",
+        label: "Orders",
+        icon: <FaShoppingCart size={14} />,
+      });
+    }
+
+    return (
+      <div className="px-4 border-t sticky top-0 bg-white z-10">
+        <div className="flex">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 py-3 flex flex-col items-center ${
+                activeTab === tab.id
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {tab.icon}
+              <span className="text-xs mt-1">{tab.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const DesignGrid = () => (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1">
@@ -589,12 +658,53 @@ const CustomerProfilePage = () => {
     );
   };
 
+  const OrdersList = () => {
+    return (
+      <div className="space-y-2">
+        {isOwnProfile ? (
+          <>
+            <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800">
+              <p className="font-medium">How to Place an Order</p>
+              <p className="text-xs text-gray-500">
+                To place an order, please contact the designer directly through
+                the messaging feature. Discuss your requirements and confirm the
+                order details with them.
+              </p>
+            </div>
+            <div className="content-center justify-center mx-96">
+              {isLoadingOrders ? (
+                <div className="py-10 flex justify-center">
+                  <Loader />
+                </div>
+              ) : orders && orders.length > 0 ? (
+                orders.map((order, index) => (
+                  <OrderItem key={order._id || index} order={order} />
+                ))
+              ) : (
+                <div className="py-10 text-center text-gray-500 text-sm">
+                  <FaShoppingCart className="text-2xl mx-auto mb-2 text-gray-300" />
+                  <p>No orders placed yet</p>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="py-10 text-center text-gray-500 text-sm">
+            <p>Orders are only visible to the profile owner.</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const getTabContent = () => {
     switch (activeTab) {
       case "designs":
         return <DesignGrid />;
       case "reviews":
         return <ReviewsList />;
+      case "orders":
+        return isOwnProfile ? <OrdersList /> : null; // Return null if not own profile
       default:
         return null;
     }
