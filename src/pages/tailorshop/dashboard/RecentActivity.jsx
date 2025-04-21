@@ -34,7 +34,7 @@ const RecentActivity = () => {
             key={index}
             className="flex items-start pb-4 border-b border-gray-100 last:border-0"
           >
-            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-500 mr-4">
+            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-primary mr-4">
               {activity.type === "order" ? (
                 <FaFileAlt className="h-5 w-5" />
               ) : (
@@ -50,7 +50,7 @@ const RecentActivity = () => {
           </div>
         ))}
       </div>
-      <button className="mt-4 text-blue-500 text-sm font-medium">
+      <button className="mt-4 text-primary text-sm font-medium">
         View all activity
       </button>
     </div>

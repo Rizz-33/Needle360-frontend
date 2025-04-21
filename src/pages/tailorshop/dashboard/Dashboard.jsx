@@ -156,7 +156,7 @@ const TailorDashboard = () => {
                         <input
                           type="text"
                           placeholder="Search..."
-                          className="pl-10 pr-4 py-2 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 w-full"
+                          className="pl-10 pr-4 py-2 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-primary w-full"
                         />
                         <svg
                           className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
