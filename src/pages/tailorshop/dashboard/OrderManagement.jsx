@@ -4,8 +4,7 @@ import { CustomButton } from "../../../components/ui/Button";
 import { useOrderStore } from "../../../store/Order.store";
 
 const OrderManagement = () => {
-  const { orders, fetchOrders, updateOrderStatus, updateOrder, deleteOrder } =
-    useOrderStore();
+  const { orders, fetchOrders, updateOrder, deleteOrder } = useOrderStore();
   const [statusFilter, setStatusFilter] = useState("");
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -13,8 +12,9 @@ const OrderManagement = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderForm, setOrderForm] = useState({
     status: "",
-    // Add other editable fields here
+    totalAmount: "",
   });
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchOrders({ status: statusFilter });
@@ -31,9 +31,10 @@ const OrderManagement = () => {
     setSelectedOrder(order);
     setOrderForm({
       status: order.status,
-      // Add other fields here
+      totalAmount: order.totalAmount,
     });
     setEditModalOpen(true);
+    setError(null);
   };
 
   // Handle form field changes
@@ -45,11 +46,26 @@ const OrderManagement = () => {
   // Submit order updates
   const handleUpdateOrder = async (e) => {
     e.preventDefault();
+    setError(null);
+
+    // Basic validation
+    if (!orderForm.status) {
+      setError("Status is required");
+      return;
+    }
+    if (isNaN(orderForm.totalAmount) || orderForm.totalAmount < 0) {
+      setError("Total amount must be a non-negative number");
+      return;
+    }
+
     try {
-      await updateOrder(selectedOrder._id, orderForm);
+      await updateOrder(selectedOrder._id, {
+        status: orderForm.status,
+        totalAmount: parseFloat(orderForm.totalAmount),
+      });
       setEditModalOpen(false);
     } catch (error) {
-      console.error("Error updating order:", error);
+      setError(error.message || "Error updating order");
     }
   };
 
@@ -65,7 +81,7 @@ const OrderManagement = () => {
       await deleteOrder(selectedOrder._id);
       setDeleteModalOpen(false);
     } catch (error) {
-      console.error("Error deleting order:", error);
+      setError(error.message || "Error deleting order");
     }
   };
 
@@ -97,7 +113,7 @@ const OrderManagement = () => {
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
-      <h1 className="text-xl font-bold text-gray-800">Order Management</h1>
+      <h1 className="text-xl font-bold text-gray-800"> Order Management</h1>
       <p className="text-xs text-gray-600">
         Stay updated on customer orders, from design requests to final delivery.
       </p>
@@ -138,6 +154,12 @@ const OrderManagement = () => {
                 scope="col"
                 className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
               >
+                Order Type
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Status
               </th>
               <th
@@ -154,7 +176,10 @@ const OrderManagement = () => {
                 <tr key={order._id} className="border-b">
                   <td className="p-2 text-primary text-sm">{order._id}</td>
                   <td className="p-2 text-gray-800 text-sm">
-                    {order?.customerId || "N/A"}
+                    {order.customerId || "N/A"}
+                  </td>
+                  <td className="p-2 text-gray-800 text-sm">
+                    {order.orderType}
                   </td>
                   <td className="p-2">
                     <StatusBadge status={order.status} />
@@ -186,7 +211,7 @@ const OrderManagement = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="4" className="p-4 text-center text-gray-500">
+                <td colSpan="5" className="p-4 text-center text-gray-500">
                   No orders found
                 </td>
               </tr>
@@ -226,64 +251,77 @@ const OrderManagement = () => {
                 </div>
                 <div>
                   <h3 className="text-xs font-medium text-gray-500 mb-1">
+                    Customer Contact
+                  </h3>
+                  <p className="text-gray-800">
+                    {selectedOrder.customerContact}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-xs font-medium text-gray-500 mb-1">
+                    Order Type
+                  </h3>
+                  <p className="text-gray-800">{selectedOrder.orderType}</p>
+                </div>
+                <div>
+                  <h3 className="text-xs font-medium text-gray-500 mb-1">
                     Status
                   </h3>
                   <StatusBadge status={selectedOrder.status} />
                 </div>
                 <div>
                   <h3 className="text-xs font-medium text-gray-500 mb-1">
+                    Due Date
+                  </h3>
+                  <p className="text-gray-800">
+                    {new Date(selectedOrder.dueDate).toLocaleDateString()}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-xs font-medium text-gray-500 mb-1">
+                    Total Amount
+                  </h3>
+                  <p className="text-gray-800">
+                    {selectedOrder.totalAmount.toFixed(2)} LKR
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-xs font-medium text-gray-500 mb-1">
                     Date Created
                   </h3>
                   <p className="text-gray-800">
-                    {selectedOrder.createdAt
-                      ? new Date(selectedOrder.createdAt).toLocaleString()
-                      : "N/A"}
+                    {new Date(selectedOrder.createdAt).toLocaleString()}
                   </p>
                 </div>
-                {/* Add more order details here */}
               </div>
 
-              {/* Order Items Section */}
-              {selectedOrder.items && selectedOrder.items.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="text-md font-semibold text-gray-800 mb-3">
-                    Order Items
-                  </h3>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="space-y-3">
-                      {selectedOrder.items.map((item, index) => (
-                        <div
-                          key={index}
-                          className="flex justify-between pb-3 border-b border-gray-200 last:border-b-0 last:pb-0"
-                        >
-                          <div>
-                            <p className="font-medium text-gray-800">
-                              {item.name || "Product"}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {item.description || "No description"}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-medium text-gray-800">
-                              {item.price ? `$${item.price.toFixed(2)}` : "N/A"}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Qty: {item.quantity || 1}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+              {/* Measurements Section */}
+              {selectedOrder.measurements &&
+                Object.keys(selectedOrder.measurements).length > 0 && (
+                  <div className="mt-6">
+                    <h3 className="text-xs text-gray-500 mb-2">Measurements</h3>
+                    <div className="bg-blue-50 rounded-2xl p-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        {Object.entries(selectedOrder.measurements).map(
+                          ([key, value]) => (
+                            <div key={key}>
+                              <p className="text-sm text-gray-500">{key}</p>
+                              <p className="font-medium text-gray-800">
+                                {value}
+                              </p>
+                            </div>
+                          )
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Notes/Comments Section */}
+              {/* Notes Section */}
               {selectedOrder.notes && (
                 <div className="mt-6">
-                  <h3 className="text-sm text-red-600 mb-2">Notes:</h3>
-                  <p className="text-gray-700 bg-blue-50 p-4 rounded-2xl">
+                  <h3 className="text-xs text-gray-500 mb-2">Notes</h3>
+                  <p className="text-gray-700 bg-red-50 p-4 rounded-2xl">
                     {selectedOrder.notes}
                   </p>
                 </div>
@@ -292,13 +330,12 @@ const OrderManagement = () => {
             <div className="border-t px-6 py-4 flex justify-end">
               <CustomButton
                 onClick={() => setViewModalOpen(false)}
-                text="Cancel"
+                text="Close"
                 color="primary"
                 hover_color="hoverAccent"
                 variant="outlined"
                 width="w-1/3"
                 height="h-9"
-                type="submit"
               />
             </div>
           </div>
@@ -308,7 +345,7 @@ const OrderManagement = () => {
       {/* Edit Order Modal */}
       {editModalOpen && selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b px-6 py-4">
               <h2 className="text-lg font-bold text-gray-800">Edit Order</h2>
               <button
@@ -320,6 +357,7 @@ const OrderManagement = () => {
             </div>
             <form onSubmit={handleUpdateOrder}>
               <div className="p-6 space-y-4">
+                {error && <p className="text-red-600 text-sm">{error}</p>}
                 <div>
                   <label className="text-xs font-medium text-gray-500 mb-1">
                     Order ID
@@ -335,7 +373,6 @@ const OrderManagement = () => {
                   <label className="text-xs font-medium text-gray-500 mb-1 block">
                     Status
                   </label>
-
                   <select
                     name="status"
                     value={orderForm.status}
@@ -347,28 +384,93 @@ const OrderManagement = () => {
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
-
                   <ChevronDown
                     className="absolute right-3 top-[70%] transform -translate-y-1/2 text-gray-500 pointer-events-none"
                     size={16}
                   />
                 </div>
-                {/* Add other editable fields here */}
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-1 block">
+                    Order Type
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedOrder.orderType}
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-3xl bg-gray-50 text-gray-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-1 block">
+                    Due Date
+                  </label>
+                  <input
+                    type="date"
+                    value={
+                      new Date(selectedOrder.dueDate)
+                        .toISOString()
+                        .split("T")[0]
+                    }
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-3xl bg-gray-50 text-gray-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-1 block">
+                    Total Amount ($)
+                  </label>
+                  <input
+                    type="number"
+                    name="totalAmount"
+                    value={orderForm.totalAmount}
+                    onChange={handleFormChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-1 block">
+                    Customer Contact
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedOrder.customerContact}
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-3xl bg-gray-50 text-gray-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-1 block">
+                    Notes
+                  </label>
+                  <textarea
+                    value={selectedOrder.notes || ""}
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-3xl bg-gray-50 text-gray-500"
+                    rows="4"
+                  />
+                </div>
               </div>
               <div className="border-t px-6 py-4 flex justify-end space-x-3">
-                <button
-                  type="button"
+                <CustomButton
                   onClick={() => setEditModalOpen(false)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
+                  text="Close"
+                  color="primary"
+                  hover_color="hoverAccent"
+                  variant="outlined"
+                  width="w-1/3"
+                  height="h-9"
+                />
+                <CustomButton
                   type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                >
-                  Save Changes
-                </button>
+                  text="Save Changes"
+                  color="primary"
+                  hover_color="hoverAccent"
+                  variant="filled"
+                  width="w-1/3"
+                  height="h-9"
+                />
               </div>
             </form>
           </div>
@@ -380,22 +482,29 @@ const OrderManagement = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
             <div className="p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">
+              <h2 className="text-lg font-bold text-gray-800 mb-4">
                 Confirm Deletion
               </h2>
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-sm">
                 Are you sure you want to delete order{" "}
-                <span className="font-semibold">{selectedOrder._id}</span>? This
-                action cannot be undone.
+                <span className="font-semibold text-primary">
+                  {selectedOrder._id}
+                </span>
+                ? <br />
+                <br />
+                This action cannot be undone.
               </p>
             </div>
             <div className="border-t px-6 py-4 flex justify-end space-x-3">
-              <button
+              <CustomButton
                 onClick={() => setDeleteModalOpen(false)}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-medium transition-colors"
-              >
-                Cancel
-              </button>
+                text="Close"
+                color="primary"
+                hover_color="hoverAccent"
+                variant="outlined"
+                width="w-1/3"
+                height="h-9"
+              />
               <button
                 onClick={handleConfirmDelete}
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
