@@ -21,6 +21,7 @@ import {
   tshirtTypes,
 } from "../../configs/Design.configs";
 import { predefinedServices } from "../../configs/Services.configs";
+import { roleTypeNumbers } from "../../configs/User.config";
 import { useAuthStore } from "../../store/Auth.store";
 import { useDesignStore } from "../../store/Design.store";
 import BlouseModel from "./3D-Models/Blouse.model";
@@ -77,7 +78,7 @@ const FashionDesignTool = () => {
   const lastPointRef = useRef(null);
 
   const { user, checkAuth } = useAuthStore();
-  const { createCustomerDesign } = useDesignStore();
+  const { createCustomerDesign, createTailorDesign } = useDesignStore();
 
   const getStyleOptions = () => {
     switch (activeGarment) {
@@ -927,7 +928,11 @@ const FashionDesignTool = () => {
 
       let response;
       try {
-        response = await createCustomerDesign(user.id, designData);
+        if (user.role === roleTypeNumbers.tailor) {
+          response = await createTailorDesign(user.id, designData);
+        } else {
+          response = await createCustomerDesign(user.id, designData);
+        }
       } catch (backendError) {
         console.error("Backend error:", backendError);
         throw new Error(
