@@ -1,10 +1,12 @@
 import { ChevronDown, Edit, Eye, Trash2, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { CustomButton } from "../../../components/ui/Button";
+import Loader from "../../../components/ui/Loader";
 import { useOrderStore } from "../../../store/Order.store";
 
 const OrderManagement = () => {
-  const { orders, fetchOrders, updateOrder, deleteOrder } = useOrderStore();
+  const { orders, fetchOrders, updateOrder, deleteOrder, isLoading } =
+    useOrderStore();
   const [statusFilter, setStatusFilter] = useState("");
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -212,7 +214,7 @@ const OrderManagement = () => {
             ) : (
               <tr>
                 <td colSpan="5" className="p-4 text-center text-gray-500">
-                  No orders found
+                  {isLoading ? <Loader /> : "No orders found"}
                 </td>
               </tr>
             )}
@@ -505,12 +507,15 @@ const OrderManagement = () => {
                 width="w-1/3"
                 height="h-9"
               />
-              <button
+              <CustomButton
                 onClick={handleConfirmDelete}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-              >
-                Delete
-              </button>
+                text="Delete"
+                color="danger"
+                hover_color="hoverAccent"
+                variant="filled"
+                width="w-1/3"
+                height="h-9"
+              />
             </div>
           </div>
         </div>
