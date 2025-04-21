@@ -15,8 +15,13 @@ const OrderManagement = () => {
   const [orderForm, setOrderForm] = useState({
     status: "",
     totalAmount: "",
+    orderType: "",
+    dueDate: "",
+    customerContact: "",
+    notes: "",
   });
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   useEffect(() => {
     fetchOrders({ status: statusFilter });
@@ -33,10 +38,15 @@ const OrderManagement = () => {
     setSelectedOrder(order);
     setOrderForm({
       status: order.status,
-      totalAmount: order.totalAmount,
+      totalAmount: order.totalAmount.toString(),
+      orderType: order.orderType,
+      dueDate: new Date(order.dueDate).toISOString().split("T")[0],
+      customerContact: order.customerContact || "",
+      notes: order.notes || "",
     });
     setEditModalOpen(true);
     setError(null);
+    setSuccess(null);
   };
 
   // Handle form field changes
@@ -49,8 +59,9 @@ const OrderManagement = () => {
   const handleUpdateOrder = async (e) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
 
-    // Basic validation
+    // Validation
     if (!orderForm.status) {
       setError("Status is required");
       return;
@@ -59,13 +70,31 @@ const OrderManagement = () => {
       setError("Total amount must be a non-negative number");
       return;
     }
+    if (!orderForm.orderType) {
+      setError("Order type is required");
+      return;
+    }
+    if (!orderForm.dueDate) {
+      setError("Due date is required");
+      return;
+    }
 
     try {
-      await updateOrder(selectedOrder._id, {
+      const updatedData = {
         status: orderForm.status,
         totalAmount: parseFloat(orderForm.totalAmount),
-      });
-      setEditModalOpen(false);
+        orderType: orderForm.orderType,
+        dueDate: new Date(orderForm.dueDate).toISOString(),
+        customerContact: orderForm.customerContact,
+        notes: orderForm.notes,
+      };
+
+      await updateOrder(selectedOrder._id, updatedData);
+      setSuccess("Order updated successfully");
+      setTimeout(() => {
+        setEditModalOpen(false);
+        setSuccess(null);
+      }, 1500);
     } catch (error) {
       setError(error.message || "Error updating order");
     }
@@ -115,7 +144,7 @@ const OrderManagement = () => {
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
-      <h1 className="text-xl font-bold text-gray-800"> Order Management</h1>
+      <h1 className="text-xl font-bold text-gray-800">Order Management</h1>
       <p className="text-xs text-gray-600">
         Stay updated on customer orders, from design requests to final delivery.
       </p>
@@ -140,34 +169,19 @@ const OrderManagement = () => {
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr className="border-b">
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
-              >
+              <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                 Order ID
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
-              >
+              <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                 Customer
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
-              >
+              <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                 Order Type
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
-              >
+              <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
-              >
+              <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -284,7 +298,7 @@ const OrderManagement = () => {
                     Total Amount
                   </h3>
                   <p className="text-gray-800">
-                    {selectedOrder.totalAmount.toFixed(2)} LKR
+                    LKR {selectedOrder.totalAmount.toFixed(2)}
                   </p>
                 </div>
                 <div>
@@ -360,6 +374,7 @@ const OrderManagement = () => {
             <form onSubmit={handleUpdateOrder}>
               <div className="p-6 space-y-4">
                 {error && <p className="text-red-600 text-sm">{error}</p>}
+                {success && <p className="text-green-600 text-sm">{success}</p>}
                 <div>
                   <label className="text-xs font-medium text-gray-500 mb-1">
                     Order ID
@@ -397,9 +412,11 @@ const OrderManagement = () => {
                   </label>
                   <input
                     type="text"
-                    value={selectedOrder.orderType}
+                    name="orderType"
+                    value={orderForm.orderType}
+                    onChange={handleFormChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-3xl bg-gray-50 text-primary/75"
                     disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-3xl bg-gray-50 text-gray-500"
                   />
                 </div>
                 <div>
@@ -408,18 +425,16 @@ const OrderManagement = () => {
                   </label>
                   <input
                     type="date"
-                    value={
-                      new Date(selectedOrder.dueDate)
-                        .toISOString()
-                        .split("T")[0]
-                    }
+                    name="dueDate"
+                    value={orderForm.dueDate}
+                    onChange={handleFormChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-3xl bg-gray-50 text-primary/75"
                     disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-3xl bg-gray-50 text-gray-500"
                   />
                 </div>
                 <div>
                   <label className="text-xs font-medium text-gray-500 mb-1 block">
-                    Total Amount ($)
+                    Total Amount (LKR)
                   </label>
                   <input
                     type="number"
@@ -437,9 +452,11 @@ const OrderManagement = () => {
                   </label>
                   <input
                     type="text"
-                    value={selectedOrder.customerContact}
+                    name="customerContact"
+                    value={orderForm.customerContact}
+                    onChange={handleFormChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-3xl bg-gray-50 text-primary/75"
                     disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-3xl bg-gray-50 text-gray-500"
                   />
                 </div>
                 <div>
@@ -447,17 +464,19 @@ const OrderManagement = () => {
                     Notes
                   </label>
                   <textarea
-                    value={selectedOrder.notes || ""}
-                    disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-3xl bg-gray-50 text-gray-500"
+                    name="notes"
+                    value={orderForm.notes}
+                    onChange={handleFormChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-3xl bg-gray-50 text-primary/75"
                     rows="4"
+                    disabled
                   />
                 </div>
               </div>
               <div className="border-t px-6 py-4 flex justify-end space-x-3">
                 <CustomButton
                   onClick={() => setEditModalOpen(false)}
-                  text="Close"
+                  text="Cancel"
                   color="primary"
                   hover_color="hoverAccent"
                   variant="outlined"
@@ -466,7 +485,7 @@ const OrderManagement = () => {
                 />
                 <CustomButton
                   type="submit"
-                  text="Save Changes"
+                  text={isLoading ? "Saving..." : "Save Changes"}
                   color="primary"
                   hover_color="hoverAccent"
                   variant="filled"
@@ -500,7 +519,7 @@ const OrderManagement = () => {
             <div className="border-t px-6 py-4 flex justify-end space-x-3">
               <CustomButton
                 onClick={() => setDeleteModalOpen(false)}
-                text="Close"
+                text="Cancel"
                 color="primary"
                 hover_color="hoverAccent"
                 variant="outlined"
