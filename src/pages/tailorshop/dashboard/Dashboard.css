@@ -1,0 +1,124 @@
+/* Tailwind CSS or similar utility classes can be used directly in JSX, but for custom styles: */
+body {
+  font-family: "Inter", sans-serif;
+}
+
+.bg-gray-100 {
+  background-color: #f7fafc;
+}
+
+.bg-white {
+  background-color: #ffffff;
+}
+
+.rounded-xl {
+  border-radius: 0.75rem;
+}
+
+.shadow-sm {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.p-6 {
+  padding: 1.5rem;
+}
+
+.text-gray-800 {
+  color: #2d3748;
+}
+
+.text-gray-600 {
+  color: #718096;
+}
+
+.text-gray-500 {
+  color: #a0aec0;
+}
+
+.text-blue-500 {
+  color: #4299e1;
+}
+
+.text-green-500 {
+  color: #48bb78;
+}
+
+.text-red-500 {
+  color: #f56565;
+}
+
+.text-purple-500 {
+  color: #9f7aea;
+}
+
+.text-orange-500 {
+  color: #ed8936;
+}
+
+.border-b {
+  border-bottom: 1px solid #edf2f7;
+}
+
+.transition-all {
+  transition: all 0.3s ease-in-out;
+}
+
+.hover\:bg-blue-50:hover {
+  background-color: #ebf8ff;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  padding: 0.5rem;
+  text-align: left;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+  width: 100%;
+}
+
+button {
+  cursor: pointer;
+}
+
+.bg-blue-500 {
+  background-color: #4299e1;
+}
+
+.text-white {
+  color: #ffffff;
+}
+
+.flex {
+  display: flex;
+}
+
+.space-x-2 > * + * {
+  margin-left: 0.5rem;
+}
+
+.space-y-2 > * + * {
+  margin-top: 0.5rem;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.text-lg {
+  font-size: 1.125rem;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+}
