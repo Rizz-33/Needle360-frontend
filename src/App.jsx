@@ -19,6 +19,7 @@ import Design from "./pages/Design";
 import Home from "./pages/Home";
 import OurServices from "./pages/Service";
 import BusinessProfileSetup from "./pages/tailorshop/BusinessProfileSetup";
+import TailorDashboard from "./pages/tailorshop/dashboard/Dashboard";
 import PendingApproval from "./pages/tailorshop/PendingApproval";
 import TailorProfilePage from "./pages/tailorshop/Profile";
 import { useAuthStore } from "./store/Auth.store";
@@ -149,92 +150,98 @@ function App() {
   return (
     <div className="max-h-screen bg-white text-black flex items-center justify-center relative overflow-hidden">
       <ChatPopup />
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/signup"
-          element={
-            <RedirectAuthenticatedUser>
-              <Signup />
-            </RedirectAuthenticatedUser>
-          }
-        />
-        <Route
-          path="/login"
-          element={
-            <RedirectAuthenticatedUser>
-              <Login />
-            </RedirectAuthenticatedUser>
-          }
-        />
-        <Route path="/verify-email" element={<EmailVerification />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route
-          path="/reset-password/:token"
-          element={
-            <RedirectAuthenticatedUser>
-              <ResetPassword />
-            </RedirectAuthenticatedUser>
-          }
-        />
-        <Route
-          path="/design/*"
-          element={
-            <ProtectedRoute>
-              <Design />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/services" element={<OurServices />} />
-        <Route path="/design-tool" element={<FashionDesignTool />} />
-        <Route path="/pending-approval" element={<PendingApproval />} />
-        <Route path="/profile-setup" element={<BusinessProfileSetup />} />
-        <Route path="/edit-profile" element={<CustomerProfileSetup />} />
-        <Route
-          path="/tailor/:id"
-          element={
-            <ProtectedRoute>
-              <TailorProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/user/:id"
-          element={
-            <ProtectedRoute>
-              <CustomerProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <AdminProtectedRoute>
-              <SidebarProvider>
+      <SidebarProvider>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              <RedirectAuthenticatedUser>
+                <Signup />
+              </RedirectAuthenticatedUser>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <RedirectAuthenticatedUser>
+                <Login />
+              </RedirectAuthenticatedUser>
+            }
+          />
+          <Route path="/verify-email" element={<EmailVerification />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route
+            path="/reset-password/:token"
+            element={
+              <RedirectAuthenticatedUser>
+                <ResetPassword />
+              </RedirectAuthenticatedUser>
+            }
+          />
+          <Route
+            path="/design/*"
+            element={
+              <ProtectedRoute>
+                <Design />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/services" element={<OurServices />} />
+          <Route path="/design-tool" element={<FashionDesignTool />} />
+          <Route path="/pending-approval" element={<PendingApproval />} />
+          <Route path="/profile-setup" element={<BusinessProfileSetup />} />
+          <Route path="/edit-profile" element={<CustomerProfileSetup />} />
+          <Route
+            path="/tailor-dashboard"
+            element={
+              <ProtectedRoute>
+                <TailorDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tailor/:id"
+            element={
+              <ProtectedRoute>
+                <TailorProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user/:id"
+            element={
+              <ProtectedRoute>
+                <CustomerProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <AdminProtectedRoute>
                 <Dashboard />
-              </SidebarProvider>
-            </AdminProtectedRoute>
-          }
-        />
-        <Route
-          path="/pending-tailors"
-          element={
-            <AdminProtectedRoute>
-              <SidebarProvider>
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/pending-tailors"
+            element={
+              <AdminProtectedRoute>
                 <TailorRequest />
-              </SidebarProvider>
-            </AdminProtectedRoute>
-          }
-        />
-        <Route path="/admin-login" element={<AdminLogin />} />
-      </Routes>
+              </AdminProtectedRoute>
+            }
+          />
+          <Route path="/admin-login" element={<AdminLogin />} />
+        </Routes>
+      </SidebarProvider>
       <Toaster />
     </div>
   );
