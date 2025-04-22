@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { ChevronDown, Edit, Eye, Trash2, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { CustomButton } from "../../../components/ui/Button";
