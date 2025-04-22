@@ -43,6 +43,12 @@ const DesignManagement = () => {
     selectedTags: [],
     priceRange: { min: "", max: "" },
   });
+  const [showMoreFormTags, setShowMoreFormTags] = useState(false); // For Add New Design form
+  const [showMoreFilterTags, setShowMoreFilterTags] = useState(false); // For Filter Designs section
+  const [showMoreEditTags, setShowMoreEditTags] = useState(false); // For Edit modal
+
+  // Number of tags to show initially
+  const initialTagLimit = 4;
 
   useEffect(() => {
     if (user?.id) {
@@ -74,7 +80,7 @@ const DesignManagement = () => {
     setNewDesign((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle tags change for new design (checkboxes)
+  // Handle tags change for new design (tag chips)
   const handleNewTagsChange = (tag) => {
     setNewDesign((prev) => {
       const newTags = prev.tags.includes(tag)
@@ -90,7 +96,7 @@ const DesignManagement = () => {
     setDesignForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle tags change for edit modal (checkboxes)
+  // Handle tags change for edit modal (tag chips)
   const handleTagsChange = (tag) => {
     setDesignForm((prev) => {
       const newTags = prev.tags.includes(tag)
@@ -116,7 +122,7 @@ const DesignManagement = () => {
     }
   };
 
-  // Handle tag filter changes
+  // Handle tag filter changes (tag chips)
   const handleTagFilterChange = (tag) => {
     setFilters((prev) => {
       const newSelectedTags = prev.selectedTags.includes(tag)
@@ -308,7 +314,7 @@ const DesignManagement = () => {
               onChange={handleNewDesignChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
               placeholder="e.g., Handcrafted suit with premium fabric"
-              rows="3"
+              rows="1"
             />
           </div>
           <div>
@@ -330,18 +336,35 @@ const DesignManagement = () => {
             <label className="text-xs font-medium text-gray-500 mb-1 block">
               Tags
             </label>
-            <div className="flex flex-col space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-3xl p-2">
-              {predefinedServices.map((service) => (
-                <label key={service} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={newDesign.tags.includes(service)}
-                    onChange={() => handleNewTagsChange(service)}
-                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded accent-primary"
-                  />
-                  <span className="text-sm text-gray-700">{service}</span>
-                </label>
-              ))}
+            <div className="flex flex-wrap gap-1 p-1 border border-gray-300 rounded-3xl">
+              {predefinedServices
+                .slice(
+                  0,
+                  showMoreFormTags ? predefinedServices.length : initialTagLimit
+                )
+                .map((service) => (
+                  <button
+                    key={service}
+                    type="button"
+                    onClick={() => handleNewTagsChange(service)}
+                    className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                      newDesign.tags.includes(service)
+                        ? "bg-primary text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    {service}
+                  </button>
+                ))}
+              {predefinedServices.length > initialTagLimit && (
+                <button
+                  type="button"
+                  onClick={() => setShowMoreFormTags(!showMoreFormTags)}
+                  className="px-2 py-0.5 text-xs text-primary hover:underline"
+                >
+                  {showMoreFormTags ? "Show Less" : "Show More"}
+                </button>
+              )}
             </div>
           </div>
           <div>
@@ -391,18 +414,35 @@ const DesignManagement = () => {
           <label className="text-xs font-medium text-gray-500 mb-1 block">
             Filter by Tags
           </label>
-          <div className="flex flex-col space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-3xl p-2">
-            {predefinedServices.map((tag) => (
-              <label key={tag} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={filters.selectedTags.includes(tag)}
-                  onChange={() => handleTagFilterChange(tag)}
-                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded accent-primary"
-                />
-                <span className="text-sm text-gray-700">{tag}</span>
-              </label>
-            ))}
+          <div className="flex flex-wrap gap-1 p-1 border border-gray-300 rounded-3xl">
+            {predefinedServices
+              .slice(
+                0,
+                showMoreFilterTags ? predefinedServices.length : initialTagLimit
+              )
+              .map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => handleTagFilterChange(tag)}
+                  className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                    filters.selectedTags.includes(tag)
+                      ? "bg-primary text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            {predefinedServices.length > initialTagLimit && (
+              <button
+                type="button"
+                onClick={() => setShowMoreFilterTags(!showMoreFilterTags)}
+                className="px-2 py-0.5 text-xs text-primary hover:underline"
+              >
+                {showMoreFilterTags ? "Show Less" : "Show More"}
+              </button>
+            )}
           </div>
         </div>
         <div>
@@ -669,21 +709,37 @@ const DesignManagement = () => {
                   <label className="text-xs font-medium text-gray-500 mb-1 block">
                     Tags
                   </label>
-                  <div className="flex flex-col space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-3xl p-2">
-                    {predefinedServices.map((service) => (
-                      <label
-                        key={service}
-                        className="flex items-center space-x-2"
+                  <div className="flex flex-wrap gap-1 p-1 border border-gray-300 rounded-3xl">
+                    {predefinedServices
+                      .slice(
+                        0,
+                        showMoreEditTags
+                          ? predefinedServices.length
+                          : initialTagLimit
+                      )
+                      .map((service) => (
+                        <button
+                          key={service}
+                          type="button"
+                          onClick={() => handleTagsChange(service)}
+                          className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                            designForm.tags.includes(service)
+                              ? "bg-primary text-white"
+                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
+                        >
+                          {service}
+                        </button>
+                      ))}
+                    {predefinedServices.length > initialTagLimit && (
+                      <button
+                        type="button"
+                        onClick={() => setShowMoreEditTags(!showMoreEditTags)}
+                        className="px-2 py-0.5 text-xs text-primary hover:underline"
                       >
-                        <input
-                          type="checkbox"
-                          checked={designForm.tags.includes(service)}
-                          onChange={() => handleTagsChange(service)}
-                          className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded accent-primary"
-                        />
-                        <span className="text-sm text-gray-700">{service}</span>
-                      </label>
-                    ))}
+                        {showMoreEditTags ? "Show Less" : "Show More"}
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div>
