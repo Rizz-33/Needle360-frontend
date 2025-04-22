@@ -15,6 +15,12 @@ const InventoryManagement = () => {
     isLoading,
   } = useInventoryStore();
   const [typeFilter, setTypeFilter] = useState("");
+  const [stockStatusFilter, setStockStatusFilter] = useState({
+    inStock: false,
+    lowStock: false,
+  });
+  const [sizeFilter, setSizeFilter] = useState("");
+  const [quantityRange, setQuantityRange] = useState({ min: "", max: "" });
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -44,8 +50,28 @@ const InventoryManagement = () => {
   // Defined units and sizes
 
   useEffect(() => {
-    fetchInventory({ type: typeFilter });
-  }, [fetchInventory, typeFilter]);
+    const filters = {
+      type: typeFilter,
+      isLowStock:
+        stockStatusFilter.inStock && stockStatusFilter.lowStock
+          ? undefined
+          : stockStatusFilter.lowStock
+          ? true
+          : stockStatusFilter.inStock
+          ? false
+          : undefined,
+      size: sizeFilter || undefined,
+      minQuantity: quantityRange.min ? parseInt(quantityRange.min) : undefined,
+      maxQuantity: quantityRange.max ? parseInt(quantityRange.max) : undefined,
+    };
+    fetchInventory(filters);
+  }, [
+    fetchInventory,
+    typeFilter,
+    stockStatusFilter,
+    sizeFilter,
+    quantityRange,
+  ]);
 
   // Extract unique types from inventory for the filter dropdown
   useEffect(() => {
@@ -54,6 +80,18 @@ const InventoryManagement = () => {
       setAvailableTypes(types);
     }
   }, [inventory]);
+
+  // Handle stock status checkbox changes
+  const handleStockStatusChange = (e) => {
+    const { name, checked } = e.target;
+    setStockStatusFilter((prev) => ({ ...prev, [name]: checked }));
+  };
+
+  // Handle quantity range input changes
+  const handleQuantityRangeChange = (e) => {
+    const { name, value } = e.target;
+    setQuantityRange((prev) => ({ ...prev, [name]: value }));
+  };
 
   // View item details
   const handleViewItem = (item) => {
@@ -247,7 +285,7 @@ const InventoryManagement = () => {
 
       {/* Add New Item Form */}
       <div className="my-6">
-        <h2 className="text-sm font-medium text-gray-700 mb-4">Add New Item</h2>
+        <h2 className="text-sm font-medium text-primary mb-4">Add New Item</h2>
         <form
           onSubmit={handleAddItem}
           className="grid grid-cols-1 md:grid-cols-4 gap-4"
@@ -382,25 +420,111 @@ const InventoryManagement = () => {
         </form>
       </div>
 
-      {/* Filter */}
-      <div className="my-6 relative w-full md:w-1/4">
-        <h2 className="text-sm font-medium text-gray-700 mb-4">Filter Items</h2>
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          className="p-2 pr-10 border border-gray-300 text-sm rounded-full w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary appearance-none"
-        >
-          <option value="">All Types</option>
-          {availableTypes.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
-        <ChevronDown
-          className="absolute right-2 top-[75%] transform -translate-y-1/2 text-gray-500 pointer-events-none"
-          size={16}
-        />
+      {/* Filters */}
+
+      <h2 className="text-sm font-medium text-primary mb-[-4px] mt-4">
+        Filter Items
+      </h2>
+      <div className="my-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <h2 className="text-xs font-medium text-gray-500 mb-1 block">
+            Filter by Quantity Range
+          </h2>
+          <div className="relative">
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="p-2 pr-10 border border-gray-300 text-sm rounded-full w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary appearance-none"
+            >
+              <option value="">All Types</option>
+              {availableTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="absolute right-2 top-[50%] transform -translate-y-1/2 text-gray-500 pointer-events-none"
+              size={16}
+            />
+          </div>
+        </div>
+        <div>
+          <h2 className="text-xs font-medium text-gray-500 mb-1 block">
+            Stock Status
+          </h2>
+          <div className="flex flex-col space-y-2">
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                name="inStock"
+                checked={stockStatusFilter.inStock}
+                onChange={handleStockStatusChange}
+                className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+              />
+              <span className="text-sm text-gray-700">In Stock</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                name="lowStock"
+                checked={stockStatusFilter.lowStock}
+                onChange={handleStockStatusChange}
+                className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded accent-primary"
+              />
+              <span className="text-sm text-gray-700">Low Stock</span>
+            </label>
+          </div>
+        </div>
+        <div>
+          <h2 className="text-xs font-medium text-gray-500 mb-1 block">
+            Filter by Size
+          </h2>
+          <div className="relative">
+            <select
+              value={sizeFilter}
+              onChange={(e) => setSizeFilter(e.target.value)}
+              className="p-2 pr-10 border border-gray-300 text-sm rounded-full w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary appearance-none"
+            >
+              <option value="">All Sizes</option>
+              <option value="no-size">No Size</option>
+              {sizeOptions.map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="absolute right-2 top-[50%] transform -translate-y-1/2 text-gray-500 pointer-events-none"
+              size={16}
+            />
+          </div>
+        </div>
+        <div>
+          <h2 className="text-xs font-medium text-gray-500 mb-1 block">
+            Filter by Quantity Range
+          </h2>
+          <div className="flex space-x-2">
+            <input
+              type="number"
+              name="min"
+              value={quantityRange.min}
+              onChange={handleQuantityRangeChange}
+              placeholder="Min"
+              className="w-1/2 px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              min="0"
+            />
+            <input
+              type="number"
+              name="max"
+              value={quantityRange.max}
+              onChange={handleQuantityRangeChange}
+              placeholder="Max"
+              className="w-1/2 px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              min="0"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Inventory Table */}
