@@ -421,7 +421,6 @@ const InventoryManagement = () => {
       </div>
 
       {/* Filters */}
-
       <h2 className="text-sm font-medium text-primary mb-[-4px] mt-4">
         Filter Items
       </h2>
@@ -460,7 +459,7 @@ const InventoryManagement = () => {
                 name="inStock"
                 checked={stockStatusFilter.inStock}
                 onChange={handleStockStatusChange}
-                className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded accent-primary"
               />
               <span className="text-sm text-gray-700">In Stock</span>
             </label>
