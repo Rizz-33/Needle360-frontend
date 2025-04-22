@@ -1,8 +1,8 @@
 import { ChevronDown, Edit, Eye, Trash2, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { CustomButton } from "../../../components/ui/Button"; // Assuming this component exists
-import Loader from "../../../components/ui/Loader"; // Assuming this component exists
-import { fabricTypes, sizeOptions } from "../../../configs/Design.configs";
+import { CustomButton } from "../../../components/ui/Button";
+import Loader from "../../../components/ui/Loader";
+import { sizeOptions, units } from "../../../configs/Inventory.config";
 import { useInventoryStore } from "../../../store/Inventory.store";
 
 const InventoryManagement = () => {
@@ -39,10 +39,21 @@ const InventoryManagement = () => {
     lowStockThreshold: "",
     costPerUnit: "",
   });
+  // Store unique types for filtering
+  const [availableTypes, setAvailableTypes] = useState([]);
+  // Defined units and sizes
 
   useEffect(() => {
     fetchInventory({ type: typeFilter });
   }, [fetchInventory, typeFilter]);
+
+  // Extract unique types from inventory for the filter dropdown
+  useEffect(() => {
+    if (inventory.length > 0) {
+      const types = [...new Set(inventory.map((item) => item.type))];
+      setAvailableTypes(types);
+    }
+  }, [inventory]);
 
   // View item details
   const handleViewItem = (item) => {
@@ -260,26 +271,17 @@ const InventoryManagement = () => {
               placeholder="e.g., Coconut Buttons"
             />
           </div>
-          <div className="relative">
+          <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">
               Type
             </label>
-            <select
+            <input
+              type="text"
               name="type"
               value={newItem.type}
               onChange={handleNewItemChange}
-              className="p-2 pr-10 border border-gray-300 text-sm rounded-full w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary appearance-none"
-            >
-              <option value="">Select Type</option>
-              {fabricTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              className="absolute right-2 top-[65%] transform -translate-y-1/2 text-gray-500 pointer-events-none"
-              size={16}
+              className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              placeholder="e.g., Buttons, Fabric, Thread"
             />
           </div>
           <div>
@@ -317,17 +319,26 @@ const InventoryManagement = () => {
               size={16}
             />
           </div>
-          <div>
+          <div className="relative">
             <label className="text-xs font-medium text-gray-500 mb-1 block">
               Unit
             </label>
-            <input
-              type="text"
+            <select
               name="unit"
               value={newItem.unit}
               onChange={handleNewItemChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-              placeholder="e.g., rolls"
+              className="p-2 pr-10 border border-gray-300 text-sm rounded-full w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary appearance-none"
+            >
+              <option value="">Select Unit</option>
+              {units.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="absolute right-2 top-[65%] transform -translate-y-1/2 text-gray-500 pointer-events-none"
+              size={16}
             />
           </div>
           <div>
@@ -380,7 +391,7 @@ const InventoryManagement = () => {
           className="p-2 pr-10 border border-gray-300 text-sm rounded-full w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary appearance-none"
         >
           <option value="">All Types</option>
-          {fabricTypes.map((type) => (
+          {availableTypes.map((type) => (
             <option key={type} value={type}>
               {type}
             </option>
@@ -393,7 +404,7 @@ const InventoryManagement = () => {
       </div>
 
       {/* Inventory Table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto mt-12">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr className="border-b">
@@ -532,7 +543,7 @@ const InventoryManagement = () => {
                     Cost per Unit
                   </h3>
                   <p className="text-gray-800">
-                    ${selectedItem.costPerUnit.toFixed(2)}
+                    LKR {selectedItem.costPerUnit.toFixed(2)}
                   </p>
                 </div>
                 <div>
@@ -615,27 +626,17 @@ const InventoryManagement = () => {
                     placeholder="e.g., Coconut Buttons"
                   />
                 </div>
-                <div className="relative w-full">
+                <div>
                   <label className="text-xs font-medium text-gray-500 mb-1 block">
                     Type
                   </label>
-                  <select
+                  <input
+                    type="text"
                     name="type"
                     value={itemForm.type}
                     onChange={handleFormChange}
-                    className="p-2 pr-10 border border-gray-300 text-sm rounded-full w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary appearance-none"
-                  >
-                    <option value="">Select Type</option>
-                    {fabricTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    className="absolute right-3 top-[70%]
-                  transform -translate-y-1/2 text-gray-500 pointer-events-none"
-                    size={16}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                    placeholder="e.g., Buttons, Fabric, Thread"
                   />
                 </div>
                 <div>
@@ -669,21 +670,30 @@ const InventoryManagement = () => {
                     ))}
                   </select>
                   <ChevronDown
-                    className="absolute right-3 top-[70%] transform -translate-y-1/2 text-gray-500 pointer-events-none"
+                    className="absolute right-3 top-[65%] transform -translate-y-1/2 text-gray-500 pointer-events-none"
                     size={16}
                   />
                 </div>
-                <div>
+                <div className="relative w-full">
                   <label className="text-xs font-medium text-gray-500 mb-1 block">
                     Unit
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="unit"
                     value={itemForm.unit}
                     onChange={handleFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                    placeholder="e.g., rolls"
+                    className="p-2 pr-10 border border-gray-300 text-sm rounded-full w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary appearance-none"
+                  >
+                    <option value="">Select Unit</option>
+                    {units.map((unit) => (
+                      <option key={unit} value={unit}>
+                        {unit}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="absolute right-3 top-[65%] transform -translate-y-1/2 text-gray-500 pointer-events-none"
+                    size={16}
                   />
                 </div>
                 <div>
