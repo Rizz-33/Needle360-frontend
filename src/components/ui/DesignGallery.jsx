@@ -16,6 +16,7 @@ import { roleTypeNumbers } from "../../configs/User.config";
 import { useAuthStore } from "../../store/Auth.store";
 import { useCustomerStore } from "../../store/Customer.store";
 import { useDesignStore } from "../../store/Design.store";
+import { useOrderStore } from "../../store/Order.store";
 import { useReviewStore } from "../../store/Review.store";
 import { useShopStore } from "../../store/Shop.store";
 import Loader from "../ui/Loader";
@@ -169,6 +170,7 @@ const ReviewItem = ({ review }) => {
 
 const DesignCard = ({ design }) => {
   const [showModal, setShowModal] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState("");
   const [creatorDetails, setCreatorDetails] = useState(null);
@@ -176,7 +178,16 @@ const DesignCard = ({ design }) => {
   const [designReviews, setDesignReviews] = useState([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [isOwnDesign, setIsOwnDesign] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // New state for submission status
+  const [orderForm, setOrderForm] = useState({
+    orderType: "",
+    totalAmount: "",
+    dueDate: "",
+    customerContact: "",
+    notes: "",
+  });
   const { createReview, fetchUserReviews } = useReviewStore();
+  const { createOrder } = useOrderStore();
   const { user } = useAuthStore();
 
   const handleViewDetails = () => {
@@ -185,10 +196,45 @@ const DesignCard = ({ design }) => {
     fetchDesignReviews();
   };
 
+  const handleCreateOrderClick = () => {
+    if (!user) {
+      toast.error("Please log in to create an order");
+      return;
+    }
+    if (user.role !== roleTypeNumbers.customer) {
+      toast.error("Only customers can create orders");
+      return;
+    }
+    if (isOwnDesign) {
+      toast.error("You cannot create an order for your own design");
+      return;
+    }
+    setOrderForm({
+      orderType:
+        design.tags?.[0] || predefinedServices[0] || "Custom Fashion Designs",
+      totalAmount: design.price ? design.price.toString() : "",
+      dueDate: "",
+      customerContact: user.phoneNumber || "",
+      notes: `Order for design: ${design.title || "Untitled Design"}`,
+    });
+    setShowOrderModal(true);
+  };
+
   const closeModal = () => {
     setShowModal(false);
     setRating(0);
     setReview("");
+  };
+
+  const closeOrderModal = () => {
+    setShowOrderModal(false);
+    setOrderForm({
+      orderType: "",
+      totalAmount: "",
+      dueDate: "",
+      customerContact: "",
+      notes: "",
+    });
   };
 
   const fetchCreatorDetails = async () => {
@@ -290,6 +336,58 @@ const DesignCard = ({ design }) => {
       console.error("Error submitting review:", error);
       toast.error("Failed to submit review");
     }
+  };
+
+  const handleOrderSubmit = async () => {
+    try {
+      setIsSubmitting(true); // Set submitting state
+      if (!orderForm.orderType) {
+        toast.error("Please select an order type");
+        return;
+      }
+      if (!orderForm.totalAmount || parseFloat(orderForm.totalAmount) <= 0) {
+        toast.error("Total amount must be a positive number");
+        return;
+      }
+      if (!orderForm.dueDate) {
+        toast.error("Please select a due date");
+        return;
+      }
+      if (!orderForm.customerContact) {
+        toast.error("Please provide a contact number");
+        return;
+      }
+      if (!design.tailorId || typeof design.tailorId !== "string") {
+        console.error("Invalid tailorId:", design.tailorId);
+        toast.error("Invalid tailor ID");
+        return;
+      }
+
+      const orderData = {
+        tailorId: design.tailorId,
+        orderType: orderForm.orderType,
+        totalAmount: parseFloat(orderForm.totalAmount),
+        dueDate: new Date(orderForm.dueDate).toISOString(),
+        customerContact: orderForm.customerContact,
+        notes: orderForm.notes,
+      };
+
+      console.log("Submitting order data:", orderData); // Debugging log
+
+      await createOrder(orderData, design.tailorId);
+      toast.success("Order created successfully!");
+      closeOrderModal();
+    } catch (error) {
+      console.error("Error creating order:", error);
+      toast.error(error.message || "Failed to create order");
+    } finally {
+      setIsSubmitting(false); // Reset submitting state
+    }
+  };
+
+  const handleOrderFormChange = (e) => {
+    const { name, value } = e.target;
+    setOrderForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const formatPrice = (price) => {
@@ -570,6 +668,137 @@ const DesignCard = ({ design }) => {
                   Please log in to leave a review.
                 </div>
               )}
+              {user &&
+                user.role === roleTypeNumbers.customer &&
+                !isOwnDesign &&
+                design.tailorId && (
+                  <div className="mt-6 pt-3 border-t flex justify-end gap-1.5">
+                    <CustomButton
+                      text="Get This Tailored"
+                      color="primary"
+                      hover_color="hoverAccent"
+                      variant="filled"
+                      width="w-1/3"
+                      height="h-8"
+                      onClick={handleCreateOrderClick}
+                    />
+                  </div>
+                )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showOrderModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="sticky top-0 bg-white z-10 flex justify-between items-center p-6 border-b">
+              <h2 className="text-xl font-bold text-gray-800">Create Order</h2>
+              <button
+                onClick={closeOrderModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <FaTimes className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">
+                  Order Type
+                </label>
+                <select
+                  name="orderType"
+                  value={orderForm.orderType}
+                  onChange={handleOrderFormChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                  required
+                >
+                  <option value="">Select order type</option>
+                  {predefinedServices.map((service) => (
+                    <option key={service} value={service}>
+                      {service}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">
+                  Total Amount (LKR) (amount will vary)
+                </label>
+                <input
+                  type="number"
+                  name="totalAmount"
+                  value={orderForm.totalAmount}
+                  onChange={handleOrderFormChange}
+                  placeholder="Enter total amount"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                  min="0"
+                  step="0.01"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  name="dueDate"
+                  value={orderForm.dueDate}
+                  onChange={handleOrderFormChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                  min={new Date().toISOString().split("T")[0]}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">
+                  Customer Contact
+                </label>
+                <input
+                  type="text"
+                  name="customerContact"
+                  value={orderForm.customerContact}
+                  onChange={handleOrderFormChange}
+                  placeholder="Enter phone number"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">
+                  Notes
+                </label>
+                <textarea
+                  name="notes"
+                  value={orderForm.notes}
+                  onChange={handleOrderFormChange}
+                  placeholder="Enter any additional notes"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                  rows="4"
+                />
+              </div>
+              <div className="flex justify-end space-x-3">
+                <CustomButton
+                  text="Cancel"
+                  color="primary"
+                  hover_color="hoverAccent"
+                  variant="outlined"
+                  width="w-1/3"
+                  height="h-10"
+                  onClick={closeOrderModal}
+                />
+                <CustomButton
+                  text={isSubmitting ? "Submitting" : "Submit Order"}
+                  color="primary"
+                  hover_color="hoverAccent"
+                  variant="filled"
+                  width="w-1/3"
+                  height="h-10"
+                  onClick={handleOrderSubmit}
+                  disabled={isSubmitting}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -608,7 +837,7 @@ const DesignGallery = () => {
   const [filteredDesigns, setFilteredDesigns] = useState([]);
   const [isFiltering, setIsFiltering] = useState(false);
   const [creatorCache, setCreatorCache] = useState({});
-  const [reviewCache, setReviewCache] = useState({}); // Cache for reviews
+  const [reviewCache, setReviewCache] = useState({});
 
   useEffect(() => {
     const loadDesigns = async () => {
@@ -650,7 +879,6 @@ const DesignGallery = () => {
           let averageRating = 0;
           let reviewCount = 0;
 
-          // Check if reviews are already cached
           if (reviewCache[userId]) {
             const reviews = reviewCache[userId];
             reviewCount = reviews.length;
@@ -771,7 +999,6 @@ const DesignGallery = () => {
           let averageRating = 0;
           let reviewCount = 0;
 
-          // Use cached reviews
           if (reviewCache[userId]) {
             const reviews = reviewCache[userId];
             reviewCount = reviews.length;
@@ -806,7 +1033,6 @@ const DesignGallery = () => {
         enrichedDesigns.map(async (design) => {
           let include = true;
 
-          // Price filter
           if (
             filters.priceMin &&
             (!design.price || design.price < parseFloat(filters.priceMin))
@@ -820,12 +1046,10 @@ const DesignGallery = () => {
             include = false;
           }
 
-          // Tags filter
           if (filters.tags.length > 0 && design.tags) {
             include = filters.tags.every((tag) => design.tags.includes(tag));
           }
 
-          // Address filter
           if (filters.address) {
             const creatorDetails = await fetchCreatorDetails(design);
             if (
@@ -841,7 +1065,6 @@ const DesignGallery = () => {
             }
           }
 
-          // Rating filter
           if (
             filters.minRating > 0 &&
             (design.averageRating || 0) < filters.minRating
@@ -849,7 +1072,6 @@ const DesignGallery = () => {
             include = false;
           }
 
-          // Date filter
           if (filters.dateFrom) {
             const fromDate = new Date(filters.dateFrom);
             if (new Date(design.createdAt) < fromDate) {
@@ -906,7 +1128,7 @@ const DesignGallery = () => {
     });
     setActiveFilter("all");
     try {
-      await fetchAllDesigns(); // Explicitly fetch all designs
+      await fetchAllDesigns();
       toast.success("Filters reset and all designs loaded");
     } catch (err) {
       console.error("Error resetting filters:", err);
