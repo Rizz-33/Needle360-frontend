@@ -16,6 +16,7 @@ const OrderManagement = () => {
     initializeSocket,
     disconnectSocket,
     isLoading,
+    error: storeError,
   } = useOrderStore();
   const { user } = useAuthStore();
   const [statusFilter, setStatusFilter] = useState("");
@@ -48,6 +49,13 @@ const OrderManagement = () => {
   useEffect(() => {
     fetchOrders({ status: statusFilter, page: 1, limit: 10 });
   }, [fetchOrders, statusFilter]);
+
+  // Display store errors if any
+  useEffect(() => {
+    if (storeError) {
+      toast.error(storeError);
+    }
+  }, [storeError]);
 
   // View order details
   const handleViewOrder = (order) => {
@@ -251,7 +259,7 @@ const OrderManagement = () => {
                     >
                       <Eye size={18} />
                     </button>
-                    {order.status === "requested" ? (
+                    {user.role === 4 && order.status === "requested" ? (
                       <>
                         <button
                           onClick={() =>
@@ -286,21 +294,25 @@ const OrderManagement = () => {
                         </button>
                       </>
                     ) : (
+                      user.role === 4 && (
+                        <button
+                          onClick={() => handleOpenEditModal(order)}
+                          className="text-green-600 hover:text-green-900 p-1 hover:bg-green-100 rounded-full transition-colors"
+                          title="Edit"
+                        >
+                          <Edit size={18} />
+                        </button>
+                      )
+                    )}
+                    {user.role === 4 && (
                       <button
-                        onClick={() => handleOpenEditModal(order)}
-                        className="text-green-600 hover:text-green-900 p-1 hover:bg-green-100 rounded-full transition-colors"
-                        title="Edit"
+                        onClick={() => handleOpenDeleteModal(order)}
+                        className="text-red-600 hover:text-red-900 p-1 hover:bg-red-100 rounded-full transition-colors"
+                        title="Delete"
                       >
-                        <Edit size={18} />
+                        <Trash2 size={18} />
                       </button>
                     )}
-                    <button
-                      onClick={() => handleOpenDeleteModal(order)}
-                      className="text-red-600 hover:text-red-900 p-1 hover:bg-red-100 rounded-full transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 size={18} />
-                    </button>
                   </td>
                 </tr>
               ))
