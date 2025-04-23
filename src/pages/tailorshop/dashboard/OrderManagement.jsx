@@ -192,6 +192,32 @@ const OrderManagement = () => {
     );
   };
 
+  // Payment Status badge component
+  const PaymentStatusBadge = ({ paymentStatus }) => {
+    const badgeStyles = {
+      paid: "bg-green-100 text-green-800",
+      pending: "bg-yellow-100 text-yellow-800",
+      failed: "bg-red-100 text-red-800",
+    };
+
+    const dotColors = {
+      paid: "text-green-800",
+      pending: "text-yellow-800",
+      failed: "text-red-800",
+    };
+
+    return (
+      <span
+        className={`px-3 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full ${
+          badgeStyles[paymentStatus] || "bg-gray-100 text-gray-800"
+        }`}
+      >
+        <span className={`${dotColors[paymentStatus]} text-sm`}>●</span>
+        {paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}
+      </span>
+    );
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <h1 className="text-xl font-bold text-gray-800">Order Management</h1>
@@ -233,6 +259,9 @@ const OrderManagement = () => {
                 Status
               </th>
               <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                Payment Status
+              </th>
+              <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -250,6 +279,9 @@ const OrderManagement = () => {
                   </td>
                   <td className="p-2">
                     <StatusBadge status={order.status} />
+                  </td>
+                  <td className="p-2">
+                    <PaymentStatusBadge paymentStatus={order.paymentStatus} />
                   </td>
                   <td className="p-2 flex space-x-2">
                     <button
@@ -318,7 +350,7 @@ const OrderManagement = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="5" className="p-4 text-center text-gray-500">
+                <td colSpan="6" className="p-4 text-center text-gray-500">
                   {isLoading ? <Loader /> : "No orders found"}
                 </td>
               </tr>
@@ -367,6 +399,14 @@ const OrderManagement = () => {
                     Status
                   </h3>
                   <StatusBadge status={selectedOrder.status} />
+                </div>
+                <div>
+                  <h3 className="text-xs font-medium text-gray-500 mb-1">
+                    Payment Status
+                  </h3>
+                  <PaymentStatusBadge
+                    paymentStatus={selectedOrder.paymentStatus}
+                  />
                 </div>
                 <div>
                   <h3 className="text-xs font-medium text-gray-500 mb-1">

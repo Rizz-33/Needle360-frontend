@@ -134,12 +134,19 @@ const ReviewItem = ({ review, reviewersData }) => {
 };
 
 const OrderItem = ({ order }) => {
+  const navigate = useNavigate();
   const statusStyles = {
     requested: "bg-purple-100 text-purple-800",
     pending: "bg-yellow-100 text-yellow-800",
     processing: "bg-blue-100 text-blue-800",
     completed: "bg-green-100 text-green-800",
     cancelled: "bg-red-100 text-red-800",
+  };
+
+  const paymentStatusStyles = {
+    paid: "bg-green-100 text-green-800",
+    pending: "bg-yellow-100 text-yellow-800",
+    failed: "bg-red-100 text-red-800",
   };
 
   return (
@@ -155,7 +162,7 @@ const OrderItem = ({ order }) => {
           </p>
           <p className="text-sm text-gray-600">Type: {order.orderType}</p>
         </div>
-        <div className="flex items-center">
+        <div className="flex flex-col items-end gap-2">
           <span
             className={`px-2 py-0.5 rounded-full text-xs font-medium ${
               statusStyles[order.status] || "bg-gray-100 text-gray-800"
@@ -163,6 +170,29 @@ const OrderItem = ({ order }) => {
           >
             {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
           </span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+              paymentStatusStyles[order.paymentStatus] ||
+              "bg-gray-100 text-gray-800"
+            }`}
+          >
+            Payment:{" "}
+            {order.paymentStatus.charAt(0).toUpperCase() +
+              order.paymentStatus.slice(1)}
+          </span>
+          {order.status === "completed" &&
+            order.paymentStatus === "pending" && (
+              <CustomButton
+                onClick={() => navigate(`/checkout/${order._id}`)}
+                text="Checkout"
+                color="primary"
+                hover_color="hoverAccent"
+                variant="filled"
+                width="w-24"
+                height="h-8"
+                text_size="text-xs"
+              />
+            )}
         </div>
       </div>
     </div>
@@ -274,7 +304,7 @@ const CreateOrderForm = ({ tailorId, onClose }) => {
               value={formData.dueDate}
               onChange={handleChange}
               min={new Date().toISOString().split("T")[0]}
-              className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:lang-none focus:ring-2 focus:ring-primary"
               required
             />
           </div>
@@ -847,8 +877,8 @@ const CustomerProfilePage = () => {
             <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800">
               <p className="font-medium">Your Orders</p>
               <p className="text-xs text-gray-500">
-                View the status of your orders. Contact the tailor for any
-                updates or issues.
+                View the status of your orders. Pay for completed orders to
+                finalize your purchase.
               </p>
             </div>
             <div className="content-center justify-center">
