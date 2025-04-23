@@ -916,6 +916,22 @@ const TailorProfilePage = () => {
 
             <div className="flex items-end gap-2 pt-20">
               {isOwnProfile ? (
+                <CustomButton
+                  text="Go to Dashboard"
+                  color="primary"
+                  hover_color="hoverPrimary"
+                  variant="outlined"
+                  onClick={() => navigate("/tailor-dashboard")}
+                  height="h-8"
+                  width="w-32"
+                />
+              ) : (
+                ""
+              )}
+            </div>
+
+            <div className="flex items-end gap-2 pt-20">
+              {isOwnProfile ? (
                 <motion.button
                   onClick={handleEditProfile}
                   whileHover={{ scale: 1.05 }}

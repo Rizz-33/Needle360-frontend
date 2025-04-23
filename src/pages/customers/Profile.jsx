@@ -135,10 +135,11 @@ const ReviewItem = ({ review, reviewersData }) => {
 
 const OrderItem = ({ order }) => {
   const statusStyles = {
+    requested: "bg-purple-100 text-purple-800",
     pending: "bg-yellow-100 text-yellow-800",
-    confirmed: "bg-green-100 text-green-800",
+    processing: "bg-blue-100 text-blue-800",
+    completed: "bg-green-100 text-green-800",
     cancelled: "bg-red-100 text-red-800",
-    completed: "bg-blue-100 text-blue-800",
   };
 
   return (
@@ -152,6 +153,7 @@ const OrderItem = ({ order }) => {
           <p className="text-sm text-gray-600">
             Total: LKR {order.totalAmount?.toFixed(2) || "N/A"}
           </p>
+          <p className="text-sm text-gray-600">Type: {order.orderType}</p>
         </div>
         <div className="flex items-center">
           <span
@@ -163,18 +165,186 @@ const OrderItem = ({ order }) => {
           </span>
         </div>
       </div>
-      {order.items && order.items.length > 0 && (
-        <div className="text-sm text-gray-600 mt-2">
-          <p>Items:</p>
-          <ul className="list-disc list-inside">
-            {order.items.map((item, index) => (
-              <li key={index}>
-                {item.name || "Item"} (Qty: {item.quantity})
-              </li>
-            ))}
-          </ul>
+    </div>
+  );
+};
+
+const CreateOrderForm = ({ tailorId, onClose }) => {
+  const { createOrder, isLoading } = useOrderStore();
+  const [formData, setFormData] = useState({
+    tailorId,
+    customerContact: "",
+    orderType: "",
+    dueDate: "",
+    totalAmount: "",
+    notes: "",
+    measurements: {},
+  });
+  const [error, setError] = useState(null);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleMeasurementChange = (key, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      measurements: { ...prev.measurements, [key]: value },
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+
+    try {
+      await createOrder(formData);
+      toast.success("Order created successfully!");
+      onClose();
+    } catch (err) {
+      setError(err.message || "Error creating order");
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center border-b px-6 py-4">
+          <h2 className="text-lg font-bold text-gray-800">Create Order</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 focus:outline-none"
+          >
+            <X size={20} />
+          </button>
         </div>
-      )}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && <p className="text-red-600 text-sm">{error}</p>}
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">
+              Contact Number
+            </label>
+            <input
+              type="text"
+              name="customerContact"
+              value={formData.customerContact}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary"
+              required
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">
+              Order Type
+            </label>
+            <select
+              name="orderType"
+              value={formData.orderType}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary"
+              required
+            >
+              <option value="">Select Order Type</option>
+              {[
+                "School Uniforms",
+                "Saree Blouses",
+                "Wedding Attire",
+                "Office Wear",
+                "National Dress",
+                "Formal Wear",
+                "Casual Wear",
+                "Kidswear",
+                "Religious/Cultural Outfits",
+                "Custom Fashion Designs",
+              ].map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">
+              Due Date
+            </label>
+            <input
+              type="date"
+              name="dueDate"
+              value={formData.dueDate}
+              onChange={handleChange}
+              min={new Date().toISOString().split("T")[0]}
+              className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary"
+              required
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">
+              Total Amount (LKR)
+            </label>
+            <input
+              type="number"
+              name="totalAmount"
+              value={formData.totalAmount}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary"
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">
+              Notes
+            </label>
+            <textarea
+              name="notes"
+              value={formData.notes}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary"
+              rows="4"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">
+              Measurements (e.g., Chest, Waist)
+            </label>
+            {["Chest", "Waist", "Hips", "Length"].map((key) => (
+              <div key={key} className="flex items-center space-x-2 mb-2">
+                <label className="text-sm text-gray-600 w-24">{key}</label>
+                <input
+                  type="text"
+                  value={formData.measurements[key] || ""}
+                  onChange={(e) => handleMeasurementChange(key, e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder={`Enter ${key} measurement`}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end space-x-3">
+            <CustomButton
+              onClick={onClose}
+              text="Cancel"
+              color="primary"
+              hover_color="hoverAccent"
+              variant="outlined"
+              width="w-1/3"
+              height="h-9"
+            />
+            <CustomButton
+              type="submit"
+              text={isLoading ? "Creating..." : "Create Order"}
+              color="primary"
+              hover_color="hoverAccent"
+              variant="filled"
+              width="w-1/3"
+              height="h-9"
+              disabled={isLoading}
+            />
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
@@ -211,6 +381,8 @@ const CustomerProfilePage = () => {
     orders,
     isLoading: isLoadingOrders,
     getCustomerOrdersById,
+    initializeSocket,
+    disconnectSocket,
   } = useOrderStore();
   const { fetchTailorById } = useShopStore();
 
@@ -223,6 +395,7 @@ const CustomerProfilePage = () => {
   const [review, setReview] = useState("");
   const [isLoadingCreator, setIsLoadingCreator] = useState(false);
   const [creatorDetails, setCreatorDetails] = useState(null);
+  const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
   const loadingReviewerIdsRef = useRef(new Set());
 
   const currentUserId = currentUser?._id || currentUser?.id;
@@ -232,6 +405,15 @@ const CustomerProfilePage = () => {
     (currentUserId &&
       profileUserId &&
       String(currentUserId) === String(profileUserId));
+
+  useEffect(() => {
+    if (currentUserId) {
+      initializeSocket(currentUserId, currentUser.role);
+    }
+    return () => {
+      disconnectSocket();
+    };
+  }, [currentUserId, currentUser?.role, initializeSocket, disconnectSocket]);
 
   const loadReviewerDetails = useCallback(
     async (reviewClientId) => {
@@ -538,7 +720,6 @@ const CustomerProfilePage = () => {
       { id: "reviews", label: "Reviews", icon: <FaStar size={14} /> },
     ];
 
-    // Only include Orders tab if isOwnProfile is true
     if (isOwnProfile) {
       tabs.push({
         id: "orders",
@@ -664,14 +845,13 @@ const CustomerProfilePage = () => {
         {isOwnProfile ? (
           <>
             <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800">
-              <p className="font-medium">How to Place an Order</p>
+              <p className="font-medium">Your Orders</p>
               <p className="text-xs text-gray-500">
-                To place an order, please contact the designer directly through
-                the messaging feature. Discuss your requirements and confirm the
-                order details with them.
+                View the status of your orders. Contact the tailor for any
+                updates or issues.
               </p>
             </div>
-            <div className="content-center justify-center mx-96">
+            <div className="content-center justify-center">
               {isLoadingOrders ? (
                 <div className="py-10 flex justify-center">
                   <Loader />
@@ -704,7 +884,7 @@ const CustomerProfilePage = () => {
       case "reviews":
         return <ReviewsList />;
       case "orders":
-        return isOwnProfile ? <OrdersList /> : null; // Return null if not own profile
+        return isOwnProfile ? <OrdersList /> : null;
       default:
         return null;
     }
@@ -758,21 +938,29 @@ const CustomerProfilePage = () => {
                   <span>Edit</span>
                 </motion.button>
               ) : (
-                <button
-                  onClick={handleFollow}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                    isFollowing
-                      ? "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                      : "bg-primary text-white hover:bg-primary-dark"
-                  } transition-colors shadow-md`}
-                  disabled={isInteractionLoading}
-                >
-                  {isInteractionLoading
-                    ? "Loading..."
-                    : isFollowing
-                    ? "Following"
-                    : "Follow"}
-                </button>
+                <>
+                  <button
+                    onClick={() => setIsOrderFormOpen(true)}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium bg-green-600 text-white hover:bg-green-700 transition-colors shadow-md"
+                  >
+                    Place Order
+                  </button>
+                  <button
+                    onClick={handleFollow}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                      isFollowing
+                        ? "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                        : "bg-primary text-white hover:bg-primary-dark"
+                    } transition-colors shadow-md`}
+                    disabled={isInteractionLoading}
+                  >
+                    {isInteractionLoading
+                      ? "Loading..."
+                      : isFollowing
+                      ? "Following"
+                      : "Follow"}
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -962,62 +1150,41 @@ const CustomerProfilePage = () => {
                     </div>
                   )}
                 </div>
-                {!isOwnProfile ? (
-                  <div>
-                    <h3 className="text-md font-semibold text-gray-900 mb-3">
-                      Rate this Design
-                    </h3>
-                    <div className="space-y-4">
-                      <div>
-                        <StarRating rating={rating} setRating={setRating} />
-                      </div>
-                      <textarea
-                        className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                        rows="3"
-                        placeholder="Share your thoughts about this designer..."
-                        value={review}
-                        onChange={(e) => setReview(e.target.value)}
-                      />
-                      <CustomButton
-                        text="Submit Review"
-                        color="primary"
-                        hover_color="hoverPrimary"
-                        variant="outlined"
-                        onClick={handleSubmitReview}
-                        width="w-1/3"
-                        height="h-10"
-                      />
+                <div>
+                  <h3 className="text-md font-semibold text-gray-900 mb-3">
+                    Rate this Design
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <StarRating rating={rating} setRating={setRating} />
                     </div>
-                  </div>
-                ) : isOwnProfile ? (
-                  <div className="text-center text-xs text-gray-500 italic py-2">
-                    This is your design. You cannot leave a review on your own
-                    work.
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-500 italic py-2">
-                    Please log in to leave a review.
-                  </div>
-                )}
-                {isOwnProfile && (
-                  <div className="mt-6 pt-3 border-t flex justify-end gap-1.5">
+                    <textarea
+                      className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      rows="3"
+                      placeholder="Share your thoughts about this designer..."
+                      value={review}
+                      onChange={(e) => setReview(e.target.value)}
+                    />
                     <CustomButton
-                      text="Edit"
+                      text="Submit Review"
                       color="primary"
-                      hover_color="hoverAccent"
-                      variant="filled"
+                      hover_color="hoverPrimary"
+                      variant="outlined"
+                      onClick={handleSubmitReview}
                       width="w-1/3"
-                      height="h-8"
-                      onClick={() => {
-                        closeModal();
-                        handleEditProfile();
-                      }}
+                      height="h-10"
                     />
                   </div>
-                )}
+                </div>
               </div>
             </motion.div>
           </motion.div>
+        )}
+        {isOrderFormOpen && (
+          <CreateOrderForm
+            tailorId={profileUserId}
+            onClose={() => setIsOrderFormOpen(false)}
+          />
         )}
       </AnimatePresence>
 
