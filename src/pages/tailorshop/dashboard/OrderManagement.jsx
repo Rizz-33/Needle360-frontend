@@ -1,12 +1,23 @@
 import { ChevronDown, Edit, Eye, Trash2, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import { CustomButton } from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
+import { useAuthStore } from "../../../store/Auth.store";
 import { useOrderStore } from "../../../store/Order.store";
 
 const OrderManagement = () => {
-  const { orders, fetchOrders, updateOrder, deleteOrder, isLoading } =
-    useOrderStore();
+  const {
+    orders,
+    fetchOrders,
+    updateOrder,
+    deleteOrder,
+    approveOrRejectOrder,
+    initializeSocket,
+    disconnectSocket,
+    isLoading,
+  } = useOrderStore();
+  const { user } = useAuthStore();
   const [statusFilter, setStatusFilter] = useState("");
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -23,8 +34,19 @@ const OrderManagement = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
+  // Initialize WebSocket connection
   useEffect(() => {
-    fetchOrders({ status: statusFilter });
+    if (user?._id && user?.role) {
+      initializeSocket(user._id, user.role);
+    }
+    return () => {
+      disconnectSocket();
+    };
+  }, [user?._id, user?.role, initializeSocket, disconnectSocket]);
+
+  // Fetch orders based on status filter
+  useEffect(() => {
+    fetchOrders({ status: statusFilter, page: 1, limit: 10 });
   }, [fetchOrders, statusFilter]);
 
   // View order details
@@ -91,12 +113,14 @@ const OrderManagement = () => {
 
       await updateOrder(selectedOrder._id, updatedData);
       setSuccess("Order updated successfully");
+      toast.success("Order updated successfully!");
       setTimeout(() => {
         setEditModalOpen(false);
         setSuccess(null);
       }, 1500);
     } catch (error) {
       setError(error.message || "Error updating order");
+      toast.error(error.message || "Error updating order");
     }
   };
 
@@ -110,31 +134,49 @@ const OrderManagement = () => {
   const handleConfirmDelete = async () => {
     try {
       await deleteOrder(selectedOrder._id);
+      toast.success("Order deleted successfully!");
       setDeleteModalOpen(false);
     } catch (error) {
       setError(error.message || "Error deleting order");
+      toast.error(error.message || "Error deleting order");
+    }
+  };
+
+  // Approve or reject order
+  const handleApproveOrReject = async (orderId, action) => {
+    try {
+      await approveOrRejectOrder(orderId, action);
+      toast.success(
+        `Order ${action === "approve" ? "approved" : "rejected"} successfully!`
+      );
+    } catch (error) {
+      toast.error(`Failed to ${action} order`);
     }
   };
 
   // Status badge component
   const StatusBadge = ({ status }) => {
     const badgeStyles = {
-      pending: "bg-gray-100 text-gray-800",
-      processing: "bg-yellow-100 text-yellow-800",
+      requested: "bg-purple-100 text-purple-800",
+      pending: "bg-yellow-100 text-yellow-800",
+      processing: "bg-blue-100 text-blue-800",
       completed: "bg-green-100 text-green-800",
       cancelled: "bg-red-100 text-red-800",
     };
 
     const dotColors = {
-      pending: "text-gray-800",
-      processing: "text-yellow-800",
+      requested: "text-purple-800",
+      pending: "text-yellow-800",
+      processing: "text-blue-800",
       completed: "text-green-800",
       cancelled: "text-red-800",
     };
 
     return (
       <span
-        className={`px-3 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full ${badgeStyles[status]}`}
+        className={`px-3 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full ${
+          badgeStyles[status] || "bg-gray-100 text-gray-800"
+        }`}
       >
         <span className={`${dotColors[status]} text-sm`}>●</span>
         {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -155,6 +197,7 @@ const OrderManagement = () => {
           className="p-2 pr-10 border border-gray-300 text-sm rounded-full w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary appearance-none"
         >
           <option value="">All Statuses</option>
+          <option value="requested">Requested</option>
           <option value="pending">Pending</option>
           <option value="processing">Processing</option>
           <option value="completed">Completed</option>
@@ -173,7 +216,7 @@ const OrderManagement = () => {
                 Order ID
               </th>
               <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
-                Customer
+                Customer Contact
               </th>
               <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                 Order Type
@@ -192,7 +235,7 @@ const OrderManagement = () => {
                 <tr key={order._id} className="border-b">
                   <td className="p-2 text-primary text-sm">{order._id}</td>
                   <td className="p-2 text-gray-800 text-sm">
-                    {order.customerId || "N/A"}
+                    {order.customerContact || "N/A"}
                   </td>
                   <td className="p-2 text-gray-800 text-sm">
                     {order.orderType}
@@ -208,13 +251,49 @@ const OrderManagement = () => {
                     >
                       <Eye size={18} />
                     </button>
-                    <button
-                      onClick={() => handleOpenEditModal(order)}
-                      className="text-green-600 hover:text-green-900 p-1 hover:bg-green-100 rounded-full transition-colors"
-                      title="Edit"
-                    >
-                      <Edit size={18} />
-                    </button>
+                    {order.status === "requested" ? (
+                      <>
+                        <button
+                          onClick={() =>
+                            handleApproveOrReject(order._id, "approve")
+                          }
+                          className="text-green-600 hover:text-green-900 p-1 hover:bg-green-100 rounded-full transition-colors"
+                          title="Approve"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleApproveOrReject(order._id, "reject")
+                          }
+                          className="text-red-600 hover:text-red-900 p-1 hover:bg-red-100 rounded-full transition-colors"
+                          title="Reject"
+                        >
+                          <X size={18} />
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => handleOpenEditModal(order)}
+                        className="text-green-600 hover:text-green-900 p-1 hover:bg-green-100 rounded-full transition-colors"
+                        title="Edit"
+                      >
+                        <Edit size={18} />
+                      </button>
+                    )}
                     <button
                       onClick={() => handleOpenDeleteModal(order)}
                       className="text-red-600 hover:text-red-900 p-1 hover:bg-red-100 rounded-full transition-colors"
@@ -259,18 +338,10 @@ const OrderManagement = () => {
                 </div>
                 <div>
                   <h3 className="text-xs font-medium text-gray-500 mb-1">
-                    Customer ID
-                  </h3>
-                  <p className="text-gray-800">
-                    {selectedOrder.customerId || "N/A"}
-                  </p>
-                </div>
-                <div>
-                  <h3 className="text-xs font-medium text-gray-500 mb-1">
                     Customer Contact
                   </h3>
                   <p className="text-gray-800">
-                    {selectedOrder.customerContact}
+                    {selectedOrder.customerContact || "N/A"}
                   </p>
                 </div>
                 <div>
@@ -337,7 +408,7 @@ const OrderManagement = () => {
               {selectedOrder.notes && (
                 <div className="mt-6">
                   <h3 className="text-xs text-gray-500 mb-2">Notes</h3>
-                  <p className="text-gray-700 bg-red-50 p-4 rounded-2xl">
+                  <p className="text-gray-700 bg-gray-50 p-4 rounded-2xl">
                     {selectedOrder.notes}
                   </p>
                 </div>
@@ -467,9 +538,8 @@ const OrderManagement = () => {
                     name="notes"
                     value={orderForm.notes}
                     onChange={handleFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-3xl bg-gray-50 text-primary/75"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                     rows="4"
-                    disabled
                   />
                 </div>
               </div>
@@ -491,6 +561,7 @@ const OrderManagement = () => {
                   variant="filled"
                   width="w-1/3"
                   height="h-9"
+                  disabled={isLoading}
                 />
               </div>
             </form>
