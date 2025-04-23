@@ -17,6 +17,7 @@ export const useOrderStore = create((set, get) => ({
   isLoading: false,
   error: null,
   socket: null,
+  paymentOrderId: null,
 
   initializeSocket: (userId, role) => {
     const socket = io(import.meta.env.VITE_API_URL || "http://localhost:4000", {
@@ -51,6 +52,23 @@ export const useOrderStore = create((set, get) => ({
         orders: state.orders.filter((order) => order._id !== id),
         total: state.total - 1,
       }));
+    });
+
+    socket.on(
+      "paymentStatusUpdated",
+      ({ orderId, paymentStatus, paymentMethod }) => {
+        set((state) => ({
+          orders: state.orders.map((order) =>
+            order._id === orderId
+              ? { ...order, paymentStatus, paymentMethod }
+              : order
+          ),
+        }));
+      }
+    );
+
+    socket.on("orderReadyForPayment", ({ orderId }) => {
+      set({ paymentOrderId: orderId });
     });
 
     socket.on("connect_error", (err) => {
@@ -213,6 +231,40 @@ export const useOrderStore = create((set, get) => ({
     }
   },
 
+  createPaymentIntent: async (orderId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.post(`${BASE_API_URL}/payment/intent`, {
+        orderId,
+      });
+      set({ isLoading: false });
+      return response.data;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Error creating payment intent",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  selectCOD: async (orderId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.post(`${BASE_API_URL}/payment/cod`, {
+        orderId,
+      });
+      set({ isLoading: false });
+      return response.data;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Error selecting COD",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
   resetOrderFilters: () => {
     set((state) => ({
       currentPage: 1,
@@ -228,6 +280,7 @@ export const useOrderStore = create((set, get) => ({
       limit: 10,
       isLoading: false,
       error: null,
+      paymentOrderId: null,
     });
   },
 }));
