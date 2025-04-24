@@ -89,7 +89,7 @@ const StripePaymentForm = ({ order, clientSecret, onSuccess }) => {
       </AnimatePresence>
 
       <div className="mb-6">
-        <BankCard interactive={false} />
+        <BankCard interactive={true} cardType="visa" />
       </div>
 
       <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">

@@ -384,7 +384,7 @@ const OrderDetails = () => {
                         transition={{ duration: 0.3 }}
                         className="mt-4"
                       >
-                        <BankCard />
+                        <BankCard interactive={true} cardType="visa" />
                       </motion.div>
                     )}
                   </motion.div>
