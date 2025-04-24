@@ -80,7 +80,7 @@ const OrderDetails = () => {
 
   if (isLoading || !order) {
     return (
-      <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen w-full bg-blue-50 flex items-center justify-center">
         <Loader />
       </div>
     );
@@ -88,7 +88,7 @@ const OrderDetails = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen w-full bg-blue-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center">
           <div className="text-red-500 mb-4">
             <AlertCircle className="w-12 h-12 mx-auto" />
@@ -108,7 +108,7 @@ const OrderDetails = () => {
   }
 
   return (
-    <div className="max-h-screen w-full bg-gray-50 py-8 px-4 sm:px-6 lg:px-8 overflow-y-auto">
+    <div className="max-h-screen py-8 px-4 sm:px-6 lg:px-8 overflow-auto w-full bg-gradient-to-br from-blue-50 via-secondary/20 to-blue-100 overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -117,7 +117,7 @@ const OrderDetails = () => {
       >
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Order Summary</h1>
-          <p className="text-gray-500 text-sm">
+          <p className="text-gray-500 text-xs">
             Review your order details before payment
           </p>
         </div>
@@ -133,7 +133,7 @@ const OrderDetails = () => {
                   </h2>
                   <div className="flex items-center space-x-3">
                     <span
-                      className={`px-3 py-1 text-sm font-medium rounded-full ${
+                      className={`px-3 py-1 text-xs font-medium rounded-full ${
                         order.status === "completed"
                           ? "bg-green-100 text-green-800"
                           : order.status === "cancelled"
@@ -143,7 +143,7 @@ const OrderDetails = () => {
                     >
                       {order.status?.toUpperCase() || "N/A"}
                     </span>
-                    <span className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
+                    <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
                       {order.orderType || "N/A"}
                     </span>
                   </div>
@@ -156,10 +156,10 @@ const OrderDetails = () => {
                         <Calendar size={18} />
                       </div>
                       <div>
-                        <h3 className="text-sm font-medium text-gray-500">
+                        <h3 className="text-xs font-medium text-gray-500">
                           Due Date
                         </h3>
-                        <p className="text-gray-800 font-medium">
+                        <p className="text-gray-800 font-medium text-sm">
                           {order.dueDate
                             ? new Date(order.dueDate).toLocaleDateString(
                                 "en-US",
@@ -180,10 +180,10 @@ const OrderDetails = () => {
                         <Clock size={18} />
                       </div>
                       <div>
-                        <h3 className="text-sm font-medium text-gray-500">
+                        <h3 className="text-xs font-medium text-gray-500">
                           Created At
                         </h3>
-                        <p className="text-gray-800 font-medium">
+                        <p className="text-gray-800 font-medium text-sm">
                           {order.createdAt
                             ? new Date(order.createdAt).toLocaleDateString(
                                 "en-US",
@@ -207,7 +207,7 @@ const OrderDetails = () => {
                         <DollarSign size={18} />
                       </div>
                       <div>
-                        <h3 className="text-sm font-medium text-gray-500">
+                        <h3 className="text-xs font-medium text-gray-500">
                           Total Amount
                         </h3>
                         <p className="text-2xl font-bold text-gray-800">
@@ -221,7 +221,7 @@ const OrderDetails = () => {
                         <FileText size={18} />
                       </div>
                       <div>
-                        <h3 className="text-sm font-medium text-gray-500">
+                        <h3 className="text-xs font-medium text-gray-500">
                           Payment Status
                         </h3>
                         <p
@@ -241,13 +241,13 @@ const OrderDetails = () => {
                 </div>
 
                 <div className="border-t border-gray-200 pt-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                  <h3 className="text-lg font-medium text-primary mb-4 flex items-center">
                     <Store className="mr-2" size={20} />
                     Tailor Details
                   </h3>
                   {tailor ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-gray-50 p-4 rounded-lg flex items-center">
+                      <div className="bg-blue-50 p-4 rounded-lg flex items-center">
                         {tailor.logoUrl && (
                           <div className="mr-3 flex-shrink-0">
                             <img
@@ -258,30 +258,30 @@ const OrderDetails = () => {
                           </div>
                         )}
                         <div>
-                          <h4 className="text-sm font-medium text-gray-500 mb-1">
+                          <h4 className="text-xs font-medium text-gray-500 mb-1">
                             Shop Name
                           </h4>
-                          <p className="text-gray-800 font-medium">
+                          <p className="text-gray-800 font-medium text-sm">
                             {tailor.shopName || "Not provided"}
                           </p>
                         </div>
                       </div>
 
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h4 className="text-sm font-medium text-gray-500 mb-1">
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <h4 className="text-xs font-medium text-gray-500 mb-1">
                           Contact Number
                         </h4>
-                        <p className="text-gray-800 flex items-center">
+                        <p className="text-gray-800 flex items-center text-sm">
                           <Phone className="mr-2" size={16} />
                           {tailor.contactNumber || "Not provided"}
                         </p>
                       </div>
 
-                      <div className="bg-gray-50 p-4 rounded-lg md:col-span-2">
-                        <h4 className="text-sm font-medium text-gray-500 mb-1">
+                      <div className="bg-blue-50 p-4 rounded-lg md:col-span-2">
+                        <h4 className="text-xs font-medium text-gray-500 mb-1">
                           Address
                         </h4>
-                        <p className="text-gray-800 flex items-start">
+                        <p className="text-gray-800 flex items-start text-sm">
                           <MapPin
                             className="mr-2 mt-1 flex-shrink-0"
                             size={16}
@@ -291,7 +291,7 @@ const OrderDetails = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="bg-blue-50 p-4 rounded-lg">
                       <p className="text-gray-600">
                         Tailor information not available
                       </p>
@@ -307,11 +307,13 @@ const OrderDetails = () => {
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                       {Array.from(order.measurements.entries()).map(
                         ([key, value]) => (
-                          <div key={key} className="bg-gray-50 p-3 rounded-lg">
+                          <div key={key} className="bg-blue-50 p-3 rounded-lg">
                             <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                               {key}
                             </h4>
-                            <p className="text-gray-800 font-medium">{value}</p>
+                            <p className="text-gray-800 font-medium text-sm">
+                              {value}
+                            </p>
                           </div>
                         )
                       )}
@@ -324,8 +326,8 @@ const OrderDetails = () => {
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
                       Additional Notes
                     </h3>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="text-gray-700 whitespace-pre-wrap">
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <p className="text-gray-700 whitespace-pre-wrap text-sm">
                         {order.notes}
                       </p>
                     </div>
@@ -363,7 +365,7 @@ const OrderDetails = () => {
                           <h3 className="font-medium text-gray-900">
                             Credit/Debit Card
                           </h3>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-xs text-gray-500">
                             Pay securely with your card
                           </p>
                         </div>
@@ -406,7 +408,7 @@ const OrderDetails = () => {
                           <h3 className="font-medium text-gray-900">
                             Cash on Delivery
                           </h3>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-xs text-gray-500">
                             Pay when you receive the order
                           </p>
                         </div>
@@ -443,7 +445,7 @@ const OrderDetails = () => {
 
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
               <div className="p-6 sm:p-8">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">
                   Order Summary
                 </h3>
                 <div className="space-y-3">
