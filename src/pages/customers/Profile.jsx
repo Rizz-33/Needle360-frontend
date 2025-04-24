@@ -147,6 +147,7 @@ const OrderItem = ({ order }) => {
     paid: "bg-green-100 text-green-800",
     pending: "bg-yellow-100 text-yellow-800",
     failed: "bg-red-100 text-red-800",
+    cod: "bg-orange-100 text-orange-800",
   };
 
   return (
@@ -177,8 +178,10 @@ const OrderItem = ({ order }) => {
             }`}
           >
             Payment:{" "}
-            {order.paymentStatus.charAt(0).toUpperCase() +
-              order.paymentStatus.slice(1)}
+            {order.paymentStatus === "cod"
+              ? "Cash on Delivery"
+              : order.paymentStatus.charAt(0).toUpperCase() +
+                order.paymentStatus.slice(1)}
           </span>
           {order.status === "completed" &&
             order.paymentStatus === "pending" && (
@@ -304,7 +307,7 @@ const CreateOrderForm = ({ tailorId, onClose }) => {
               value={formData.dueDate}
               onChange={handleChange}
               min={new Date().toISOString().split("T")[0]}
-              className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:lang-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary"
               required
             />
           </div>

@@ -198,6 +198,7 @@ const OrderManagement = () => {
       paid: "text-green-800",
       pending: "text-yellow-800",
       failed: "text-red-800",
+      cod: "text-orange-800",
     };
 
     return (
@@ -206,7 +207,9 @@ const OrderManagement = () => {
           badgeStyles[paymentStatus] || "bg-gray-100 text-gray-800"
         }`}
       >
-        #{paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}
+        {paymentStatus === "cod"
+          ? "Cash on Delivery"
+          : paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}
       </span>
     );
   };
