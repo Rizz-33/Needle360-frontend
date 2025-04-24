@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
 import React from "react";
 
 const Footer = () => {
@@ -55,26 +56,30 @@ const Footer = () => {
               <a
                 href="https://facebook.com"
                 className="text-gray-200 hover:text-white"
+                aria-label="Facebook"
               >
-                <i className="fab fa-facebook fa-lg"></i>
+                <Facebook size={20} />
               </a>
               <a
                 href="https://instagram.com"
                 className="text-gray-200 hover:text-white"
+                aria-label="Instagram"
               >
-                <i className="fab fa-instagram fa-lg"></i>
+                <Instagram size={20} />
               </a>
               <a
                 href="https://twitter.com"
                 className="text-gray-200 hover:text-white"
+                aria-label="Twitter"
               >
-                <i className="fab fa-twitter fa-lg"></i>
+                <Twitter size={20} />
               </a>
               <a
                 href="https://linkedin.com"
                 className="text-gray-200 hover:text-white"
+                aria-label="LinkedIn"
               >
-                <i className="fab fa-linkedin fa-lg"></i>
+                <Linkedin size={20} />
               </a>
             </div>
           </div>
