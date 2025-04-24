@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   FaChevronDown,
   FaRegHeart,
@@ -9,6 +9,7 @@ import {
   FaSearch,
   FaShoppingBag,
 } from "react-icons/fa";
+import { predefinedServices } from "../../configs/Services.configs";
 import { useAuthStore } from "../../store/Auth.store";
 
 const transition = {
@@ -102,6 +103,59 @@ const ProfileMenu = () => {
   );
 };
 
+const CategoryMenu = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <motion.div
+        className="cursor-pointer text-primary hover:text-hoverAccent flex items-center"
+        whileHover={{ scale: 1.1 }}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span>Categories</span>
+        <FaChevronDown className="ml-2 text-[10px]" />
+      </motion.div>
+
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={transition}
+          className="absolute left-0 mt-2 w-56 bg-white border rounded-lg shadow-md z-50"
+        >
+          <div className="py-1">
+            {predefinedServices.map((service, index) => (
+              <a
+                key={index}
+                href={"/design"}
+                className="block px-4 py-2 text-sm hover:bg-gray-100"
+              >
+                {service}
+              </a>
+            ))}
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+};
+
 const NavbarMenu = () => {
   const [active, setActive] = useState(null);
   const { isAuthenticated } = useAuthStore();
@@ -119,22 +173,22 @@ const NavbarMenu = () => {
           whileHover={{ scale: 1.1 }}
           onClick={() => (window.location.href = "/")}
         />
-        <motion.div className="relative pl-5" whileHover={{ scale: 1.1 }}>
-          <span className="cursor-pointer text-primary hover:text-hoverAccent flex items-center">
-            Categories <FaChevronDown className="ml-2 text-[10px]" />
-          </span>
+        <motion.div className="relative pl-5">
+          <CategoryMenu />
         </motion.div>
       </div>
       <div className="flex-grow mx-1 sm:mx-6">
-        <motion.input
-          type="text"
-          placeholder="Search..."
-          className="hidden sm:block w-full px-1 py-1 sm:px-4 sm:py-2 border border-secondary rounded-full focus:border-primary hover:border-primary focus:outline-none"
-          whileHover={{ scale: 1.02 }}
-        />
-        <motion.div className="block sm:hidden">
-          <FaSearch className="text-primary cursor-pointer hover:text-hoverAccent mx-2" />
-        </motion.div>
+        <div className="relative">
+          <motion.input
+            type="text"
+            placeholder="Search..."
+            className="hidden sm:block w-full px-1 py-1 sm:px-4 sm:py-2 border border-secondary rounded-full focus:border-primary hover:border-primary focus:outline-none"
+            whileHover={{ scale: 1.02 }}
+          />
+          <motion.div className="block sm:hidden">
+            <FaSearch className="text-primary cursor-pointer hover:text-hoverAccent mx-2" />
+          </motion.div>
+        </div>
       </div>
       <div className="flex items-center space-x-1 sm:space-x-4 pr-1 sm:pr-7">
         {isAuthenticated ? (
