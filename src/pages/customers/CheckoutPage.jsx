@@ -174,11 +174,11 @@ const CheckoutPage = () => {
 
       if (foundOrder.paymentStatus === "paid") {
         toast.error("This order is already paid");
-        navigate("/user/orders");
+        navigate("/");
       }
     } else {
       toast.error("Order not found");
-      navigate("/user/orders");
+      navigate("/");
     }
   }, [orderId, orders, navigate, location.search, fetchTailorById]);
 
@@ -212,7 +212,7 @@ const CheckoutPage = () => {
       setIsProcessing(true);
       await selectCOD(order._id);
       toast.success("COD selected successfully! You will pay upon delivery.");
-      navigate("/user/orders");
+      navigate("/");
     } catch (err) {
       toast.error(err.message || "Error selecting COD");
     } finally {
@@ -222,7 +222,7 @@ const CheckoutPage = () => {
 
   const handlePaymentSuccess = () => {
     toast.success("Payment successful!");
-    navigate("/user/orders");
+    navigate("/");
   };
 
   if (
