@@ -44,7 +44,7 @@ const OrderDetails = () => {
   useEffect(() => {
     if (!orderId) {
       toast.error("No order selected");
-      navigate("/user/orders");
+      navigate("/");
       return;
     }
 
@@ -62,11 +62,11 @@ const OrderDetails = () => {
 
       if (foundOrder.paymentStatus === "paid") {
         toast.error("This order is already paid");
-        navigate("/user/orders");
+        navigate("/");
       }
     } else {
       toast.error("Order not found");
-      navigate("/user/orders");
+      navigate("/");
     }
   }, [orderId, orders, navigate, fetchTailorById]);
 
@@ -96,7 +96,7 @@ const OrderDetails = () => {
           <h3 className="text-xl font-bold text-gray-800 mb-2">Error</h3>
           <p className="text-gray-600 mb-6">{error}</p>
           <CustomButton
-            onClick={() => navigate("/user/orders")}
+            onClick={() => navigate("/")}
             text="Back to Orders"
             color="primary"
             variant="filled"
