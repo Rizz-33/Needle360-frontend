@@ -13,7 +13,9 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import Login from "./pages/auth/Login";
 import ResetPassword from "./pages/auth/ResetPassword";
 import Signup from "./pages/auth/Signup";
+import CheckoutPage from "./pages/customers/CheckoutPage";
 import CustomerProfileSetup from "./pages/customers/CustomerProfileSetup";
+import OrderDetails from "./pages/customers/OrderDetails";
 import CustomerProfilePage from "./pages/customers/Profile";
 import Design from "./pages/Design";
 import Home from "./pages/Home";
@@ -199,6 +201,8 @@ function App() {
           <Route path="/pending-approval" element={<PendingApproval />} />
           <Route path="/profile-setup" element={<BusinessProfileSetup />} />
           <Route path="/edit-profile" element={<CustomerProfileSetup />} />
+          <Route path="/checkout/:orderId" element={<OrderDetails />} />
+          <Route path="/checkout/payment/:orderId" element={<CheckoutPage />} />
           <Route
             path="/tailor-dashboard"
             element={
