@@ -1,10 +1,14 @@
 import {
+  Code,
   Globe,
+  Lightbulb,
   Package,
   PenTool,
+  Rocket,
   Ruler,
   Share2,
   Shirt,
+  Terminal,
   Users,
   ZoomIn,
 } from "lucide-react";
@@ -118,4 +122,35 @@ export const predefinedServices = [
   "Kidswear",
   "Religious/Cultural Outfits",
   "Custom Fashion Designs",
+];
+
+export const sdlcFeatures = [
+  {
+    id: "planning",
+    title: "Planning",
+    description:
+      "Strategic roadmapping and requirement analysis for successful products",
+    icon: Lightbulb,
+  },
+  {
+    id: "development",
+    title: "Development",
+    description:
+      "Clean, efficient code using modern frameworks and best practices",
+    icon: Code,
+  },
+  {
+    id: "testing",
+    title: "Testing",
+    description:
+      "Comprehensive testing strategies to ensure quality and performance",
+    icon: Terminal,
+  },
+  {
+    id: "deployment",
+    title: "Deployment",
+    description:
+      "Seamless deployment pipelines with CI/CD for reliable releases",
+    icon: Rocket,
+  },
 ];
