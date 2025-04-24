@@ -195,12 +195,6 @@ const OrderManagement = () => {
   // Payment Status badge component
   const PaymentStatusBadge = ({ paymentStatus }) => {
     const badgeStyles = {
-      paid: "bg-green-100 text-green-800",
-      pending: "bg-yellow-100 text-yellow-800",
-      failed: "bg-red-100 text-red-800",
-    };
-
-    const dotColors = {
       paid: "text-green-800",
       pending: "text-yellow-800",
       failed: "text-red-800",
@@ -212,8 +206,7 @@ const OrderManagement = () => {
           badgeStyles[paymentStatus] || "bg-gray-100 text-gray-800"
         }`}
       >
-        <span className={`${dotColors[paymentStatus]} text-sm`}>●</span>
-        {paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}
+        #{paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}
       </span>
     );
   };
