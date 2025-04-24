@@ -14,6 +14,7 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import Login from "./pages/auth/Login";
 import ResetPassword from "./pages/auth/ResetPassword";
 import Signup from "./pages/auth/Signup";
+import Contact from "./pages/Contact";
 import CheckoutPage from "./pages/customers/CheckoutPage";
 import CustomerProfileSetup from "./pages/customers/CustomerProfileSetup";
 import OrderDetails from "./pages/customers/OrderDetails";
@@ -199,6 +200,7 @@ function App() {
           />
           <Route path="/services" element={<OurServices />} />
           <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="/design-tool" element={<FashionDesignTool />} />
           <Route path="/pending-approval" element={<PendingApproval />} />
           <Route path="/profile-setup" element={<BusinessProfileSetup />} />
