@@ -4,6 +4,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import ChatPopup from "./components/chat/ChatPopUp";
 import FashionDesignTool from "./components/design/Tool";
 import { SidebarProvider } from "./components/ui/SideBarMenu";
+import About from "./pages/About.JSX";
 import AdminLogin from "./pages/admin/AdminLogin";
 import Dashboard from "./pages/admin/Dashboard";
 import TailorRequest from "./pages/admin/TailorRequest";
@@ -197,6 +198,7 @@ function App() {
             }
           />
           <Route path="/services" element={<OurServices />} />
+          <Route path="/about" element={<About />} />
           <Route path="/design-tool" element={<FashionDesignTool />} />
           <Route path="/pending-approval" element={<PendingApproval />} />
           <Route path="/profile-setup" element={<BusinessProfileSetup />} />
