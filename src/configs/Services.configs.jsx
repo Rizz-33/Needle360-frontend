@@ -2,8 +2,12 @@ import {
   Code,
   Globe,
   Lightbulb,
+  Mail,
+  MapPin,
+  MessageSquare,
   Package,
   PenTool,
+  Phone,
   Rocket,
   Ruler,
   Share2,
@@ -152,5 +156,32 @@ export const sdlcFeatures = [
     description:
       "Seamless deployment pipelines with CI/CD for reliable releases",
     icon: Rocket,
+  },
+];
+
+export const contactMethods = [
+  {
+    id: "email",
+    title: "Email",
+    description: "Get in touch via email for project inquiries",
+    icon: Mail,
+  },
+  {
+    id: "phone",
+    title: "Phone",
+    description: "Speak directly about your project requirements",
+    icon: Phone,
+  },
+  {
+    id: "chat",
+    title: "Live Chat",
+    description: "Quick responses through our messaging platform",
+    icon: MessageSquare,
+  },
+  {
+    id: "visit",
+    title: "Visit",
+    description: "Schedule an in-person consultation at our office",
+    icon: MapPin,
   },
 ];
