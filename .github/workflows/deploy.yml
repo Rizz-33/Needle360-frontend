@@ -32,7 +32,9 @@ jobs:
 
       - name: Build and Push Frontend Image
         run: |
-          docker build -t rizz336/needle360-frontend -f Dockerfile .
+          docker build -t rizz336/needle360-frontend \
+            --build-arg VITE_API_BASE_URL="${{ secrets.API_BASE_URL }}" \
+            -f Dockerfile .
           docker push rizz336/needle360-frontend:latest
 
   deploy:
@@ -49,7 +51,4 @@ jobs:
         run: docker rm needle360-frontend-container || true
 
       - name: Run Docker Container
-        run: |
-          docker run -d -p 8080:80 --name needle360-frontend-container \
-            -e REACT_APP_API_URL='http://13.61.16.74:4000' \
-            rizz336/needle360-frontend:latest
+        run: docker run -d -p 8080:80 --name needle360-frontend-container rizz336/needle360-frontend:latest
