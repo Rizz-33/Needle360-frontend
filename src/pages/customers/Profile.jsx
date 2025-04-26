@@ -14,7 +14,7 @@ import {
   FaUser,
 } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
-import ChatPopup from "../../components/chat/ChatPopUp";
+import ChatPopup from "../../components/chat/ChatPopup";
 import MessageButton from "../../components/chat/MessageButton";
 import { CustomButton } from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
