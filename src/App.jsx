@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import ChatPopup from "./components/chat/ChatPopUp";
+import ChatPopup from "./components/chat/ChatPopup";
 import FashionDesignTool from "./components/design/Tool";
 import { SidebarProvider } from "./components/ui/SideBarMenu";
 import About from "./pages/About.JSX";
