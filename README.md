@@ -121,7 +121,7 @@ npm install  # or pnpm install / yarn install
 npm run dev  # or npm run dev / yarn dev
 ```
 
-The application will be available at `http://localhost:4000`
+The application will be available at `http://localhost:5173`
 
 ### Environment Variables
 
