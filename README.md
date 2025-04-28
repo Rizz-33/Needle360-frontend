@@ -1,14 +1,14 @@
-# Needle360 - Digital Marketplace and Community Hub for the tailoring sector in Sri Lanka
+# needle360 - Digital Marketplace and Community Hub for the tailoring sector in Sri Lanka
 
 <div align="center">
     <br><br>
-    <img src="https://github.com/Rizz-33/Needle360-frontend/blob/main/public/logo-white-full.png" alt="Needle360 Logo">
+    <img src="https://github.com/Rizz-33/needle360-frontend/blob/main/public/logo-white-full.png" alt="needle360 Logo">
     <br><br>
 </div>
 
 ## Overview
 
-**Needle360** is a web-based e-commerce platform designed specifically for tailor shops. The platform enables tailor shop owners to showcase and sell custom garments while allowing customers to design their own clothing, submit customizations, and interact with tailor shops seamlessly.
+**needle360** is a web-based e-commerce platform designed specifically for tailor shops. The platform enables tailor shop owners to showcase and sell custom garments while allowing customers to design their own clothing, submit customizations, and interact with tailor shops seamlessly.
 
 This project aims to revolutionize the tailor industry by providing a one-stop digital solution for custom apparel shopping and order management.
 
@@ -58,8 +58,8 @@ Clone the repository and navigate into the project directory:
 
 ```bash
 # Clone the repository
-git clone https://github.com/Rizz-33/Needle360-frontend.git
-cd Needle360-frontend
+git clone https://github.com/Rizz-33/needle360-frontend.git
+cd needle360-frontend
 
 # Install dependencies
 npm install  # or npm install / yarn install
@@ -104,4 +104,4 @@ For any queries, feel free to reach out:
 
 ---
 
-Craft your style with **Needle360** – Where Tailoring Meets Technology! ✂️🧵
+Craft your style with **needle360** – Where Tailoring Meets Technology! ✂️🧵
