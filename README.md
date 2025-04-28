@@ -31,16 +31,64 @@ This project aims to revolutionize the tailor industry by providing a one-stop d
 - **Customer Interaction**: Respond to design requests and provide updates.
 - **Analytics Dashboard**: Monitor sales, order trends, and customer engagement.
 - **Flexible Pricing System**: Set pricing based on fabric, design complexity, and customer requests.
+- **Appointment Scheduling**: Manage customer appointments and availability calendar.
+- **Inventory Management**: Track fabric stock and materials.
+
+### For Administrators
+
+- **User Management**: Oversee all platform users and their access rights.
+- **Service Management**: Maintain and update available services.
+- **Reporting**: Generate comprehensive reports on platform performance.
+- **Content Moderation**: Ensure quality standards across the platform.
+
+## System Architecture
+
+needle360 follows a layered architecture to ensure scalability and maintainability:
+
+### Frontend Layer
+
+- **Admin Portal**: Comprehensive management dashboard for platform administrators
+- **Tailor Portal**: Feature-rich interface for tailor shop management
+- **Customer Portal**: User-friendly interface for browsing, customizing, and ordering
+
+### Integration Layer
+
+- **API Gateway**: Manages API requests between frontend and backend
+- **Event Bus**: Facilitates real-time communication between services
+- **External Integrations**: Connects with payment processors, email services, and storage solutions
+
+### Backend Layer
+
+Multiple microservices handle specific business domains:
+
+- Authentication Service (All users)
+- Order Service
+- Design Service
+- Inventory Service
+- Payment Service
+- Messaging Service
+- Appointment Service
+- Review Service
+- and more
+
+### Data Layer
+
+- **MongoDB**: Primary database storing user profiles, orders, designs, and more
+- **Redis**: Caching for improved performance
+- **Cloudinary**: Cloud storage for design images and documents
 
 ## Technology Stack
 
 - **Frontend**: React.js, TailwindCSS
 - **Backend**: Node.js, Express.js
 - **Database**: MongoDB
-- **Authentication**: Firebase/Auth0
+- **Caching**: Redis
+- **Authentication**: JWT with role-based access control
 - **Deployment**: Vercel/Netlify (Frontend), AWS/DigitalOcean (Backend)
-- **Payment Gateway**: Stripe/PayPal Integration
-- **File Uploads**: Cloudinary for storing images and design submissions
+- **Payment Gateway**: Stripe integration
+- **Messaging**: SocketIO
+- **Email Service**: Mailtrap
+- **File Storage**: Cloudinary
 
 ## Getting Started
 
@@ -51,6 +99,8 @@ Ensure you have the following installed before setting up the project:
 - **Node.js** (v18+ recommended)
 - **Git**
 - **PNPM/Yarn/NPM**
+- **MongoDB** (local or Atlas connection)
+- **Redis** (optional for development)
 
 ### Installation
 
@@ -62,16 +112,37 @@ git clone https://github.com/Rizz-33/needle360-frontend.git
 cd needle360-frontend
 
 # Install dependencies
-npm install  # or npm install / yarn install
+npm install  # or pnpm install / yarn install
 ```
 
 ### Running the Development Server
 
 ```bash
-npm dev  # or npm run dev / yarn dev
+npm run dev  # or npm run dev / yarn dev
 ```
 
-The application will be available at `http://localhost:3000`
+The application will be available at `http://localhost:4000`
+
+### Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```
+# API Configuration
+API_URL=http://localhost:4000
+
+# MongoDB
+MONGODB_URI=your_mongodb_connection_string
+
+# Authentication
+JWT_SECRET=your_jwt_secret
+
+# External Services
+STRIPE_API_KEY=your_stripe_key
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
 
 ## Contributing
 
@@ -90,6 +161,8 @@ We welcome contributions from the community! Follow these steps to contribute:
 - ✅ Order & Payment Integration
 - ⏳ AI-based Custom Design Suggestions (Upcoming)
 - ⏳ Mobile App Version (Upcoming)
+- ⏳ Enhanced Analytics Dashboard (Upcoming)
+- ⏳ Multi-language Support (Upcoming)
 
 ## License
 
