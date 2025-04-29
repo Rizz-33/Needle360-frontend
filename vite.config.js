@@ -6,17 +6,14 @@ dotenv.config();
 
 export default defineConfig({
   define: {
-    API_URL: JSON.stringify(process.env.VITE_API_URL),
+    "process.env.VITE_API_URL": JSON.stringify(
+      process.env.VITE_API_URL || "http://172.20.10.5:4000"
+    ),
   },
   plugins: [react()],
   server: {
-    historyApiFallback: true,
-    host: "0.0.0.0",
+    host: "0.0.0.0", // Bind to all interfaces
     port: 5173,
-  },
-  preview: {
-    historyApiFallback: true,
-    host: "0.0.0.0",
-    port: 5173,
+    historyApiFallback: true, // Support for client-side routing
   },
 });
