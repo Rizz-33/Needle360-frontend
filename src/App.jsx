@@ -191,7 +191,7 @@ function App() {
             }
           />
           <Route
-            path="/design/*"
+            path="/design"
             element={
               <ProtectedRoute>
                 <Design />
