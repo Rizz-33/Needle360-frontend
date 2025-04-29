@@ -8,7 +8,7 @@ const BASE_API_URL = `${
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common["Content-Type"] = "application/json";
 
-export const useAvailabilityStore = create((set) => ({
+export const useAvailabilityStore = create((set, get) => ({
   availabilitySlots: [],
   isLoading: false,
   error: null,
@@ -44,6 +44,7 @@ export const useAvailabilityStore = create((set) => ({
       const response = await axios.post(`${BASE_API_URL}/${tailorId}`, {
         slots,
       });
+      // Update state with the full list returned from the backend
       set({ availabilitySlots: response.data.slots, isLoading: false });
       return response.data.slots;
     } catch (error) {
@@ -70,6 +71,7 @@ export const useAvailabilityStore = create((set) => ({
           updates,
         }
       );
+      // Update state with the full list returned from the backend
       set({ availabilitySlots: response.data.slots, isLoading: false });
       return response.data.slots;
     } catch (error) {
@@ -96,6 +98,7 @@ export const useAvailabilityStore = create((set) => ({
           data: { slotIds },
         }
       );
+      // Update state with the full list returned from the backend
       set({ availabilitySlots: response.data.slots, isLoading: false });
       return true;
     } catch (error) {
