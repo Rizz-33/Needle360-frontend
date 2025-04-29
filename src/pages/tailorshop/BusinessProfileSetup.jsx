@@ -1513,7 +1513,7 @@ const BusinessProfileSetup = () => {
                             }
                             await updateBulkAvailability(user._id, [
                               {
-                                id: editingItem.id,
+                                _id: editingItem.id,
                                 day: newItemData.day,
                                 from: newItemData.from,
                                 to: newItemData.to,

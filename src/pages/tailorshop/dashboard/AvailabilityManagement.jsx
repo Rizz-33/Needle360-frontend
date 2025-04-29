@@ -126,6 +126,7 @@ const AvailabilityManagement = () => {
     }
 
     try {
+      // Send the update with the correct field name (_id)
       await updateBulkAvailability(user.id, [
         { _id: selectedSlot._id, ...editSlot },
       ]);
