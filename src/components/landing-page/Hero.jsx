@@ -62,12 +62,12 @@ export default function HeroSection() {
           </div>
         </div>
 
-        {/* Right Side Image */}
-        <div className="relative w-full max-w-sm">
+        {/* Right Side Image - larger than left side */}
+        <div className="relative w-full flex-grow">
           <img
-            src="/tailor-mockup.png"
+            src="/hero.png"
             alt="Hero: A tailor working on a sewing machine and a customer"
-            className="w-full rounded-2xl shadow-lg"
+            className="h-auto w-full max-h-[500px] object-contain"
           />
         </div>
       </div>
