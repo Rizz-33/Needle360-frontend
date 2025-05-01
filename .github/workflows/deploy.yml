@@ -56,7 +56,7 @@ jobs:
       - name: Run New Container
         run: |
           docker run -d \
-            -p 80:80 \
+            -p 80:5173 \
             --name needle360-frontend-container \
             --restart unless-stopped \
             rizz336/needle360-frontend:latest
