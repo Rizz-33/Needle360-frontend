@@ -7,18 +7,17 @@ dotenv.config();
 export default defineConfig({
   define: {
     "process.env.VITE_API_URL": JSON.stringify(
-      process.env.VITE_API_URL || "http://13.61.16.74:4000" // Your backend IP
+      process.env.VITE_API_URL || "http://13.61.16.74:4000/" // Note `/api` prefix
     ),
   },
   plugins: [react()],
   server: {
-    host: "0.0.0.0",
-    port: 5173,
-    strictPort: true,
-    cors: true,
-  },
-  build: {
-    outDir: "dist",
-    emptyOutDir: true,
+    proxy: {
+      "/api": {
+        target: "http://13.61.16.74:4000", // Proxy API requests to backend
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+    },
   },
 });
