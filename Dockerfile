@@ -1,9 +1,5 @@
 FROM node:alpine3.18 AS build
 
-# ARG VITE_API_BASE_URL
-
-# ENV VITE_API_BASE_URL=${API_URL}
-
 WORKDIR /app
 
 COPY package*.json ./
@@ -12,11 +8,12 @@ RUN npm install
 
 COPY . .
 
-RUN npm run build || (echo "Build failed!" && exit 1)
-
-RUN ls -la /app/dist
+RUN npm run build
 
 FROM nginx:1.23-alpine
+
+# Copy custom nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 WORKDIR /usr/share/nginx/html
 
