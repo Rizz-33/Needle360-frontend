@@ -1,5 +1,4 @@
 name: Deploy React Application
-
 on:
   push:
     branches:
@@ -58,8 +57,11 @@ jobs:
       - name: Run New Container
         run: |
           docker run -d \
-            -p 80:80 \
+            -p 80:5173 \
             --name needle360-frontend-container \
             -e VITE_API_URL=http://13.61.16.74:4000 \
             --restart unless-stopped \
             rizz336/needle360-frontend:latest
+
+      - name: Verify Container Running
+        run: docker ps | grep needle360-frontend-container
