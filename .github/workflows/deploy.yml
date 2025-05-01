@@ -40,6 +40,17 @@ jobs:
     needs: build
     runs-on: self-hosted
     steps:
+      - name: Clean Up Disk Space
+        run: |
+          # Remove unused Docker resources
+          docker system prune -af --volumes
+
+          # Clear npm cache
+          rm -rf /root/.npm/_cacache || true
+
+          # Check available disk space
+          df -h
+
       - name: Check Docker Access
         run: docker ps
 
