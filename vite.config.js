@@ -1,18 +1,20 @@
-import dotenv from "dotenv";
+import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+// Load environment variables from .env file
+import dotenv from "dotenv";
 dotenv.config();
 
 export default defineConfig({
+  plugins: [react()],
   define: {
-    // Use environment variable for API URL, fallback to provided URL
     "process.env.VITE_API_URL": JSON.stringify(
-      process.env.VITE_API_URL || "http://13.61.16.74:4000"
+      process.env.VITE_API_URL || "http://localhost:4000" // Fallback for local dev
     ),
   },
   server: {
-    host: "0.0.0.0", // Allow external connections
+    host: "0.0.0.0", // Allow external connections for local dev
     port: 5173,
-    strictPort: true, // Don't try other ports if 5173 is taken
+    strictPort: true,
   },
 });
