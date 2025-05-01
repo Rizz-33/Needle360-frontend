@@ -55,9 +55,6 @@ jobs:
             echo "Port 5173 is in use, attempting to free it"
             sudo fuser -k 5173/tcp || true
           fi
-      - name: Create Docker Network
-        run: |
-          docker network create needle360-network || true
       - name: Pull Image
         run: docker pull rizz336/needle360-frontend:latest
       - name: Stop and Remove Old Container
@@ -69,12 +66,8 @@ jobs:
           docker run -d \
             -p 5173:80 \
             --name needle360-frontend-container \
-            --network needle360-network \
             --restart unless-stopped \
             rizz336/needle360-frontend:latest
-      - name: Connect Backend to Network
-        run: |
-          docker network connect needle360-network needle360-backend-container || true
       - name: Verify Container Running
         run: |
           sleep 5
