@@ -5,9 +5,6 @@ on:
     branches:
       - dev
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
   build:
@@ -32,8 +29,8 @@ jobs:
 
       - name: Build and Push Frontend Image
         run: |
-          docker build -t rizz336/needle360-frontend \
-            --build-arg VITE_API_BASE_URL="${{ secrets.API_BASE_URL }}" \
+          docker build -t rizz336/needle360-frontend:latest \
+            --build-arg VITE_API_URL=http://13.61.16.74:4000 \
             -f Dockerfile .
           docker push rizz336/needle360-frontend:latest
 
@@ -51,4 +48,7 @@ jobs:
         run: docker rm needle360-frontend-container || true
 
       - name: Run Docker Container
-        run: docker run -d -p 5173:80 --name needle360-frontend-container rizz336/needle360-frontend:latest
+        run: |
+          docker run -d -p 80:80 --name needle360-frontend-container \
+            -e VITE_API_URL=http://13.61.16.74:4000 \
+            rizz336/needle360-frontend:latest
