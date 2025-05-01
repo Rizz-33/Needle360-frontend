@@ -1,26 +1,15 @@
-FROM node:alpine3.18 AS build
+FROM node:alpine3.18
 
 WORKDIR /app
-
 COPY package*.json ./
-
 RUN npm install
-
 COPY . .
 
-RUN npm run build
+EXPOSE 5173
 
-FROM nginx:1.23-alpine
+# Use npm run dev for development with hot-reloading
+CMD ["npm", "run", "dev"]
 
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-WORKDIR /usr/share/nginx/html
-
-RUN rm -rf ./*
-
-COPY --from=build /app/dist .
-
-EXPOSE 80
-
-ENTRYPOINT ["nginx", "-g", "daemon off;"]
+# Or for production build:
+# RUN npm run build
+# CMD ["npm", "run", "preview"]
