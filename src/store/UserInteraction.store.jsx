@@ -2,7 +2,7 @@ import axios from "axios";
 import { create } from "zustand";
 
 const BASE_API_URL = `${
-  import.meta.env.API_URL || "http://localhost:4000"
+  import.meta.env.VITE_API_URL || "http://localhost:4000"
 }/api/user-interactions`;
 
 export const useUserInteractionStore = create((set, get) => ({
@@ -34,7 +34,7 @@ export const useUserInteractionStore = create((set, get) => ({
         try {
           const userResponse = await axios.get(
             `${
-              import.meta.env.API_URL || "http://localhost:4000"
+              import.meta.env.VITE_API_URL || "http://localhost:4000"
             }/api/users/${followeeId}`
           );
           updatedFollowing.push(userResponse.data);
