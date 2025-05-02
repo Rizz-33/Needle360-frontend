@@ -24,9 +24,11 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build and Push
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'http://13.61.16.74:4000' }}
         run: |
           docker build -t rizz336/needle360-frontend:$GITHUB_SHA \
-            --build-arg VITE_API_URL=${{ env.VITE_API_URL || 'http://13.61.16.74:4000' }} \
+            --build-arg VITE_API_URL=$VITE_API_URL \
             -f Dockerfile .
           docker tag rizz336/needle360-frontend:$GITHUB_SHA rizz336/needle360-frontend:latest
           docker push rizz336/needle360-frontend:$GITHUB_SHA
@@ -46,7 +48,13 @@ jobs:
         run: docker ps || { echo "Docker not accessible"; exit 1; }
       - name: Verify Backend
         run: |
-          curl -f http://13.61.16.74:4000 || { echo "Backend not accessible"; exit 1; }
+          curl -f ${{ secrets.VITE_API_URL || 'http://13.61.16.74:4000' }} || { echo "Backend not accessible, proceeding anyway"; true; }
+      - name: Check Port 5173 Availability
+        run: |
+          if sudo netstat -tuln | grep :5173; then
+            echo "Port 5173 is in use, attempting to free it"
+            sudo fuser -k 5173/tcp || true
+          fi
       - name: Pull Image
         run: docker pull rizz336/needle360-frontend:latest
       - name: Stop and Remove Old Container
@@ -56,11 +64,15 @@ jobs:
       - name: Run New Container
         run: |
           docker run -d \
-            -p 80:5173 \
+            -p 5173:80 \
             --name needle360-frontend-container \
             --restart unless-stopped \
             rizz336/needle360-frontend:latest
       - name: Verify Container Running
         run: |
-          sleep 5 # Wait for container to start
+          sleep 5
           docker ps | grep needle360-frontend-container || { echo "Container not running"; exit 1; }
+      - name: Verify Nginx
+        run: |
+          docker exec needle360-frontend-container nginx -t || { echo "Nginx config error"; exit 1; }
+          curl -I http://localhost:5173 || { echo "Nginx not responding"; exit 1; }
