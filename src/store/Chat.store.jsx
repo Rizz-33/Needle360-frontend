@@ -1,7 +1,7 @@
 import { io } from "socket.io-client";
 import { create } from "zustand";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const BASE_API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 export const useChatStore = create((set, get) => ({
   // State
@@ -69,7 +69,7 @@ export const useChatStore = create((set, get) => ({
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/conversations`, {
+      const response = await fetch(`${BASE_API_URL}/api/conversations`, {
         credentials: "include",
         headers,
       });
@@ -121,7 +121,7 @@ export const useChatStore = create((set, get) => ({
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No authentication token found");
 
-      const response = await fetch(`${API_BASE_URL}/api/messages/send`, {
+      const response = await fetch(`${BASE_API_URL}/api/messages/send`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -180,7 +180,7 @@ export const useChatStore = create((set, get) => ({
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/conversations`, {
+      const response = await fetch(`${BASE_API_URL}/api/conversations`, {
         method: "POST",
         credentials: "include",
         headers,
@@ -215,7 +215,7 @@ export const useChatStore = create((set, get) => ({
       if (!token) throw new Error("No authentication token found");
 
       const response = await fetch(
-        `${API_BASE_URL}/api/messages/${messageId}`,
+        `${BASE_API_URL}/api/messages/${messageId}`,
         {
           method: "DELETE",
           headers: {
@@ -296,7 +296,7 @@ export const useChatStore = create((set, get) => ({
       if (!token) throw new Error("No authentication token found");
 
       const response = await fetch(
-        `${API_BASE_URL}/api/messages/conversation/${conversationId}/read`,
+        `${BASE_API_URL}/api/messages/conversation/${conversationId}/read`,
         {
           method: "POST",
           headers: {
@@ -347,7 +347,7 @@ export const useChatStore = create((set, get) => ({
       const nextPage = loadMore ? currentPage + 1 : 1;
 
       const response = await fetch(
-        `${API_BASE_URL}/api/messages/conversation/${conversationId}?page=${nextPage}&limit=50`,
+        `${BASE_API_URL}/api/messages/conversation/${conversationId}?page=${nextPage}&limit=50`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -419,7 +419,7 @@ export const useChatStore = create((set, get) => ({
 
     console.log("Initializing socket connection...");
 
-    const socket = io(API_BASE_URL, {
+    const socket = io(BASE_API_URL, {
       withCredentials: true,
       autoConnect: true,
       reconnection: true,
