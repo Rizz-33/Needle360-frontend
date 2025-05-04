@@ -70,8 +70,8 @@ jobs:
 
       - name: Stop and Remove Old Container
         run: |
-          docker stop needle360-frontend-container || echo "No container to stop"
-          docker rm needle360-frontend-container || echo "No container to remove"
+          docker stop needle360-frontend-container
+          docker rm needle360-frontend-container
 
       - name: Run New Container
         run: |
