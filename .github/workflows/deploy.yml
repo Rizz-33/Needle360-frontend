@@ -67,7 +67,6 @@ jobs:
             -p 80:80 \
             --name needle360-frontend-container \
             --restart unless-stopped \
-            -e VITE_API_URL=/api \
             rizz336/needle360-frontend:latest
       - name: Verify Container Running
         run: |
