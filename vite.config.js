@@ -12,13 +12,11 @@ export default defineConfig(({ mode }) => {
       "import.meta.env.VITE_API_URL": JSON.stringify(
         env.VITE_API_URL || "http://localhost:4000"
       ),
-      // Add other environment variables as needed
     },
     server: {
-      host: "0.0.0.0", // Listen on all network interfaces
-      port: 5173, // Development server port
-      strictPort: true, // Don't try other ports if 5173 is taken
-      // Proxy configuration for API requests during development
+      host: "0.0.0.0",
+      port: 5173,
+      strictPort: true,
       proxy: {
         "/api": {
           target: env.VITE_API_URL || "http://localhost:4000",
@@ -28,13 +26,11 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
-    // Build-specific settings
     build: {
       outDir: "dist",
       emptyOutDir: true,
-      sourcemap: mode !== "production", // Enable sourcemaps in non-production
+      sourcemap: mode !== "production",
     },
-    // Preview server settings (runs after build)
     preview: {
       port: 5173,
       strictPort: true,

@@ -2,11 +2,19 @@
 FROM node:18-alpine as build
 
 WORKDIR /app
-COPY package.json package-lock.json ./
+
+# First copy only the files needed for dependencies installation
+COPY package.json .
+COPY package-lock.json .
+
 RUN npm ci
+
+# Then copy the rest of the files
 COPY . .
+
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
+
 RUN npm run build
 
 # Stage 2: Serve the app with Nginx
