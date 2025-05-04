@@ -70,8 +70,8 @@ jobs:
 
       - name: Stop and Remove Old Container
         run: |
-          docker stop needle360-frontend-container || true
-          docker rm needle360-frontend-container || true
+          docker stop needle360-frontend-container || echo "No container to stop"
+          docker rm needle360-frontend-container || echo "No container to remove"
 
       - name: Run New Container
         run: |
@@ -81,34 +81,17 @@ jobs:
             --restart unless-stopped \
             rizz336/needle360-frontend:latest
 
-      - name: Wait for Container to be Healthy
+      - name: Verify Container Running
         run: |
-          echo "Waiting for container to start..."
-          for i in {1..10}; do
-            sleep 3
-            docker ps | grep needle360-frontend-container && break
-            echo "Waiting... ($i)"
-          done
-          docker inspect --format='{{.State.Status}}' needle360-frontend-container
-
-      - name: Print Container Logs (if restarting)
-        run: |
-          STATUS=$(docker inspect --format='{{.State.Status}}' needle360-frontend-container)
-          if [ "$STATUS" != "running" ]; then
-            echo "Container not running. Printing logs:"
-            docker logs needle360-frontend-container || true
+          sleep 5
+          if ! docker ps | grep needle360-frontend-container; then
+            echo "Container not running"
             exit 1
           fi
 
       - name: Verify Nginx
         run: |
-          docker exec needle360-frontend-container nginx -t || {
-            echo "Nginx config error"
-            docker logs needle360-frontend-container
-            exit 1
-          }
-          curl -I http://localhost:5173 || {
-            echo "Nginx not responding"
-            docker logs needle360-frontend-container
-            exit 1
-          }
+          docker exec needle360-frontend-container nginx -t || \
+          { echo "Nginx config error"; exit 1; }
+          curl -I http://localhost:5173 || \
+          { echo "Nginx not responding"; exit 1; }
