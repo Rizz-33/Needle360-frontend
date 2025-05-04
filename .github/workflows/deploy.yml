@@ -1,4 +1,5 @@
 name: Deploy React Application
+
 on:
   push:
     branches:
@@ -10,19 +11,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+
       - uses: actions/cache@v3
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ hashFiles('**/package.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
+
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
       - name: Build and Push
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL || 'http://13.61.16.74:4000' }}
@@ -44,35 +49,49 @@ jobs:
           docker container prune -f || true
           rm -rf /root/.npm/_cacache || true
           df -h
+
       - name: Check Docker Access
         run: docker ps || { echo "Docker not accessible"; exit 1; }
+
       - name: Verify Backend
         run: |
-          curl -f ${{ secrets.VITE_API_URL || 'http://13.61.16.74:4000' }} || { echo "Backend not accessible, proceeding anyway"; true; }
+          curl -f ${{ secrets.VITE_API_URL || 'http://13.61.16.74:4000' }} || \
+          { echo "Backend not accessible, proceeding anyway"; true; }
+
       - name: Check Port 5173 Availability
         run: |
           if sudo netstat -tuln | grep :5173; then
             echo "Port 5173 is in use, attempting to free it"
             sudo fuser -k 5173/tcp || true
           fi
+
       - name: Pull Image
         run: docker pull rizz336/needle360-frontend:latest
+
       - name: Stop and Remove Old Container
         run: |
-          docker stop needle360-frontend-container && echo "Stopped container" || echo "No container to stop"
-          docker rm needle360-frontend-container && echo "Removed container" || echo "No container to remove"
+          docker stop needle360-frontend-container || echo "No container to stop"
+          docker rm needle360-frontend-container || echo "No container to remove"
+
       - name: Run New Container
         run: |
           docker run -d \
-            -p 5173:80 \  # Map host port 5173 → container port 80
+            -p 5173:80 \
             --name needle360-frontend-container \
             --restart unless-stopped \
             rizz336/needle360-frontend:latest
+
       - name: Verify Container Running
         run: |
           sleep 5
-          docker ps | grep needle360-frontend-container || { echo "Container not running"; exit 1; }
+          if ! docker ps | grep needle360-frontend-container; then
+            echo "Container not running"
+            exit 1
+          fi
+
       - name: Verify Nginx
         run: |
-          docker exec needle360-frontend-container nginx -t || { echo "Nginx config error"; exit 1; }
-          curl -I http://localhost:5173 || { echo "Nginx not responding"; exit 1; }
+          docker exec needle360-frontend-container nginx -t || \
+          { echo "Nginx config error"; exit 1; }
+          curl -I http://localhost:5173 || \
+          { echo "Nginx not responding"; exit 1; }
