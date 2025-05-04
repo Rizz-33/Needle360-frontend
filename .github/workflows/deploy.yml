@@ -64,7 +64,7 @@ jobs:
       - name: Run New Container
         run: |
           docker run -d \
-            -p 80:80 \
+            -p 5173:80 \  # Map host port 5173 → container port 80
             --name needle360-frontend-container \
             --restart unless-stopped \
             rizz336/needle360-frontend:latest
