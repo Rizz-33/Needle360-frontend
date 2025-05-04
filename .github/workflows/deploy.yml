@@ -63,6 +63,7 @@ jobs:
           if sudo netstat -tuln | grep :5173; then
             echo "Port 5173 is in use, attempting to free it"
             sudo fuser -k 5173/tcp || true
+            sleep 2
           fi
 
       - name: Pull Image
@@ -70,8 +71,9 @@ jobs:
 
       - name: Stop and Remove Old Container
         run: |
-          docker stop needle360-frontend-container || echo "No container to stop"
-          docker rm needle360-frontend-container || echo "No container to remove"
+          docker stop needle360-frontend-container || true
+          docker rm needle360-frontend-container || true
+          sleep 2
 
       - name: Run New Container
         run: |
@@ -80,18 +82,21 @@ jobs:
             --name needle360-frontend-container \
             --restart unless-stopped \
             rizz336/needle360-frontend:latest
+        timeout-minutes: 5
 
       - name: Verify Container Running
         run: |
-          sleep 5
+          sleep 10
           if ! docker ps | grep needle360-frontend-container; then
-            echo "Container not running"
+            echo "Container not running, checking logs..."
+            docker logs needle360-frontend-container || true
             exit 1
           fi
 
       - name: Verify Nginx
         run: |
+          sleep 5
           docker exec needle360-frontend-container nginx -t || \
-          { echo "Nginx config error"; exit 1; }
+          { echo "Nginx config error"; docker logs needle360-frontend-container; exit 1; }
           curl -I http://localhost:5173 || \
-          { echo "Nginx not responding"; exit 1; }
+          { echo "Nginx not responding"; docker logs needle360-frontend-container; exit 1; }
