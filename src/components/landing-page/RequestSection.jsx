@@ -59,10 +59,11 @@ const RequestSection = () => {
         variant="filled"
         width="w-36"
         height="h-9"
-        type="submit"
-        onClick={() => console.log("Request to Join Clicked")}
+        type="button"
+        onClick={() => navigate("/signup")}
         iconRight={<ChevronRight />}
       />
+
       <div className="mb-12" />
     </div>
   );
