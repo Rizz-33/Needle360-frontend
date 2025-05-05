@@ -57,6 +57,11 @@ jobs:
           if sudo lsof -i :443; then sudo fuser -k 443/tcp || true; fi
           sleep 2
 
+      - name: Create SSL directories if needed
+        run: |
+          sudo mkdir -p /etc/ssl/needle360
+          sudo mkdir -p /etc/ssl/private
+
       - name: Verify SSL certificates exist
         run: |
           if [ ! -f "/etc/ssl/needle360/needle360.online.crt" ]; then
@@ -76,7 +81,7 @@ jobs:
           docker run -d \
             -p 80:80 \
             -p 443:443 \
-            -v /etc/ssl/needle360:/etc/ssl/needle360 \
+            -v /etc/ssl/needle360:/etc/ssl/needle360:ro \
             --name needle360-frontend-container \
             --restart unless-stopped \
             --link needle360-backend-container \
