@@ -1,20 +1,20 @@
 # Stage 1: Build the React app
 FROM node:18-alpine as build
-
 WORKDIR /app
 
-# First copy only the files needed for dependencies installation
-COPY package.json .
-COPY package-lock.json .
+# Copy package files
+COPY package.json ./
 
-RUN npm ci
+# Install dependencies (using npm install instead of ci)
+RUN npm install --legacy-peer-deps
 
-# Then copy the rest of the files
+# Copy the rest of the files
 COPY . .
 
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 
+# Build the app
 RUN npm run build
 
 # Stage 2: Serve the app with Nginx

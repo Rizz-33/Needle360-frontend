@@ -11,28 +11,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0 # Important to get all history for checksums
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - uses: actions/cache@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v3
         with:
-          path: |
-            ~/.npm
-            node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          node-version: "18"
 
-      - name: Verify package-lock.json exists
-        run: |
-          if [ ! -f "package-lock.json" ]; then
-            echo "package-lock.json not found! Generating it..."
-            npm install
-          fi
-          ls -la package-lock.json
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
 
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -42,7 +31,7 @@ jobs:
 
       - name: Build and Push
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL || 'http://13.61.16.74:4000' }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://needle360.online/api' }}
         run: |
           docker build -t rizz336/needle360-frontend:$GITHUB_SHA \
             --build-arg VITE_API_URL=$VITE_API_URL \
@@ -55,59 +44,38 @@ jobs:
     needs: build
     runs-on: self-hosted
     steps:
-      - name: Clean Up Disk Space
-        run: |
-          docker image prune -f || true
-          docker container prune -f || true
-          rm -rf /root/.npm/_cacache || true
-          df -h
-
-      - name: Check Docker Access
-        run: docker ps || { echo "Docker not accessible"; exit 1; }
-
-      - name: Verify Backend
-        run: |
-          curl -f ${{ secrets.VITE_API_URL || 'http://13.61.16.74:4000' }} || \
-          { echo "Backend not accessible, proceeding anyway"; true; }
-
-      - name: Check Port 5173 Availability
-        run: |
-          if sudo netstat -tuln | grep :5173; then
-            echo "Port 5173 is in use, attempting to free it"
-            sudo fuser -k 5173/tcp || true
-            sleep 2
-          fi
-
-      - name: Pull Image
-        run: docker pull rizz336/needle360-frontend:latest
-
-      - name: Stop and Remove Old Container
+      - name: Clean up old containers
         run: |
           docker stop needle360-frontend-container || true
           docker rm needle360-frontend-container || true
+          docker image prune -f
+          docker container prune -f
+
+      - name: Check port availability
+        run: |
+          if sudo lsof -i :80; then sudo fuser -k 80/tcp || true; fi
+          if sudo lsof -i :443; then sudo fuser -k 443/tcp || true; fi
           sleep 2
 
-      - name: Run New Container
+      - name: Pull new image
+        run: docker pull rizz336/needle360-frontend:latest
+
+      - name: Run container
         run: |
           docker run -d \
-            -p 80:80 \  # Changed from 5173:80 to 80:80
+            -p 80:80 \
+            -p 443:443 \
+            -v /path/to/ssl/certs:/etc/ssl \
             --name needle360-frontend-container \
             --restart unless-stopped \
+            --link needle360-backend-container \
             rizz336/needle360-frontend:latest
 
-      - name: Verify Container Running
-        run: |
-          sleep 10
-          if ! docker ps | grep needle360-frontend-container; then
-            echo "Container not running, checking logs..."
-            docker logs needle360-frontend-container || true
-            exit 1
-          fi
-
-      - name: Verify Nginx
+      - name: Verify deployment
         run: |
           sleep 5
-          docker exec needle360-frontend-container nginx -t || \
-          { echo "Nginx config error"; docker logs needle360-frontend-container; exit 1; }
-          curl -I http://localhost || \  # Changed from http://localhost:5173
-          { echo "Nginx not responding"; docker logs needle360-frontend-container; exit 1; }
+          curl -I https://localhost || {
+            echo "HTTPS deployment verification failed"
+            docker logs needle360-frontend-container
+            exit 1
+          }
