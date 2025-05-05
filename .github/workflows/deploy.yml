@@ -31,7 +31,7 @@ jobs:
 
       - name: Build and Push
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL || 'http://13.61.16.74:4000' }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://needle360.online/api' }}
         run: |
           docker build -t rizz336/needle360-frontend:$GITHUB_SHA \
             --build-arg VITE_API_URL=$VITE_API_URL \
@@ -51,13 +51,11 @@ jobs:
           docker image prune -f
           docker container prune -f
 
-      - name: Check port 80 availability
+      - name: Check port availability
         run: |
-          if sudo lsof -i :80; then
-            echo "Port 80 is in use, attempting to free it"
-            sudo fuser -k 80/tcp || true
-            sleep 2
-          fi
+          if sudo lsof -i :80; then sudo fuser -k 80/tcp || true; fi
+          if sudo lsof -i :443; then sudo fuser -k 443/tcp || true; fi
+          sleep 2
 
       - name: Pull new image
         run: docker pull rizz336/needle360-frontend:latest
@@ -66,15 +64,18 @@ jobs:
         run: |
           docker run -d \
             -p 80:80 \
+            -p 443:443 \
+            -v /path/to/ssl/certs:/etc/ssl \
             --name needle360-frontend-container \
             --restart unless-stopped \
+            --link needle360-backend-container \
             rizz336/needle360-frontend:latest
 
       - name: Verify deployment
         run: |
           sleep 5
-          curl -I http://localhost || {
-            echo "Deployment verification failed"
+          curl -I https://localhost || {
+            echo "HTTPS deployment verification failed"
             docker logs needle360-frontend-container
             exit 1
           }
