@@ -90,7 +90,7 @@ jobs:
       - name: Run New Container
         run: |
           docker run -d \
-            -p 5173:80 \
+            -p 80:80 \  # Changed from 5173:80 to 80:80
             --name needle360-frontend-container \
             --restart unless-stopped \
             rizz336/needle360-frontend:latest
@@ -109,5 +109,5 @@ jobs:
           sleep 5
           docker exec needle360-frontend-container nginx -t || \
           { echo "Nginx config error"; docker logs needle360-frontend-container; exit 1; }
-          curl -I http://localhost:5173 || \
+          curl -I http://localhost || \  # Changed from http://localhost:5173
           { echo "Nginx not responding"; docker logs needle360-frontend-container; exit 1; }
