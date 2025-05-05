@@ -1,4 +1,4 @@
-name: Deploy React Application
+name: Deploy React Application with HTTPS
 
 on:
   push:
@@ -57,6 +57,17 @@ jobs:
           if sudo lsof -i :443; then sudo fuser -k 443/tcp || true; fi
           sleep 2
 
+      - name: Verify SSL certificates exist
+        run: |
+          if [ ! -f "/etc/ssl/needle360/needle360.online.crt" ]; then
+            echo "SSL certificate not found at /etc/ssl/needle360/needle360.online.crt"
+            exit 1
+          fi
+          if [ ! -f "/etc/ssl/needle360/needle360.online.key" ]; then
+            echo "SSL key not found at /etc/ssl/needle360/needle360.online.key"
+            exit 1
+          fi
+
       - name: Pull new image
         run: docker pull rizz336/needle360-frontend:latest
 
@@ -65,7 +76,7 @@ jobs:
           docker run -d \
             -p 80:80 \
             -p 443:443 \
-            -v /path/to/ssl/certs:/etc/ssl \
+            -v /etc/ssl/needle360:/etc/ssl/needle360 \
             --name needle360-frontend-container \
             --restart unless-stopped \
             --link needle360-backend-container \
@@ -73,8 +84,8 @@ jobs:
 
       - name: Verify deployment
         run: |
-          sleep 5
-          curl -I https://localhost || {
+          sleep 10  # Give Nginx more time to start
+          curl -k -I https://localhost || {
             echo "HTTPS deployment verification failed"
             docker logs needle360-frontend-container
             exit 1
