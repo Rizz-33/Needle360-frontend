@@ -30,11 +30,8 @@ export default function ForgotPassword() {
       await forgotPassword(values);
       setIsSubmitted(true);
     } catch (error) {
-      console.error("Error during forgot password request:", error);
       setErrors({
-        submit:
-          error.response?.data?.message ||
-          "Failed to submit. Please try again.",
+        submit: error.message || "Failed to submit. Please try again.",
       });
     }
   };
