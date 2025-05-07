@@ -215,7 +215,7 @@ const Form = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [formValues, setFormValues] = useState({ ...values });
   const [formErrors, setFormErrors] = useState({ ...errors });
-  const totalSteps = 3; // for multi-step forms like tailor shop signup
+  const totalSteps = 2; // Reduced to 2 steps since bank details are removed
   const navigate = useNavigate();
   const { isLoading } = useAuthStore();
 
@@ -278,10 +278,11 @@ const Form = ({
       else if (formValues.password !== formValues.confirmPassword)
         newErrors.confirmPassword = "Passwords do not match";
     } else if (step === 1) {
-      // Validate business details
+      // Validate business/contact details
       if (roleType === 4) {
         if (!formValues.shopName)
           newErrors.shopName = "Business name is required";
+        if (!formValues.logoUrl) newErrors.logoUrl = "Shop logo is required";
       } else {
         if (!formValues.name) newErrors.name = "Name is required";
       }
@@ -293,13 +294,6 @@ const Form = ({
       if (!formValues.province) newErrors.province = "Province is required";
       if (!formValues.postalCode)
         newErrors.postalCode = "Postal code is required";
-    } else if (step === 2) {
-      // Validate bank details
-      if (!formValues.bankName) newErrors.bankName = "Bank name is required";
-      if (!formValues.accountNumber)
-        newErrors.accountNumber = "Account number is required";
-      if (!formValues.accountName)
-        newErrors.accountName = "Account name is required";
     }
 
     setFormErrors(newErrors);
@@ -484,30 +478,6 @@ const Form = ({
         placeholder: "Enter your street address",
         required: true,
       },
-      {
-        name: "bankDetails-group",
-        gridCols: 3,
-        fields: [
-          {
-            name: "accountNumber",
-            type: "text",
-            placeholder: "Enter your account number",
-            required: true,
-          },
-          {
-            name: "accountName",
-            type: "text",
-            placeholder: "Enter account name",
-            required: true,
-          },
-          {
-            name: "bankName",
-            type: "text",
-            placeholder: "Enter bank name",
-            required: true,
-          },
-        ],
-      },
     ],
     // Multi-step form fields for tailor shop signup
     tailorSignup: [
@@ -555,6 +525,7 @@ const Form = ({
             name: "logoUrl",
             type: "logo",
             placeholder: "Upload Shop Logo",
+            required: true,
           },
           {
             name: "contactNumber",
@@ -606,7 +577,6 @@ const Form = ({
                   "Negombo",
                   "Anuradhapura",
                   "Ratnapura",
-                  // Other cities as needed
                 ],
                 required: true,
               },
@@ -626,36 +596,6 @@ const Form = ({
           },
         ],
       },
-      // Step 3: Banking & Registration
-      {
-        step: 2,
-        fields: [
-          {
-            name: "bankDetails-group",
-            gridCols: 3,
-            fields: [
-              {
-                name: "accountNumber",
-                type: "text",
-                placeholder: "Account number",
-                required: true,
-              },
-              {
-                name: "accountName",
-                type: "text",
-                placeholder: "Account name",
-                required: true,
-              },
-              {
-                name: "bankName",
-                type: "text",
-                placeholder: "Bank name",
-                required: true,
-              },
-            ],
-          },
-        ],
-      },
     ],
   };
 
@@ -665,20 +605,16 @@ const Form = ({
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // For multi-step forms, handle navigation between steps
     if (multiStep) {
-      // If we're not at the last step, move to the next step
       if (currentStep < totalSteps - 1) {
         handleNext();
         return;
       }
 
-      // If we're at the last step, validate before submitting
       if (!validateStep(currentStep)) {
         return;
       }
     } else {
-      // For non-multi-step forms, validate all fields
       let hasErrors = false;
       const newErrors = {};
 
@@ -703,7 +639,6 @@ const Form = ({
       }
     }
 
-    // If validation passes, submit the form with all collected values
     onSubmit({ ...formValues, roleType });
   };
 
@@ -753,21 +688,15 @@ const Form = ({
     const isPasswordGroup = fieldGroup.name === "password-group";
     const isLocationGroup = fieldGroup.name === "location-group";
     const isAddressGroup = fieldGroup.name === "address-group";
-    const isBankDetailsGroup = fieldGroup.name === "bankDetails-group";
 
     if (
-      (isPasswordGroup ||
-        isLocationGroup ||
-        isBankDetailsGroup ||
-        isAddressGroup) &&
+      (isPasswordGroup || isLocationGroup || isAddressGroup) &&
       visibleFields.length === fieldGroup.gridCols
     ) {
       return (
         <div
           key={fieldGroup.name}
-          className={`grid ${
-            isBankDetailsGroup ? "grid-cols-3" : "grid-cols-2"
-          } gap-2`}
+          className={`grid grid-cols-${fieldGroup.gridCols} gap-2`}
         >
           {visibleFields.map((subField) => (
             <div key={subField.name}>{renderField(subField)}</div>
@@ -795,7 +724,6 @@ const Form = ({
       ));
     }
 
-    // For multi-step forms like tailorSignup
     const currentStepFields = fields.find(
       (stepFields) => stepFields.step === currentStep
     );
@@ -810,15 +738,6 @@ const Form = ({
       </div>
     );
   };
-
-  // Debug output when in development
-  useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
-      console.log("Current step:", currentStep);
-      console.log("Form values:", formValues);
-      console.log("Form errors:", formErrors);
-    }
-  }, [currentStep, formValues, formErrors]);
 
   return (
     <div className={className}>

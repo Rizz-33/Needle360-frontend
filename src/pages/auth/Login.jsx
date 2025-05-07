@@ -31,9 +31,7 @@ const Login = () => {
 
   // Handle form submission
   const handleSubmit = async (formValues) => {
-    console.log("Form submitted with values:", formValues);
     try {
-      // Pass the roleType to the login function
       const result = await login(formValues.email, formValues.password);
 
       // Check if the logged-in user's role matches the selected roleType
@@ -48,7 +46,8 @@ const Login = () => {
 
       navigate("/");
     } catch (error) {
-      console.error("Login failed:", error);
+      // Avoid logging sensitive data
+      setErrors({ auth: error.message || "Login failed." });
     }
   };
 

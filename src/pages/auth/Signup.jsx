@@ -13,14 +13,11 @@ const Signup = () => {
     password: "",
     confirmPassword: "",
     contactNumber: "",
-    country: "Sri Lanka", // Default value
+    country: "Sri Lanka",
     province: "",
     city: "",
     postalCode: "",
     address: "",
-    accountNumber: "",
-    accountName: "",
-    bankName: "",
     logoUrl: "",
   });
 
@@ -35,7 +32,6 @@ const Signup = () => {
       ...prevValues,
       [name]: value,
     }));
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -43,19 +39,17 @@ const Signup = () => {
 
   const handleRoleTypeChange = (newRoleType) => {
     setRoleType(newRoleType);
-    // Reset specific form values when switching roles
     setValues((prev) => ({
       ...prev,
       name: "",
       shopName: "",
-      logo: null,
+      logoUrl: "",
     }));
   };
 
   const validateForm = () => {
     const newErrors = {};
 
-    // Role-specific validation
     if (roleType === 1) {
       if (!values.name) newErrors.name = "Name is required";
     } else {
@@ -63,17 +57,22 @@ const Signup = () => {
       if (!values.logoUrl) newErrors.logoUrl = "Shop logo is required";
     }
 
-    // Common validation for both roles
     if (!values.contactNumber)
       newErrors.contactNumber = "Contact number is required";
+    if (!values.email) newErrors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(values.email))
+      newErrors.email = "Please enter a valid email";
+    if (!values.password) newErrors.password = "Password is required";
+    else if (values.password.length < 8)
+      newErrors.password = "Password must be at least 8 characters";
+    if (!values.confirmPassword)
+      newErrors.confirmPassword = "Please confirm your password";
+    else if (values.password !== values.confirmPassword)
+      newErrors.confirmPassword = "Passwords do not match";
     if (!values.province) newErrors.province = "Province is required";
     if (!values.city) newErrors.city = "City is required";
     if (!values.postalCode) newErrors.postalCode = "Postal code is required";
     if (!values.address) newErrors.address = "Street address is required";
-    if (!values.accountNumber)
-      newErrors.accountNumber = "Account number is required";
-    if (!values.accountName) newErrors.accountName = "Account name is required";
-    if (!values.bankName) newErrors.bankName = "Bank name is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -82,30 +81,10 @@ const Signup = () => {
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    const payload = {
-      name: values.name,
-      email: values.email,
-      password: values.password,
-      contactNumber: values.contactNumber,
-      country: values.country,
-      province: values.province,
-      city: values.city,
-      postalCode: values.postalCode,
-      address: values.address,
-      accountNumber: values.accountNumber,
-      bankName: values.bankName,
-      role: roleType === 1 ? "user" : "tailor-shop-owner",
-      ...(roleType === 4 && {
-        shopName: values.shopName,
-        logoUrl: values.logoUrl || null,
-      }),
-    };
-
     try {
       await signup(values, roleType);
       navigate("/verify-email");
     } catch (error) {
-      console.error("Signup error details:", error);
       setErrors((prev) => ({
         ...prev,
         submit: error.message || "An error occurred during signup",
@@ -124,7 +103,6 @@ const Signup = () => {
       </div>
       <div className="w-full md:w-1/2 p-4 md:pr-24">
         {roleType === 4 ? (
-          // Use multi-step form for tailor shop signup
           <Form
             formType="tailorSignup"
             values={values}
@@ -140,7 +118,6 @@ const Signup = () => {
             multiStep={true}
           />
         ) : (
-          // Use regular form for customer signup
           <Form
             formType="signup"
             values={values}
