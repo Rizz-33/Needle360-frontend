@@ -6,11 +6,9 @@ const BASE_API_URL = `${
   import.meta.env.VITE_API_URL || "http://localhost:4000"
 }/api/auth`;
 
-// Configure axios
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common["Content-Type"] = "application/json";
 
-// Add axios interceptors for error handling
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -38,8 +36,6 @@ export const useAuthStore = create((set, get) => ({
       province: values.province,
       city: values.city,
       postalCode: values.postalCode,
-      bankAccountNumber: values.accountNumber,
-      bankName: values.bankName,
       ...(roleType === 1 && {
         address: values.address,
       }),
@@ -51,10 +47,13 @@ export const useAuthStore = create((set, get) => ({
     };
 
     try {
-      set({ isLoading: true });
+      set({ isLoading: true, error: null });
       const response = await axios.post(`${BASE_API_URL}/signup`, mappedValues);
 
-      // Set user data directly from signup response
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
+
       const userData = response.data.user;
       const normalizedUser = {
         ...userData,
@@ -72,14 +71,15 @@ export const useAuthStore = create((set, get) => ({
       return response.data;
     } catch (error) {
       const errorMessage =
-        error.response?.data?.message || "An error occurred during signup";
+        error.response?.data?.message ||
+        "We couldn’t create your account. Please try again.";
       set({
         error: errorMessage,
         user: null,
         isAuthenticated: false,
         isApproved: false,
       });
-      throw error;
+      throw new Error(errorMessage);
     } finally {
       set({ isLoading: false });
     }
@@ -93,6 +93,10 @@ export const useAuthStore = create((set, get) => ({
         password,
       });
 
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
+
       const userData = response.data.user;
       const normalizedUser = {
         ...userData,
@@ -100,7 +104,6 @@ export const useAuthStore = create((set, get) => ({
         registrationNumber: userData.registrationNumber,
       };
 
-      // Store the token in localStorage
       localStorage.setItem("token", response.data.token);
 
       set({
@@ -116,10 +119,10 @@ export const useAuthStore = create((set, get) => ({
       };
     } catch (error) {
       const errorMessage =
-        error.response?.data?.message || "An error occurred during login";
-      console.error("Login Error:", error.response || error.message || error);
+        error.response?.data?.message ||
+        "We couldn’t log you in. Please try again.";
       set({ error: errorMessage });
-      throw error;
+      throw new Error(errorMessage);
     } finally {
       set({ isLoading: false });
     }
@@ -128,14 +131,19 @@ export const useAuthStore = create((set, get) => ({
   logout: async () => {
     set({ isLoading: true, error: null });
     try {
-      await axios.post(`${BASE_API_URL}/logout`);
-      localStorage.removeItem("token"); // Clear the token
+      const response = await axios.post(`${BASE_API_URL}/logout`);
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
+      localStorage.removeItem("token");
       set({ user: null, isAuthenticated: false, error: null });
+      return response.data;
     } catch (error) {
       const errorMessage =
-        error.response?.data?.message || "An error occurred during logout";
+        error.response?.data?.message ||
+        "We couldn’t log you out. Please try again.";
       set({ error: errorMessage });
-      throw error;
+      throw new Error(errorMessage);
     } finally {
       set({ isLoading: false });
     }
@@ -148,6 +156,10 @@ export const useAuthStore = create((set, get) => ({
         code,
       });
 
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
+
       const userData = response.data.user;
       const normalizedUser = {
         ...userData,
@@ -165,9 +177,9 @@ export const useAuthStore = create((set, get) => ({
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
-        "An error occurred during email verification";
+        "We couldn’t verify your email. Please try again.";
       set({ error: errorMessage });
-      throw error;
+      throw new Error(errorMessage);
     } finally {
       set({ isLoading: false });
     }
@@ -179,15 +191,18 @@ export const useAuthStore = create((set, get) => ({
       const response = await axios.post(`${BASE_API_URL}/forgot-password`, {
         email,
       });
+
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
+
       return response.data;
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
-        (error.response?.status === 400
-          ? "Invalid email address"
-          : "An error occurred during forgot password request");
+        "We couldn’t process your request. Please try again.";
       set({ error: errorMessage });
-      throw error;
+      throw new Error(errorMessage);
     } finally {
       set({ isLoading: false });
     }
@@ -200,13 +215,18 @@ export const useAuthStore = create((set, get) => ({
         `${BASE_API_URL}/reset-password/${token}`,
         { password }
       );
+
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
+
       return response.data;
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
-        "An error occurred during password reset";
+        "We couldn’t reset your password. Please try again.";
       set({ error: errorMessage });
-      throw error;
+      throw new Error(errorMessage);
     } finally {
       set({ isLoading: false });
     }
@@ -217,19 +237,21 @@ export const useAuthStore = create((set, get) => ({
     try {
       const token = localStorage.getItem("token");
 
-      // Check if the token exists
       if (!token) {
-        throw new Error("No token found. Please log in.");
+        set({
+          user: null,
+          isAuthenticated: false,
+          isApproved: false,
+          error: null,
+        });
+        return { user: null, isAuthenticated: false };
       }
 
-      // Log the token for debugging
-      console.log("Token:", token);
+      const response = await axios.get(`${BASE_API_URL}/check-auth`);
 
-      const response = await axios.get(`${BASE_API_URL}/check-auth`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
 
       const userData = response.data.user;
       const normalizedUser = {
@@ -238,22 +260,45 @@ export const useAuthStore = create((set, get) => ({
         registrationNumber: userData.registrationNumber,
       };
 
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+      }
+
       set({
         user: normalizedUser,
         isAuthenticated: true,
         isApproved: normalizedUser.isApproved || false,
+        error: null,
       });
 
-      return { user: normalizedUser };
+      return { user: normalizedUser, isAuthenticated: true };
     } catch (error) {
-      console.error("CheckAuth Error:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        "Something went wrong. Please try again later.";
+
+      if (
+        error.response?.status === 401 ||
+        errorMessage.includes("Please log in to continue") ||
+        errorMessage.includes("Your session has expired")
+      ) {
+        localStorage.removeItem("token");
+        set({
+          user: null,
+          isAuthenticated: false,
+          isApproved: false,
+          error: null,
+        });
+        return { user: null, isAuthenticated: false };
+      }
+
       set({
         user: null,
         isAuthenticated: false,
         isApproved: false,
-        error: error.message, // Set the error message for debugging
+        error: errorMessage,
       });
-      return null;
+      return { user: null, isAuthenticated: false };
     } finally {
       set({ isCheckingAuth: false });
     }
@@ -263,17 +308,13 @@ export const useAuthStore = create((set, get) => ({
     set({ isCheckingApproval: true, isLoading: true, error: null });
 
     try {
-      // Get the latest user state
       const currentUser = get().user;
-
-      // Check for both _id and id
       const userId = currentUser?._id || currentUser?.id;
 
       if (!userId) {
-        console.warn("No authenticated user ID found in checkApproval");
         set({
           isApproved: false,
-          error: "No authenticated user found",
+          error: "Please log in to check your approval status.",
         });
         return { isApproved: false };
       }
@@ -281,6 +322,10 @@ export const useAuthStore = create((set, get) => ({
       const response = await axios.get(
         `${BASE_API_URL}/check-approval/${userId}`
       );
+
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
 
       const isApproved = response.data.isApproved === true;
 
@@ -294,17 +339,13 @@ export const useAuthStore = create((set, get) => ({
 
       return { isApproved };
     } catch (error) {
-      console.error("CheckApproval Error:", error);
-
       const errorMessage =
         error.response?.data?.message ||
-        "An error occurred while checking approval status";
-
+        "We couldn’t check your approval status. Please try again.";
       set({
         error: errorMessage,
         isApproved: false,
       });
-
       return { isApproved: false };
     } finally {
       set({
@@ -312,5 +353,9 @@ export const useAuthStore = create((set, get) => ({
         isLoading: false,
       });
     }
+  },
+
+  clearError: () => {
+    set({ error: null });
   },
 }));
