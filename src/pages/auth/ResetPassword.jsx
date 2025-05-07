@@ -33,10 +33,15 @@ export default function ResetPassword() {
         return;
       }
 
-      // Call resetPassword function from auth store
+      if (values.password !== values.confirmPassword) {
+        setErrors({
+          submit: "Passwords do not match.",
+        });
+        return;
+      }
+
       await resetPassword(token, values.password);
 
-      // Show success message and redirect to login page
       toast.success(
         "Password reset successfully! Redirecting to login page..."
       );
@@ -44,7 +49,9 @@ export default function ResetPassword() {
         navigate("/login");
       }, 2000);
     } catch (error) {
-      console.error("Error during reset password request:", error);
+      setErrors({
+        submit: error.message || "An error occurred during password reset.",
+      });
       toast.error("An error occurred during password reset.");
     }
   };
@@ -58,7 +65,7 @@ export default function ResetPassword() {
           onChange={handleChange}
           onSubmit={handleSubmit}
           errors={errors}
-          button="Reset Password"
+          button={isLoading ? "Resetting..." : "Reset Password"}
           heading1={headingConfigs.resetPassword.heading1}
           heading2={headingConfigs.resetPassword.heading2}
           showTerms={false}
