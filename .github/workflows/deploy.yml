@@ -82,43 +82,42 @@ jobs:
             exit 1
           }
 
-      - name: Verify backend connectivity
-        run: |
-          # Check if backend container exists
-          if ! docker inspect needle360-backend-container &> /dev/null; then
-            echo "Backend container is not running"
-            exit 1
-          fi
-
-          echo "Waiting for backend to be ready..."
-          BACKEND_PORT=4000
-
-          # Method 1: TCP port check
-          if ! nc -zvw5 localhost $BACKEND_PORT; then
-            echo "Backend port not responding"
-            exit 1
-          fi
-          echo "Backend port is responding"
-
-          # Method 2: Check actual API endpoint (using a real endpoint)
-          for i in {1..10}; do
-            # Try a real API endpoint that should exist
-            if curl -s -f http://localhost:$BACKEND_PORT/api/test >/dev/null; then
-              echo "Backend API is responding"
-              exit 0
+          - name: Verify backend connectivity
+          run: |
+            # Check if backend container exists
+            if ! docker inspect needle360-backend-container &> /dev/null; then
+              echo "Backend container is not running"
+              exit 1
             fi
-            echo "Attempt $i: Backend API not ready yet"
-            sleep 5
-          done
 
-          echo "Backend API check failed after 10 attempts"
-          echo "Trying to get any response from backend..."
-          curl -v http://localhost:$BACKEND_PORT || true
-          echo "Container status:"
-          docker ps -a | grep needle360-backend-container
-          echo "Logs:"
-          docker logs needle360-backend-container
-          exit 1
+            echo "Waiting for backend to be ready..."
+            BACKEND_PORT=4000
+
+            # Method 1: TCP port check
+            if ! nc -zvw5 localhost $BACKEND_PORT; then
+              echo "Backend port not responding"
+              exit 1
+            fi
+            echo "Backend port is responding"
+
+            # Method 2: Check actual API endpoint (change to valid one)
+            for i in {1..10}; do
+              if curl -s -f http://localhost:$BACKEND_PORT/ >/dev/null; then
+                echo "Backend API is responding"
+                exit 0
+              fi
+              echo "Attempt $i: Backend API not ready yet"
+              sleep 5
+            done
+
+            echo "Backend API check failed after 10 attempts"
+            echo "Trying to get any response from backend..."
+            curl -v http://localhost:$BACKEND_PORT || true
+            echo "Container status:"
+            docker ps -a | grep needle360-backend-container
+            echo "Logs:"
+            docker logs needle360-backend-container
+            exit 1
 
       - name: Create Docker network
         run: |
