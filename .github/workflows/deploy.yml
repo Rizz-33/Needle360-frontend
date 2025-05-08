@@ -42,9 +42,11 @@ jobs:
         run: |
           docker stop needle360-frontend-container || true
           docker rm needle360-frontend-container || true
-          docker network rm needle360-network || true
-          docker image prune -f
-          docker container prune -f
+          docker stop needle360-backend-container || true
+          docker rm needle360-backend-container || true
+          docker stop mongo-container || true
+          docker rm mongo-container || true
+          docker network create needle360-network || true
 
       - name: Check port availability
         run: |
@@ -75,57 +77,55 @@ jobs:
           echo "SSL files verified successfully"
           sudo ls -la /etc/ssl/needle360/ | grep -E 'needle360\.online\.(crt|key)'
 
-      - name: Pull new image
+      - name: Pull new images
         run: |
           docker pull rizz336/needle360-frontend:latest || {
-            echo "Failed to pull image"
+            echo "Failed to pull frontend image"
+            exit 1
+          }
+          docker pull rizz336/needle360-backend:latest || {
+            echo "Failed to pull backend image"
+            exit 1
+          }
+          docker pull mongo:latest || {
+            echo "Failed to pull MongoDB image"
             exit 1
           }
 
-      - name: Verify backend connectivity
+      - name: Deploy MongoDB container
         run: |
-          # Check if backend container exists
-          if ! docker inspect needle360-backend-container &> /dev/null; then
-            echo "Backend container is not running"
-            exit 1
-          fi
+          docker run -d \
+            --name mongo-container \
+            --restart unless-stopped \
+            --network needle360-network \
+            -v mongodb_data:/data/db \
+            mongo:latest
 
+      - name: Deploy backend container
+        run: |
+          docker run -d \
+            -p 4000:4000 \
+            --name needle360-backend-container \
+            --restart unless-stopped \
+            --network needle360-network \
+            -e MONGO_URI=mongodb://mongo-container:27017/needle360 \
+            -e NODE_ENV=production \
+            rizz336/needle360-backend:latest
+
+      - name: Wait for backend to be ready
+        run: |
           echo "Waiting for backend to be ready..."
-          BACKEND_PORT=4000
-
-          # Method 1: TCP port check
-          if ! nc -zvw5 localhost $BACKEND_PORT; then
-            echo "Backend port not responding"
-            exit 1
-          fi
-          echo "Backend port is responding"
-
-          # Method 2: Check actual API endpoint (change to valid one)
           for i in {1..10}; do
-            if curl -s -f http://localhost:$BACKEND_PORT/ >/dev/null; then
-              echo "Backend API is responding"
+            if curl -s -f http://localhost:4000/health >/dev/null; then
+              echo "Backend is ready"
               exit 0
             fi
-            echo "Attempt $i: Backend API not ready yet"
+            echo "Attempt $i: Backend not ready yet"
             sleep 5
           done
-
-          echo "Backend API check failed after 10 attempts"
-          echo "Trying to get any response from backend..."
-          curl -v http://localhost:$BACKEND_PORT || true
-          echo "Container status:"
-          docker ps -a | grep needle360-backend-container
-          echo "Logs:"
+          echo "Backend did not become ready after 10 attempts"
           docker logs needle360-backend-container
           exit 1
-
-      - name: Create Docker network
-        run: |
-          docker network create needle360-network --driver bridge || true
-          docker network inspect needle360-network || {
-            echo "Failed to create or inspect network"
-            exit 1
-          }
 
       - name: Deploy frontend container
         run: |
@@ -137,22 +137,19 @@ jobs:
             --restart unless-stopped \
             --network needle360-network \
             -e NODE_ENV=production \
-            rizz336/needle360-frontend:latest || {
-              echo "Container failed to start"
-              exit 1
-            }
+            rizz336/needle360-frontend:latest
 
       - name: Verify deployment
         run: |
           echo "Waiting for frontend to be ready..."
           for i in {1..10}; do
-            if curl -k -I https://localhost; then
-              echo "Deployment verified successfully"
+            if curl -k -I https://needle360.online >/dev/null 2>&1; then
+              echo "Frontend is ready"
               exit 0
             fi
             echo "Attempt $i: Frontend not ready yet"
             sleep 5
           done
-          echo "HTTPS deployment verification failed after 10 attempts"
+          echo "Frontend did not become ready after 10 attempts"
           docker logs needle360-frontend-container
           exit 1
