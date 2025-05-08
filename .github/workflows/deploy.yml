@@ -57,20 +57,28 @@ jobs:
           if sudo lsof -i :443; then sudo fuser -k 443/tcp || true; fi
           sleep 2
 
-      - name: Set up SSL directories
+      - name: Set up SSL directories with proper permissions
         run: |
           sudo mkdir -p /etc/ssl/needle360
           sudo mkdir -p /etc/ssl/private
-          sudo chmod -R 644 /etc/ssl/needle360
+          sudo chmod -R 755 /etc/ssl/needle360
           sudo chmod 750 /etc/ssl/private
+          sudo chown -R $USER:$(id -gn) /etc/ssl/needle360 || true
 
-      - name: Verify SSL certificates
+      - name: Verify SSL certificates (with sudo)
         run: |
-          if [ ! -f "/etc/ssl/needle360/needle360.online.crt" ] || [ ! -f "/etc/ssl/needle360/needle360.online.key" ]; then
-            echo "SSL certificate or key not found in /etc/ssl/needle360/"
-            ls -la /etc/ssl/needle360/ || true
+          if ! sudo test -f "/etc/ssl/needle360/needle360.online.crt"; then
+            echo "SSL certificate not found at /etc/ssl/needle360/needle360.online.crt"
+            sudo ls -la /etc/ssl/needle360/ || true
             exit 1
           fi
+          if ! sudo test -f "/etc/ssl/needle360/needle360.online.key"; then
+            echo "SSL key not found at /etc/ssl/needle360/needle360.online.key"
+            sudo ls -la /etc/ssl/needle360/ || true
+            exit 1
+          fi
+          echo "SSL files verified successfully"
+          sudo ls -la /etc/ssl/needle360/ | grep -E 'needle360\.online\.(crt|key)'
 
       - name: Pull new image
         run: |
@@ -101,7 +109,7 @@ jobs:
             exit 1
           }
 
-      - name: Deploy frontend container
+      - name: Deploy frontend container with proper permissions
         run: |
           docker run -d \
             -p 80:80 \
