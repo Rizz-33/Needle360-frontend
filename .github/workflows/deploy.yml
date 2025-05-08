@@ -86,7 +86,7 @@ jobs:
         run: |
           echo "Checking if backend is ready..."
           for i in {1..3}; do
-            if curl -s -f http://localhost:4000/health >/dev/null; then
+            if curl -s -f http://needle360.online:4000 >/dev/null; then
               echo "Backend is ready"
               break
             fi
