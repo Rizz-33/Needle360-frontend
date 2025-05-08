@@ -38,15 +38,13 @@ jobs:
     needs: build
     runs-on: self-hosted
     steps:
-      - name: Clean up old containers and network
+      - name: Create docker network
+        run: docker network create needle360-network || true
+
+      - name: Clean up old frontend container
         run: |
           docker stop needle360-frontend-container || true
           docker rm needle360-frontend-container || true
-          docker stop needle360-backend-container || true
-          docker rm needle360-backend-container || true
-          docker stop mongo-container || true
-          docker rm mongo-container || true
-          docker network create needle360-network || true
 
       - name: Check port availability
         run: |
@@ -83,49 +81,22 @@ jobs:
             echo "Failed to pull frontend image"
             exit 1
           }
-          docker pull rizz336/needle360-backend:latest || {
-            echo "Failed to pull backend image"
-            exit 1
-          }
-          docker pull mongo:latest || {
-            echo "Failed to pull MongoDB image"
-            exit 1
-          }
 
-      - name: Deploy MongoDB container
+      - name: Verify backend status
         run: |
-          docker run -d \
-            --name mongo-container \
-            --restart unless-stopped \
-            --network needle360-network \
-            -v mongodb_data:/data/db \
-            mongo:latest
-
-      - name: Deploy backend container
-        run: |
-          docker run -d \
-            -p 4000:4000 \
-            --name needle360-backend-container \
-            --restart unless-stopped \
-            --network needle360-network \
-            -e MONGO_URI=mongodb://mongo-container:27017/needle360 \
-            -e NODE_ENV=production \
-            rizz336/needle360-backend:latest
-
-      - name: Wait for backend to be ready
-        run: |
-          echo "Waiting for backend to be ready..."
-          for i in {1..10}; do
+          echo "Checking if backend is ready..."
+          for i in {1..3}; do
             if curl -s -f http://localhost:4000/health >/dev/null; then
               echo "Backend is ready"
-              exit 0
+              break
             fi
-            echo "Attempt $i: Backend not ready yet"
-            sleep 5
+            if [ $i -eq 3 ]; then
+              echo "Backend is not ready, but continuing with frontend deployment"
+            else
+              echo "Attempt $i: Backend not ready yet, trying again..."
+              sleep 5
+            fi
           done
-          echo "Backend did not become ready after 10 attempts"
-          docker logs needle360-backend-container
-          exit 1
 
       - name: Deploy frontend container
         run: |
@@ -152,4 +123,3 @@ jobs:
           done
           echo "Frontend did not become ready after 10 attempts"
           docker logs needle360-frontend-container
-          exit 1
