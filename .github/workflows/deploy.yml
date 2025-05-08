@@ -4,24 +4,30 @@ on:
     branches:
       - dev
       - main
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "18"
+
       - name: Install dependencies
         run: npm install --legacy-peer-deps
+
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
       - name: Build and Push
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://needle360.online' }}
@@ -37,43 +43,65 @@ jobs:
     needs: build
     runs-on: self-hosted
     steps:
-      - name: Clean up old containers
+      - name: Clean up old containers and network
         run: |
           docker stop needle360-frontend-container || true
           docker rm needle360-frontend-container || true
+          docker network rm needle360-network || true
           docker image prune -f
           docker container prune -f
+
       - name: Check port availability
         run: |
           if sudo lsof -i :80; then sudo fuser -k 80/tcp || true; fi
           if sudo lsof -i :443; then sudo fuser -k 443/tcp || true; fi
           sleep 2
-      - name: Create SSL directories if needed
+
+      - name: Set up SSL directories
         run: |
           sudo mkdir -p /etc/ssl/needle360
           sudo mkdir -p /etc/ssl/private
-      - name: Verify SSL certificates exist
+          sudo chmod -R 644 /etc/ssl/needle360
+          sudo chmod 750 /etc/ssl/private
+
+      - name: Verify SSL certificates
         run: |
-          if [ ! -f "/etc/ssl/needle360/needle360.online.crt" ]; then
-            echo "SSL certificate not found at /etc/ssl/needle360/needle360.online.crt"
+          if [ ! -f "/etc/ssl/needle360/needle360.online.crt" ] || [ ! -f "/etc/ssl/needle360/needle360.online.key" ]; then
+            echo "SSL certificate or key not found in /etc/ssl/needle360/"
+            ls -la /etc/ssl/needle360/ || true
             exit 1
           fi
-          if [ ! -f "/etc/ssl/needle360/needle360.online.key" ]; then
-            echo "SSL key not found at /etc/ssl/needle360/needle360.online.key"
-            exit 1
-          fi
+
       - name: Pull new image
-        run: docker pull rizz336/needle360-frontend:latest
-      - name: Verify backend is running
+        run: |
+          docker pull rizz336/needle360-frontend:latest || {
+            echo "Failed to pull image"
+            exit 1
+          }
+
+      - name: Verify backend connectivity
         run: |
           if ! docker inspect needle360-backend-container &> /dev/null; then
             echo "Backend container is not running"
             exit 1
           fi
-          sleep 5  # Give backend extra time to initialize
-      - name: Create network if needed
-        run: docker network create needle360-network || true
-      - name: Run container
+          echo "Waiting for backend to be ready..."
+          timeout 60 bash -c 'until docker exec needle360-backend-container curl -s http://localhost:3000/health; do
+            sleep 5
+          done' || {
+            echo "Backend health check failed"
+            exit 1
+          }
+
+      - name: Create Docker network
+        run: |
+          docker network create needle360-network --driver bridge || true
+          docker network inspect needle360-network || {
+            echo "Failed to create or inspect network"
+            exit 1
+          }
+
+      - name: Deploy frontend container
         run: |
           docker run -d \
             -p 80:80 \
@@ -82,12 +110,23 @@ jobs:
             --name needle360-frontend-container \
             --restart unless-stopped \
             --network needle360-network \
-            rizz336/needle360-frontend:latest
+            -e NODE_ENV=production \
+            rizz336/needle360-frontend:latest || {
+              echo "Container failed to start"
+              exit 1
+            }
+
       - name: Verify deployment
         run: |
-          sleep 10  # Give Nginx more time to start
-          curl -k -I https://localhost || {
-            echo "HTTPS deployment verification failed"
-            docker logs needle360-frontend-container
-            exit 1
-          }
+          echo "Waiting for frontend to be ready..."
+          sleep 15
+          for i in {1..5}; do
+            if curl -k -I https://localhost; then
+              echo "Deployment verified successfully"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "HTTPS deployment verification failed after multiple attempts"
+          docker logs needle360-frontend-container
+          exit 1
