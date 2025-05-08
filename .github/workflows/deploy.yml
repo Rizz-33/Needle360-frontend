@@ -94,7 +94,7 @@ jobs:
             exit 1
           fi
           echo "Waiting for backend to be ready..."
-          timeout 60 bash -c 'until docker exec needle360-backend-container curl -s http://localhost:3000/health; do
+          timeout 60 bash -c 'until docker run --rm --network container:needle360-backend-container curlimages/curl -s http://localhost:3000/health; do
             sleep 5
           done' || {
             echo "Backend health check failed"
