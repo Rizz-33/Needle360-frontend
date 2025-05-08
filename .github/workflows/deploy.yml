@@ -80,7 +80,7 @@ jobs:
             -v /etc/ssl/needle360:/etc/ssl/needle360:ro \
             --name needle360-frontend-container \
             --restart unless-stopped \
-            --network container:needle360-backend-container \
+            --network needle360-network \
             rizz336/needle360-frontend:latest
       - name: Verify deployment
         run: |
