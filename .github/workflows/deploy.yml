@@ -4,6 +4,7 @@ on:
     branches:
       - dev
       - main
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -32,39 +33,72 @@ jobs:
           docker tag rizz336/needle360-frontend:$GITHUB_SHA rizz336/needle360-frontend:latest
           docker push rizz336/needle360-frontend:$GITHUB_SHA
           docker push rizz336/needle360-frontend:latest
+
   deploy:
     needs: build
     runs-on: self-hosted
     steps:
-      - name: Clean up old containers
+      - name: Create docker network
+        run: docker network create needle360-network || true
+
+      - name: Clean up old frontend container
         run: |
           docker stop needle360-frontend-container || true
           docker rm needle360-frontend-container || true
-          docker image prune -f
-          docker container prune -f
+
       - name: Check port availability
         run: |
           if sudo lsof -i :80; then sudo fuser -k 80/tcp || true; fi
           if sudo lsof -i :443; then sudo fuser -k 443/tcp || true; fi
           sleep 2
-      - name: Create SSL directories if needed
+
+      - name: Set up SSL directories with proper permissions
         run: |
           sudo mkdir -p /etc/ssl/needle360
           sudo mkdir -p /etc/ssl/private
-      - name: Verify SSL certificates exist
-        run: |
-          if [ ! -f "/etc/ssl/needle360/needle360.online.crt" ]; then
-            echo "SSL certificate not found at /etc/ssl/needle360/needle360.online.crt"
-            exit 1
-          fi
-          if [ ! -f "/etc/ssl/needle360/needle360.online.key" ]; then
-            echo "SSL key not found at /etc/ssl/needle360/needle360.online.key"
-            exit 1
-          fi
-      - name: Pull new image
-        run: docker pull rizz336/needle360-frontend:latest
+          sudo chmod -R 755 /etc/ssl/needle360
+          sudo chmod 750 /etc/ssl/private
+          sudo chown -R $USER:$(id -gn) /etc/ssl/needle360 || true
 
-      - name: Run container
+      - name: Verify SSL certificates
+        run: |
+          if ! sudo test -f "/etc/ssl/needle360/needle360.online.crt"; then
+            echo "SSL certificate not found at /etc/ssl/needle360/needle360.online.crt"
+            sudo ls -la /etc/ssl/needle360/ || true
+            exit 1
+          fi
+          if ! sudo test -f "/etc/ssl/needle360/needle360.online.key"; then
+            echo "SSL key not found at /etc/ssl/needle360/needle360.online.key"
+            sudo ls -la /etc/ssl/needle360/ || true
+            exit 1
+          fi
+          echo "SSL files verified successfully"
+          sudo ls -la /etc/ssl/needle360/ | grep -E 'needle360\.online\.(crt|key)'
+
+      - name: Pull new images
+        run: |
+          docker pull rizz336/needle360-frontend:latest || {
+            echo "Failed to pull frontend image"
+            exit 1
+          }
+
+      - name: Verify backend status
+        run: |
+          echo "Checking if backend is ready..."
+          for i in {1..3}; do
+            if curl -s -f http://localhost:4000/health >/dev/null; then
+              echo "Backend is ready"
+              break
+            fi
+            if [ $i -eq 3 ]; then
+              echo "Backend is not ready, but continuing with frontend deployment"
+            else
+              echo "Attempt $i: Backend not ready yet, trying again..."
+              sleep 5
+            fi
+          done
+
+      - name: Deploy frontend container
         run: |
           docker run -d \
             -p 80:80 \
@@ -72,13 +106,20 @@ jobs:
             -v /etc/ssl/needle360:/etc/ssl/needle360:ro \
             --name needle360-frontend-container \
             --restart unless-stopped \
-            --link needle360-backend-container \
+            --network needle360-network \
+            -e NODE_ENV=production \
             rizz336/needle360-frontend:latest
+
       - name: Verify deployment
         run: |
-          sleep 10  # Give Nginx more time to start
-          curl -k -I https://localhost || {
-            echo "HTTPS deployment verification failed"
-            docker logs needle360-frontend-container
-            exit 1
-          }
+          echo "Waiting for frontend to be ready..."
+          for i in {1..10}; do
+            if curl -k -I https://needle360.online >/dev/null 2>&1; then
+              echo "Frontend is ready"
+              exit 0
+            fi
+            echo "Attempt $i: Frontend not ready yet"
+            sleep 5
+          done
+          echo "Frontend did not become ready after 10 attempts"
+          docker logs needle360-frontend-container

@@ -3,6 +3,7 @@ import { Toaster } from "react-hot-toast";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import ChatPopup from "./components/chat/ChatPopup";
 import FashionDesignTool from "./components/design/Tool";
+import Loader from "./components/ui/Loader";
 import { SidebarProvider } from "./components/ui/SideBarMenu";
 import About from "./pages/About";
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -57,7 +58,7 @@ const ProtectedRoute = ({ children }) => {
 
   // Wait for initialization before rendering
   if (!isInitialized) {
-    return null; // Or a loading spinner
+    return <Loader />;
   }
 
   if (!isAuthenticated) {
