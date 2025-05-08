@@ -64,6 +64,14 @@ jobs:
       - name: Pull new image
         run: docker pull rizz336/needle360-frontend:latest
 
+      - name: Verify backend is running
+        run: |
+          if ! docker inspect needle360-backend-container &> /dev/null; then
+            echo "Backend container is not running"
+            exit 1
+          fi
+          sleep 5  # Give backend extra time to initialize
+
       - name: Run container
         run: |
           docker run -d \
@@ -72,7 +80,7 @@ jobs:
             -v /etc/ssl/needle360:/etc/ssl/needle360:ro \
             --name needle360-frontend-container \
             --restart unless-stopped \
-            --link needle360-backend-container \
+            --network container:needle360-backend-container \
             rizz336/needle360-frontend:latest
       - name: Verify deployment
         run: |
