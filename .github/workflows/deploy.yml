@@ -91,31 +91,29 @@ jobs:
           fi
 
           echo "Waiting for backend to be ready..."
+          BACKEND_PORT=4000
 
-          # Get backend container IP
-          BACKEND_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' needle360-backend-container)
-          BACKEND_PORT=4000  # Using the exposed port from your logs
-
-          # Method 1: TCP port check (basic connectivity)
-          if nc -zvw5 $BACKEND_IP $BACKEND_PORT; then
-            echo "Backend port is responding (basic check)"
-          else
+          # Method 1: TCP port check
+          if ! nc -zvw5 localhost $BACKEND_PORT; then
             echo "Backend port not responding"
             exit 1
           fi
+          echo "Backend port is responding"
 
-          # Method 2: HTTP health check (using published port)
+          # Method 2: Check actual API endpoint (using a real endpoint)
           for i in {1..10}; do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$BACKEND_PORT/health || true)
-            if [ "$HTTP_STATUS" = "200" ]; then
-              echo "Backend health check passed"
+            # Try a real API endpoint that should exist
+            if curl -s -f http://localhost:$BACKEND_PORT/api/test >/dev/null; then
+              echo "Backend API is responding"
               exit 0
             fi
-            echo "Attempt $i: Backend not ready yet (HTTP $HTTP_STATUS)"
+            echo "Attempt $i: Backend API not ready yet"
             sleep 5
           done
 
-          echo "Backend health check failed after 10 attempts"
+          echo "Backend API check failed after 10 attempts"
+          echo "Trying to get any response from backend..."
+          curl -v http://localhost:$BACKEND_PORT || true
           echo "Container status:"
           docker ps -a | grep needle360-backend-container
           echo "Logs:"
