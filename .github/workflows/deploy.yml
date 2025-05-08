@@ -60,7 +60,7 @@ jobs:
           sudo chmod 750 /etc/ssl/private
           sudo chown -R $USER:$(id -gn) /etc/ssl/needle360 || true
 
-      - name: Verify SSL certificates (with sudo)
+      - name: Verify SSL certificates
         run: |
           if ! sudo test -f "/etc/ssl/needle360/needle360.online.crt"; then
             echo "SSL certificate not found at /etc/ssl/needle360/needle360.online.crt"
