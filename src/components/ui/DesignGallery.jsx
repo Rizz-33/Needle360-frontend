@@ -30,12 +30,13 @@ const StarRating = ({ rating, setRating }) => {
           key={star}
           type="button"
           onClick={() => setRating(star)}
-          className="focus:outline-none"
+          className="focus:outline-none p-1"
+          aria-label={`Rate ${star} stars`}
         >
           {star <= rating ? (
-            <FaStar className="text-yellow-400 text-lg" />
+            <FaStar className="text-yellow-400 text-sm sm:text-lg" />
           ) : (
-            <FaRegStar className="text-yellow-400 text-lg" />
+            <FaRegStar className="text-yellow-400 text-sm sm:text-lg" />
           )}
         </button>
       ))}
@@ -110,10 +111,10 @@ const ReviewItem = ({ review }) => {
   }, [review.clientId]);
 
   return (
-    <div className="border-b border-gray-200 py-4 last:border-0">
-      <div className="flex justify-between items-start mb-2">
+    <div className="border-b border-gray-200 py-3 sm:py-4 last:border-0">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2">
         <div className="flex items-center">
-          <div className="mr-3 w-10 h-10 rounded-full overflow-hidden">
+          <div className="mr-3 w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden">
             {reviewer.profileImage ? (
               <img
                 src={reviewer.profileImage}
@@ -126,12 +127,12 @@ const ReviewItem = ({ review }) => {
               />
             ) : (
               <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                <FaUser className="text-gray-500" />
+                <FaUser className="text-gray-500 text-sm sm:text-base" />
               </div>
             )}
           </div>
           <div>
-            <h4 className="font-medium text-gray-800">
+            <h4 className="font-medium text-gray-800 text-sm sm:text-base">
               {reviewer.name}
               {reviewer.type && (
                 <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
@@ -144,9 +145,9 @@ const ReviewItem = ({ review }) => {
                 {[1, 2, 3, 4, 5].map((star) => (
                   <span key={star}>
                     {star <= review.rating ? (
-                      <FaStar className="text-yellow-400 text-xs" />
+                      <FaStar className="text-yellow-400 text-xs sm:text-sm" />
                     ) : (
-                      <FaRegStar className="text-yellow-400 text-xs" />
+                      <FaRegStar className="text-yellow-400 text-xs sm:text-sm" />
                     )}
                   </span>
                 ))}
@@ -157,12 +158,14 @@ const ReviewItem = ({ review }) => {
             </div>
           </div>
         </div>
-        <div className="flex items-center text-xs text-gray-500">
+        <div className="flex items-center text-xs text-gray-500 mt-2 sm:mt-0">
           {formatDate(review.date)}
         </div>
       </div>
       {review.comment && (
-        <p className="text-sm text-gray-600 mt-2">{review.comment}</p>
+        <p className="text-xs sm:text-sm text-gray-600 mt-2">
+          {review.comment}
+        </p>
       )}
     </div>
   );
@@ -178,7 +181,7 @@ const DesignCard = ({ design }) => {
   const [designReviews, setDesignReviews] = useState([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [isOwnDesign, setIsOwnDesign] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // New state for submission status
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderForm, setOrderForm] = useState({
     orderType: "",
     totalAmount: "",
@@ -340,7 +343,7 @@ const DesignCard = ({ design }) => {
 
   const handleOrderSubmit = async () => {
     try {
-      setIsSubmitting(true); // Set submitting state
+      setIsSubmitting(true);
       if (!orderForm.orderType) {
         toast.error("Please select an order type");
         return;
@@ -372,8 +375,6 @@ const DesignCard = ({ design }) => {
         notes: orderForm.notes,
       };
 
-      console.log("Submitting order data:", orderData); // Debugging log
-
       await createOrder(orderData, design.tailorId);
       toast.success("Order created successfully!");
       closeOrderModal();
@@ -381,7 +382,7 @@ const DesignCard = ({ design }) => {
       console.error("Error creating order:", error);
       toast.error(error.message || "Failed to create order");
     } finally {
-      setIsSubmitting(false); // Reset submitting state
+      setIsSubmitting(false);
     }
   };
 
@@ -412,10 +413,10 @@ const DesignCard = ({ design }) => {
 
   return (
     <>
-      <div className="max-w-sm rounded-xl overflow-hidden shadow-lg bg-white transform hover:scale-105 transition-transform duration-300 ease-in-out p-4 border border-gray-100 hover:shadow-xl">
+      <div className="w-full sm:max-w-sm rounded-xl overflow-hidden shadow-lg bg-white transform hover:scale-105 transition-transform duration-300 ease-in-out p-3 sm:p-4 border border-gray-100 hover:shadow-xl">
         <div className="relative">
           <img
-            className="w-full h-64 object-cover rounded-lg"
+            className="w-full h-48 sm:h-64 object-cover rounded-lg"
             src={design.imageUrl || placeholderImg}
             alt={design.title}
             onError={(e) => {
@@ -423,7 +424,7 @@ const DesignCard = ({ design }) => {
               e.target.onerror = null;
             }}
           />
-          <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full text-xs font-medium">
+          <div className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-black/70 text-white px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium">
             {design.userType === "tailor" ||
             design.role === roleTypeNumbers.tailor
               ? "Tailor Design"
@@ -431,39 +432,39 @@ const DesignCard = ({ design }) => {
           </div>
         </div>
 
-        <div className="p-3">
-          <h3 className="text-lg font-bold text-gray-800 mb-1 truncate">
+        <div className="p-2 sm:p-3">
+          <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-1 truncate">
             {design.title || "Untitled Design"}
           </h3>
-          <p className="text-gray-600 text-sm mb-2 line-clamp-2">
+          <p className="text-gray-600 text-xs sm:text-sm mb-2 line-clamp-2">
             {design.description || "No description available"}
           </p>
           {design.tags && design.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {design.tags.map((tag, index) => (
+            <div className="flex flex-wrap gap-1 sm:gap-2 mb-2 sm:mb-3">
+              {design.tags.slice(0, 3).map((tag, index) => (
                 <span
                   key={index}
-                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+                  className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
                 >
                   {tag}
                 </span>
               ))}
               {design.tags.length > 3 && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
                   +{design.tags.length - 3}
                 </span>
               )}
             </div>
           )}
-          <div className="flex justify-between items-start mb-3 mt-2">
-            <div className="flex flex-col mr-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 sm:mb-3 mt-1 sm:mt-2">
+            <div className="flex flex-col mr-0 sm:mr-4">
               <div className="flex">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <span key={star}>
                     {star <= averageRating ? (
-                      <FaStar className="text-yellow-400 text-sm" />
+                      <FaStar className="text-yellow-400 text-xs sm:text-sm" />
                     ) : (
-                      <FaRegStar className="text-yellow-400 text-sm" />
+                      <FaRegStar className="text-yellow-400 text-xs sm:text-sm" />
                     )}
                   </span>
                 ))}
@@ -478,7 +479,7 @@ const DesignCard = ({ design }) => {
                   : "No ratings yet"}
               </span>
             </div>
-            <div className="text-sm font-bold text-primary">
+            <div className="text-xs sm:text-sm font-bold text-primary mt-1 sm:mt-0">
               {formatPrice(design.price)}
             </div>
           </div>
@@ -488,7 +489,7 @@ const DesignCard = ({ design }) => {
             hover_color="hoverAccent"
             variant="outlined"
             width="w-full"
-            height="h-8"
+            height="h-7 sm:h-8"
             type="button"
             onClick={handleViewDetails}
           />
@@ -496,35 +497,47 @@ const DesignCard = ({ design }) => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="sticky top-0 bg-white z-10 flex justify-between items-center p-6 border-b">
-              <h2 className="text-xl font-bold text-gray-800">
-                {design.title || "Untitled Design"}
-              </h2>
-              <h3 className="text-lg text-primary font-bold">
-                {design.price ? formatPrice(design.price) : ""}
-              </h3>
-              <button
-                onClick={closeModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <FaTimes className="w-4 h-4" />
-              </button>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-xl w-full max-w-lg sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="sticky top-0 bg-white z-10 flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 sm:p-6 border-b">
+              <div className="flex justify-between items-center w-full sm:w-auto">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-800">
+                  {design.title || "Untitled Design"}
+                </h2>
+                <button
+                  onClick={closeModal}
+                  className="text-gray-400 hover:text-gray-600 transition-colors sm:hidden"
+                  aria-label="Close modal"
+                >
+                  <FaTimes className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex items-center space-x-2 mt-2 sm:mt-0">
+                <h3 className="text-base sm:text-lg text-primary font-bold">
+                  {design.price ? formatPrice(design.price) : ""}
+                </h3>
+                <button
+                  onClick={closeModal}
+                  className="hidden sm:block text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label="Close modal"
+                >
+                  <FaTimes className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               <div className="rounded-xl overflow-hidden bg-gray-100">
                 <img
                   src={design.imageUrl || placeholderImg}
                   alt={design.title || "Design Image"}
-                  className="w-full h-auto max-h-[400px] object-contain"
+                  className="w-full h-auto max-h-72 sm:max-h-96 object-contain"
                   onError={(e) => {
                     e.target.src = placeholderImg;
                     e.target.onerror = null;
                   }}
                 />
               </div>
-              <div className="flex items-center justify-end space-x-3">
+              <div className="flex items-center justify-end space-x-2 sm:space-x-3">
                 <div className="flex items-center text-gray-500 text-xs">
                   <span>
                     {design?.createdAt &&
@@ -535,22 +548,22 @@ const DesignCard = ({ design }) => {
                   </span>
                 </div>
                 {isEdited && (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     <FaEdit className="mr-1" />
                     Edited
                   </span>
                 )}
               </div>
               <div className="border-b border-primary/10 pb-4">
-                <p className="text-gray-600 text-sm">
+                <p className="text-gray-600 text-xs sm:text-sm">
                   {design.description || "No description available"}
                 </p>
                 {design.tags && design.tags.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="mt-2 sm:mt-3 flex flex-wrap gap-1 sm:gap-2">
                     {design.tags.map((tag, index) => (
                       <span
                         key={index}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
                       >
                         {tag}
                       </span>
@@ -559,14 +572,16 @@ const DesignCard = ({ design }) => {
                 )}
               </div>
               <div className="border-b border-primary/10 pb-4">
-                <h3 className="text-xs text-gray-900 mb-3">Designed by</h3>
+                <h3 className="text-xs sm:text-sm text-gray-900 mb-2 sm:mb-3">
+                  Designed by
+                </h3>
                 {isLoadingCreator ? (
                   <div className="flex justify-center py-4">
                     <Loader size="small" />
                   </div>
                 ) : creatorDetails ? (
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+                  <div className="flex items-center space-x-3 sm:space-x-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 overflow-hidden">
                       <img
                         src={
                           creatorDetails.profilePic ||
@@ -578,14 +593,14 @@ const DesignCard = ({ design }) => {
                       />
                     </div>
                     <div>
-                      <h4 className="font-medium text-gray-800 text-sm">
+                      <h4 className="font-medium text-gray-800 text-sm sm:text-base">
                         {creatorDetails.role === roleTypeNumbers.tailor
                           ? creatorDetails.shopName ||
                             creatorDetails.name ||
                             "Tailor Shop"
                           : creatorDetails.name || "Customer"}
                       </h4>
-                      <div className="flex space-x-4 mt-1">
+                      <div className="flex space-x-3 sm:space-x-4 mt-1">
                         <a
                           href={`tel:${creatorDetails.contactNumber}`}
                           className="flex items-center text-xs text-primary hover:text-primary-dark"
@@ -604,13 +619,13 @@ const DesignCard = ({ design }) => {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-gray-500 text-sm">
+                  <div className="text-gray-500 text-xs sm:text-sm">
                     Creator details not available
                   </div>
                 )}
               </div>
               <div className="border-b border-primary/10 pb-4">
-                <h3 className="text-md font-semibold text-gray-900 mb-3">
+                <h3 className="text-sm sm:text-md font-semibold text-gray-900 mb-2 sm:mb-3">
                   Designer Reviews
                 </h3>
                 {isLoadingReviews ? (
@@ -624,22 +639,22 @@ const DesignCard = ({ design }) => {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-gray-500 text-sm py-2">
+                  <div className="text-gray-500 text-xs sm:text-sm py-2">
                     No reviews yet. Be the first to review!
                   </div>
                 )}
               </div>
               {!isOwnDesign && user && (
                 <div>
-                  <h3 className="text-md font-semibold text-gray-900 mb-3">
+                  <h3 className="text-sm sm:text-md font-semibold text-gray-900 mb-2 sm:mb-3">
                     Rate this Design
                   </h3>
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div>
                       <StarRating rating={rating} setRating={setRating} />
                     </div>
                     <textarea
-                      className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       rows="3"
                       placeholder="Share your thoughts about this designer..."
                       value={review}
@@ -651,20 +666,20 @@ const DesignCard = ({ design }) => {
                       hover_color="hoverPrimary"
                       variant="outlined"
                       onClick={handleSubmitReview}
-                      width="w-1/3"
-                      height="h-10"
+                      width="w-full sm:w-1/3"
+                      height="h-9 sm:h-10"
                     />
                   </div>
                 </div>
               )}
               {isOwnDesign && (
-                <div className="text-center text-xs text-gray-500 italic py-2">
+                <div className="text-center text-xs sm:text-sm text-gray-500 italic py-2">
                   This is your design. You cannot leave a review on your own
                   work.
                 </div>
               )}
               {!user && (
-                <div className="text-center text-gray-500 italic py-2">
+                <div className="text-center text-xs sm:text-sm text-gray-500 italic py-2">
                   Please log in to leave a review.
                 </div>
               )}
@@ -672,14 +687,14 @@ const DesignCard = ({ design }) => {
                 user.role === roleTypeNumbers.customer &&
                 !isOwnDesign &&
                 design.tailorId && (
-                  <div className="mt-6 pt-3 border-t flex justify-end gap-1.5">
+                  <div className="mt-4 sm:mt-6 pt-2 sm:pt-3 border-t flex justify-end gap-1 sm:gap-1.5">
                     <CustomButton
                       text="Get This Tailored"
                       color="primary"
                       hover_color="hoverAccent"
                       variant="filled"
-                      width="w-1/3"
-                      height="h-8"
+                      width="w-full sm:w-1/3"
+                      height="h-7 sm:h-8"
                       onClick={handleCreateOrderClick}
                     />
                   </div>
@@ -690,18 +705,21 @@ const DesignCard = ({ design }) => {
       )}
 
       {showOrderModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="sticky top-0 bg-white z-10 flex justify-between items-center p-6 border-b">
-              <h2 className="text-xl font-bold text-gray-800">Create Order</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-xl w-full max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="sticky top-0 bg-white z-10 flex justify-between items-center p-4 sm:p-6 border-b">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-800">
+                Create Order
+              </h2>
               <button
                 onClick={closeOrderModal}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Close order modal"
               >
                 <FaTimes className="w-4 h-4" />
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               <div>
                 <label className="text-xs font-medium text-gray-500 mb-1 block">
                   Order Type
@@ -710,7 +728,7 @@ const DesignCard = ({ design }) => {
                   name="orderType"
                   value={orderForm.orderType}
                   onChange={handleOrderFormChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                  className="w-full px-3 py-1.5 sm:py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-xs sm:text-sm"
                   required
                 >
                   <option value="">Select order type</option>
@@ -731,7 +749,7 @@ const DesignCard = ({ design }) => {
                   value={orderForm.totalAmount}
                   onChange={handleOrderFormChange}
                   placeholder="Enter total amount"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                  className="w-full px-3 py-1.5 sm:py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-xs sm:text-sm"
                   min="0"
                   step="0.01"
                   required
@@ -746,7 +764,7 @@ const DesignCard = ({ design }) => {
                   name="dueDate"
                   value={orderForm.dueDate}
                   onChange={handleOrderFormChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                  className="w-full px-3 py-1.5 sm:py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-xs sm:text-sm"
                   min={new Date().toISOString().split("T")[0]}
                   required
                 />
@@ -761,7 +779,7 @@ const DesignCard = ({ design }) => {
                   value={orderForm.customerContact}
                   onChange={handleOrderFormChange}
                   placeholder="Enter phone number"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                  className="w-full px-3 py-1.5 sm:py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-xs sm:text-sm"
                   required
                 />
               </div>
@@ -774,18 +792,18 @@ const DesignCard = ({ design }) => {
                   value={orderForm.notes}
                   onChange={handleOrderFormChange}
                   placeholder="Enter any additional notes"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                  rows="4"
+                  className="w-full px-3 py-1.5 sm:py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-xs sm:text-sm"
+                  rows="3"
                 />
               </div>
-              <div className="flex justify-end space-x-3">
+              <div className="flex flex-col sm:flex-row sm:justify-end space-y-2 sm:space-y-0 sm:space-x-2">
                 <CustomButton
                   text="Cancel"
                   color="primary"
                   hover_color="hoverAccent"
                   variant="outlined"
-                  width="w-1/3"
-                  height="h-10"
+                  width="w-full sm:w-1/3"
+                  height="h-9 sm:h-10"
                   onClick={closeOrderModal}
                 />
                 <CustomButton
@@ -793,8 +811,8 @@ const DesignCard = ({ design }) => {
                   color="primary"
                   hover_color="hoverAccent"
                   variant="filled"
-                  width="w-1/3"
-                  height="h-10"
+                  width="w-full sm:w-1/3"
+                  height="h-9 sm:h-10"
                   onClick={handleOrderSubmit}
                   disabled={isSubmitting}
                 />
@@ -1137,55 +1155,61 @@ const DesignGallery = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-800">Design Gallery</h2>
-        <div className="flex space-x-3">
+    <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 mb-4 sm:mb-0">
+          Design Gallery
+        </h2>
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           <CustomButton
             text="Tailor Designs"
             color={activeFilter === "tailor" ? "primary" : "gray"}
             hover_color="hoverAccent"
             variant={activeFilter === "tailor" ? "filled" : "outlined"}
-            height="h-8"
-            width="w-24"
+            height="h-7 sm:h-8"
+            width="w-28 sm:w-24"
             onClick={() => handleFilterChange("tailor")}
+            aria-label="Show tailor designs"
           />
           <CustomButton
             text="Customer Requests"
             color={activeFilter === "customer" ? "primary" : "gray"}
             hover_color="hoverAccent"
             variant={activeFilter === "customer" ? "filled" : "outlined"}
-            height="h-8"
-            width="w-32"
+            height="h-7 sm:h-8"
+            width="w-40 sm:w-32"
             onClick={() => handleFilterChange("customer")}
+            aria-label="Show customer requests"
           />
           <CustomButton
             text="All Designs"
             color={activeFilter === "all" ? "primary" : "gray"}
             hover_color="hoverAccent"
             variant={activeFilter === "all" ? "filled" : "outlined"}
-            height="h-8"
-            width="w-20"
+            height="h-7 sm:h-8"
+            width="w-28 sm:w-20"
             onClick={() => handleFilterChange("all")}
+            aria-label="Show all designs"
           />
           <CustomButton
             text={showFilters ? "Hide Filters" : "Show Filters"}
             color="primary"
             hover_color="hoverAccent"
             variant="text"
-            height="h-10"
+            height="h-7 sm:h-10"
             width="w-28"
             iconRight={showFilters ? <FaChevronUp /> : <FaChevronDown />}
             onClick={() => setShowFilters(!showFilters)}
+            aria-label={showFilters ? "Hide filters" : "Show filters"}
           />
         </div>
       </div>
 
       {showFilters && (
-        <div className="bg-gray-50 p-6 rounded-2xl shadow-md mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-gray-50 p-4 sm:p-6 rounded-2xl shadow-md mb-6 sm:mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <div>
-              <h3 className="text-sm font-semibold text-gray-800 mb-2">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 mb-1 sm:mb-2">
                 Price Range (LKR)
               </h3>
               <div className="flex space-x-2">
@@ -1195,7 +1219,8 @@ const DesignGallery = () => {
                   placeholder="Min"
                   value={filters.priceMin}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  aria-label="Minimum price"
                 />
                 <input
                   type="number"
@@ -1203,13 +1228,14 @@ const DesignGallery = () => {
                   placeholder="Max"
                   value={filters.priceMax}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  aria-label="Maximum price"
                 />
               </div>
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-gray-800 mb-2">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 mb-1 sm:mb-2">
                 Creation Date
               </h3>
               <div className="flex space-x-2">
@@ -1218,20 +1244,22 @@ const DesignGallery = () => {
                   name="dateFrom"
                   value={filters.dateFrom}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  aria-label="Date from"
                 />
                 <input
                   type="date"
                   name="dateTo"
                   value={filters.dateTo}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  aria-label="Date to"
                 />
               </div>
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-gray-800 mb-2">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 mb-1 sm:mb-2">
                 Creator Address
               </h3>
               <input
@@ -1240,22 +1268,26 @@ const DesignGallery = () => {
                 placeholder="Enter city or address"
                 value={filters.address}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                aria-label="Creator address"
               />
             </div>
 
-            <div className="md:col-span-3">
-              <h3 className="text-sm font-semibold text-gray-800 mb-2">Tags</h3>
-              <div className="flex flex-wrap gap-2">
+            <div className="col-span-1 sm:col-span-2 lg:col-span-3">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 mb-1 sm:mb-2">
+                Tags
+              </h3>
+              <div className="flex flex-wrap gap-1 sm:gap-2">
                 {predefinedServices.map((tag) => (
                   <button
                     key={tag}
                     onClick={() => handleTagToggle(tag)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                       filters.tags.includes(tag)
                         ? "bg-primary text-white"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
+                    aria-label={`Toggle tag ${tag}`}
                   >
                     {tag}
                   </button>
@@ -1264,7 +1296,7 @@ const DesignGallery = () => {
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-gray-800 mb-2">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 mb-1 sm:mb-2">
                 Minimum Rating
               </h3>
               <StarRating
@@ -1274,14 +1306,15 @@ const DesignGallery = () => {
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-gray-800 mb-2">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 mb-1 sm:mb-2">
                 Sort By
               </h3>
               <select
                 name="sortBy"
                 value={filters.sortBy}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                aria-label="Sort by"
               >
                 <option value="createdAt">Date Created</option>
                 <option value="price">Price</option>
@@ -1291,32 +1324,35 @@ const DesignGallery = () => {
                 name="sortOrder"
                 value={filters.sortOrder}
                 onChange={handleInputChange}
-                className="w-full mt-2 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full mt-1 sm:mt-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                aria-label="Sort order"
               >
                 <option value="desc">Descending</option>
                 <option value="asc">Ascending</option>
               </select>
             </div>
           </div>
-          <div className="mt-6 flex justify-end space-x-3">
+          <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row sm:justify-end space-y-2 sm:space-y-0 sm:space-x-2">
             <CustomButton
               text={isFiltering ? "Applying Filters..." : "Apply Filters"}
               color="primary"
               hover_color="hoverAccent"
               variant="filled"
-              height="h-10"
-              width="w-32"
+              height="h-9 sm:h-10"
+              width="w-full sm:w-32"
               onClick={applyFilters}
               disabled={isFiltering}
+              aria-label="Apply filters"
             />
             <CustomButton
               text={isLoading ? "Resetting Filters..." : "Reset Filters"}
               color="primary"
               hover_color="hoverAccent"
               variant="outlined"
-              height="h-10"
-              width="w-32"
+              height="h-9 sm:h-10"
+              width="w-full sm:w-32"
               onClick={resetFilters}
+              aria-label="Reset filters"
             />
           </div>
         </div>
@@ -1331,7 +1367,7 @@ const DesignGallery = () => {
           Error loading designs: {error}
         </div>
       ) : filteredDesigns.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {filteredDesigns.map((design, index) => (
             <DesignCard
               key={design._id || design.id || index}
