@@ -4,6 +4,7 @@ import { BsShop } from "react-icons/bs";
 import { FaSearch, FaStar, FaTimes } from "react-icons/fa";
 import { useShopStore } from "../../store/Shop.store";
 import { CustomButton } from "../ui/Button";
+import Loader from "../ui/Loader";
 
 const TailorSearchModal = ({ isOpen, onClose }) => {
   const { tailors, fetchTailors, isLoading, error } = useShopStore();
@@ -127,16 +128,7 @@ const TailorSearchModal = ({ isOpen, onClose }) => {
             >
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center h-48 space-y-4">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 1,
-                      ease: "linear",
-                    }}
-                    className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full"
-                  />
-                  <p className="text-gray-500">Loading tailors...</p>
+                  <Loader />
                 </div>
               ) : error ? (
                 <div className="text-center p-6">
