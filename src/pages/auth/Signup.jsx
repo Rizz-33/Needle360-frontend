@@ -93,55 +93,53 @@ const Signup = () => {
   };
 
   return (
-    <div className="flex w-full h-screen overflow-auto bg-gradient-to-tr from-white to-blue-50 justify-center items-center">
-      <div className="w-1/2 hidden md:block">
+    <div className="flex flex-col md:flex-row w-full min-h-screen overflow-hidden bg-gradient-to-tr from-white to-blue-50">
+      <div className="w-full md:w-1/2 hidden md:block">
         <img
-          src="/api/placeholder/800/600"
+          src="/doodle-2.png"
           alt="Signup"
-          className="w-full h-full object-cover"
+          className="h-full w-full object-cover"
         />
       </div>
-      <div className="w-full md:w-1/2 p-4 md:pr-24">
-        {roleType === 4 ? (
-          <Form
-            formType="tailorSignup"
-            values={values}
-            onChange={handleChange}
-            onSubmit={handleSubmit}
-            errors={errors}
-            disabled={disabled}
-            button={isLoading ? "Loading..." : "Complete Registration"}
-            heading1={headingConfigs.tailorSignup.heading1}
-            heading2={headingConfigs.tailorSignup.heading2}
-            footerConfig={footerConfigs.tailorSignup}
-            onRoleTypeChange={handleRoleTypeChange}
-            multiStep={true}
-          />
-        ) : (
-          <Form
-            formType="signup"
-            values={values}
-            onChange={handleChange}
-            onSubmit={handleSubmit}
-            errors={errors}
-            disabled={disabled}
-            button={isLoading ? "Loading..." : "Sign Up"}
-            heading1={headingConfigs.customerSignup.heading1}
-            heading2={headingConfigs.customerSignup.heading2}
-            footerConfig={footerConfigs.customerSignup}
-            onRoleTypeChange={handleRoleTypeChange}
-          />
-        )}
+      <div className="w-full md:w-1/2 p-4 md:p-6 lg:p-8 flex flex-col justify-center items-center">
+        <div className="w-full max-w-md">
+          {roleType === 4 ? (
+            <Form
+              formType="tailorSignup"
+              values={values}
+              onChange={handleChange}
+              onSubmit={handleSubmit}
+              errors={errors}
+              disabled={disabled}
+              button={isLoading ? "Loading..." : "Complete Registration"}
+              heading1={headingConfigs.tailorSignup.heading1}
+              heading2={headingConfigs.tailorSignup.heading2}
+              footerConfig={footerConfigs.tailorSignup}
+              onRoleTypeChange={handleRoleTypeChange}
+              multiStep={true}
+            />
+          ) : (
+            <Form
+              formType="signup"
+              values={values}
+              onChange={handleChange}
+              onSubmit={handleSubmit}
+              errors={errors}
+              disabled={disabled}
+              button={isLoading ? "Loading..." : "Sign Up"}
+              heading1={headingConfigs.customerSignup.heading1}
+              heading2={headingConfigs.customerSignup.heading2}
+              footerConfig={footerConfigs.customerSignup}
+              onRoleTypeChange={handleRoleTypeChange}
+            />
+          )}
 
-        {errors.submit && (
-          <p className="text-red-500 text-sm mt-2 text-center">
-            {errors.submit}
-          </p>
-        )}
-
-        {error && (
-          <p className="text-red-500 text-sm mt-2 text-center">{error}</p>
-        )}
+          {(errors.submit || error) && (
+            <p className="text-red-500 text-sm mt-2 text-center">
+              {errors.submit || error}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
