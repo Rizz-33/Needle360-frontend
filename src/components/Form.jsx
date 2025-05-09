@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { provinceCityMapping } from "../configs/Form.configs";
 import { useAuthStore } from "../store/Auth.store";
 import { CustomButton } from "./ui/Button";
 
@@ -46,6 +47,7 @@ const SelectField = ({
   disabled,
   error,
   roleType,
+  placeholder,
 }) => (
   <div className="relative w-full">
     <select
@@ -62,7 +64,7 @@ const SelectField = ({
       disabled={disabled}
       data-role-type={roleType}
     >
-      <option value="">{`Select ${name}`}</option>
+      <option value="">{placeholder || `Select ${name}`}</option>
       {options.map((option) => (
         <option key={option.value || option} value={option.value || option}>
           {option.label || option}
@@ -215,6 +217,7 @@ const Form = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [formValues, setFormValues] = useState({ ...values });
   const [formErrors, setFormErrors] = useState({ ...errors });
+  const [availableCities, setAvailableCities] = useState([]);
   const totalSteps = 2; // Reduced to 2 steps since bank details are removed
   const navigate = useNavigate();
   const { isLoading } = useAuthStore();
@@ -228,6 +231,25 @@ const Form = ({
   useEffect(() => {
     setFormErrors({ ...errors });
   }, [errors]);
+
+  // Update available cities when province changes
+  useEffect(() => {
+    if (formValues.province) {
+      const citiesForProvince = provinceCityMapping[formValues.province] || [];
+      setAvailableCities(citiesForProvince);
+
+      // Reset city value if current selected city is not in the new province
+      if (formValues.city && !citiesForProvince.includes(formValues.city)) {
+        const updatedValues = { ...formValues, city: "" };
+        setFormValues(updatedValues);
+        if (onChange) {
+          onChange({ target: { name: "city", value: "" } });
+        }
+      }
+    } else {
+      setAvailableCities([]);
+    }
+  }, [formValues.province]);
 
   // Handle form field changes
   const handleChange = (e) => {
@@ -421,48 +443,9 @@ const Form = ({
           {
             name: "city",
             type: "select",
-            options: [
-              "Ampara",
-              "Anuradhapura",
-              "Aranayake",
-              "Badulla",
-              "Batticaloa",
-              "Bulathkohupitiya",
-              "Colombo",
-              "Dehiowita",
-              "Dehiwala",
-              "Deraniyagala",
-              "Galigamuwa",
-              "Galle",
-              "Gampaha",
-              "Hambantota",
-              "Hatton",
-              "Hemmathagama",
-              "Jaffna",
-              "Kalutara",
-              "Kandy",
-              "Kegalle",
-              "Kilinochchi",
-              "Kitulgala",
-              "Kurunegala",
-              "Mannar",
-              "Matale",
-              "Matara",
-              "Mawanella",
-              "Monaragala",
-              "Mullaitivu",
-              "Negombo",
-              "Nuwara Eliya",
-              "Polonnaruwa",
-              "Puttalam",
-              "Rambukkana",
-              "Ratnapura",
-              "Trincomalee",
-              "Vavuniya",
-              "Wattala",
-              "Yatiyanthota",
-            ],
+            options: [], // This will be dynamically populated based on selected province
             required: true,
+            placeholder: "Select city",
           },
           {
             name: "postalCode",
@@ -568,17 +551,9 @@ const Form = ({
               {
                 name: "city",
                 type: "select",
-                options: [
-                  "Colombo",
-                  "Kandy",
-                  "Galle",
-                  "Jaffna",
-                  "Batticaloa",
-                  "Negombo",
-                  "Anuradhapura",
-                  "Ratnapura",
-                ],
+                options: [], // This will be dynamically populated based on selected province
                 required: true,
+                placeholder: "Select city",
               },
               {
                 name: "postalCode",
@@ -599,7 +574,44 @@ const Form = ({
     ],
   };
 
-  const fields = customFields || defaultFields[formType] || [];
+  // Override the city options with available cities based on selected province
+  const getUpdatedFields = (originalFields) => {
+    return originalFields.map((field) => {
+      if (field.name === "address-group") {
+        return {
+          ...field,
+          fields: field.fields.map((subField) => {
+            if (subField.name === "city") {
+              return {
+                ...subField,
+                options: availableCities,
+              };
+            }
+            return subField;
+          }),
+        };
+      } else if (field.fields) {
+        return {
+          ...field,
+          fields: field.fields.map((subField) => {
+            if (subField.name === "city") {
+              return {
+                ...subField,
+                options: availableCities,
+              };
+            }
+            return subField;
+          }),
+        };
+      }
+      return field;
+    });
+  };
+
+  // Get fields for current form type and update dynamic fields
+  const fields =
+    customFields ||
+    (defaultFields[formType] ? getUpdatedFields(defaultFields[formType]) : []);
 
   // Handle form submission
   const handleSubmit = (e) => {
@@ -656,6 +668,7 @@ const Form = ({
       disabled: disabled[field.name] || false,
       error: formErrors[field.name],
       roleType,
+      placeholder: field.placeholder,
     };
 
     if (field.type === "select") {
@@ -714,6 +727,17 @@ const Form = ({
     );
   };
 
+  // Find the correct fields to display for the current step in a multi-step form
+  const getStepFields = (step) => {
+    const currentStepData = fields.find(
+      (stepFields) => stepFields.step === step
+    );
+
+    if (!currentStepData) return [];
+
+    return getUpdatedFields(currentStepData.fields);
+  };
+
   // Render the fields for the current step if this is a multi-step form
   const renderStepContent = () => {
     if (!multiStep) {
@@ -724,15 +748,11 @@ const Form = ({
       ));
     }
 
-    const currentStepFields = fields.find(
-      (stepFields) => stepFields.step === currentStep
-    );
-
-    if (!currentStepFields) return null;
+    const currentStepFields = getStepFields(currentStep);
 
     return (
       <div className="space-y-4">
-        {currentStepFields.fields.map((field, index) => (
+        {currentStepFields.map((field, index) => (
           <React.Fragment key={index}>{renderFieldGroup(field)}</React.Fragment>
         ))}
       </div>
