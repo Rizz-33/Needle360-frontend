@@ -62,7 +62,7 @@ const AdminLogin = () => {
     <div className="flex w-full h-screen overflow-auto bg-gradient-to-tr from-white to-blue-50 justify-center items-center">
       <div className="w-1/2 hidden md:block">
         <img
-          src="/api/placeholder/800/600"
+          src="/computer-user.png"
           alt="Admin Login"
           className="w-full h-full object-cover"
         />
