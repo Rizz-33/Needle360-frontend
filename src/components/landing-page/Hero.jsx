@@ -22,7 +22,7 @@ export default function HeroSection() {
   };
 
   return (
-    <section className="w-full min-h-max py-16">
+    <section className="w-full min-h-max pb-12">
       <div className="max-w-7xl mx-auto w-full px-6 flex flex-col md:flex-row items-center gap-12">
         {/* Left Side Content */}
         <div className="text-center md:text-left max-w-2xl md:pr-12">
@@ -80,7 +80,7 @@ export default function HeroSection() {
           <img
             src="/hero.png"
             alt="Hero: A tailor working on a sewing machine and a customer"
-            className="h-auto w-full max-h-[500px] object-contain"
+            className="h-auto w-full max-h-[420px] object-contain"
           />
         </div>
       </div>
