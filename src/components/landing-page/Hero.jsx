@@ -1,13 +1,25 @@
+import React, { useState } from "react";
 import { CustomButton } from "../ui/Button";
 import { TypewriterEffect } from "../ui/TypewriterEffect";
+import TailorSearchModal from "./TailorSearchModal";
 
 export default function HeroSection() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const words = [
     { text: "Design," },
     { text: "Explore," },
     { text: "and" },
     { text: "Order" },
   ];
+
+  const openModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
 
   return (
     <section className="w-full min-h-max py-16">
@@ -57,7 +69,8 @@ export default function HeroSection() {
               variant="outlined"
               width="w-36"
               height="h-9"
-              type="submit"
+              type="button"
+              onClick={openModal}
             />
           </div>
         </div>
@@ -71,6 +84,9 @@ export default function HeroSection() {
           />
         </div>
       </div>
+
+      {/* Tailor Search Modal */}
+      <TailorSearchModal isOpen={isModalOpen} onClose={closeModal} />
     </section>
   );
 }
