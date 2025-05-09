@@ -10,14 +10,20 @@ const TailorSearchModal = ({ isOpen, onClose }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredTailors, setFilteredTailors] = useState([]);
 
-  // Fetch tailors on component mount
+  // Color scheme
+  const colors = {
+    background: "#F9FAFB",
+    cardHover: "#F3F4F6",
+    textPrimary: "#111827",
+    textSecondary: "#6B7280",
+  };
+
   useEffect(() => {
     if (isOpen) {
       fetchTailors();
     }
   }, [isOpen, fetchTailors]);
 
-  // Update filtered tailors when search query changes or tailors are loaded
   useEffect(() => {
     if (tailors) {
       const filtered = tailors.filter(
@@ -26,7 +32,6 @@ const TailorSearchModal = ({ isOpen, onClose }) => {
           tailor.name?.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
-      // Sort by ratings (for demonstration, assuming ratings exist)
       const sorted = [...filtered].sort(
         (a, b) =>
           (b.ratings?.averageRating || 0) - (a.ratings?.averageRating || 0)
@@ -44,12 +49,10 @@ const TailorSearchModal = ({ isOpen, onClose }) => {
     window.location.href = `/tailor/${id}`;
   };
 
-  // Mock ratings for demonstration
   const getRating = (tailor) => {
     return tailor.ratings?.averageRating || Math.floor(Math.random() * 5) + 1;
   };
 
-  // Render stars based on rating
   const renderStars = (rating) => {
     return Array(5)
       .fill()
@@ -57,7 +60,7 @@ const TailorSearchModal = ({ isOpen, onClose }) => {
         <FaStar
           key={i}
           className={`${
-            i < rating ? "text-yellow-400" : "text-gray-300"
+            i < rating ? "text-yellow-400" : "text-gray-200"
           } w-4 h-4`}
         />
       ));
@@ -70,111 +73,163 @@ const TailorSearchModal = ({ isOpen, onClose }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
           onClick={onClose}
         >
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: "spring", damping: 25 }}
-            className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden"
+            initial={{ scale: 0.9, y: 20, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.9, y: 20, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-hidden border border-gray-100"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-xl font-semibold text-gray-800">
-                Find a Tailor
-              </h2>
+            <div className="flex items-center justify-between p-6 bg-gradient-to-r from-primary to-hoverAccent">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Find a Tailor</h2>
+                <p className="text-secondary text-sm mt-1">
+                  Discover professional tailors near you
+                </p>
+              </div>
               <button
                 onClick={onClose}
-                className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-full hover:bg-white/10 transition-colors"
               >
-                <FaTimes className="w-5 h-5 text-gray-500" />
+                <FaTimes className="w-5 h-5 text-white" />
               </button>
             </div>
 
             {/* Search Bar */}
-            <div className="p-4 border-b">
+            <div className="p-6 border-b border-gray-100">
               <div className="relative">
-                <input
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaSearch className="text-gray-400" />
+                </div>
+                <motion.input
                   type="text"
                   placeholder="Search by name or shop name..."
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  className="w-full p-3 pl-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full text-sm py-3 pl-10 pr-4 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                  whileFocus={{
+                    boxShadow: `0 0 0 3px ${colors.primary}20`,
+                    borderColor: colors.primary,
+                  }}
                 />
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               </div>
             </div>
 
             {/* Tailors List */}
             <div
-              className="overflow-y-auto p-4"
-              style={{ maxHeight: "calc(80vh - 140px)" }}
+              className="overflow-y-auto p-6 bg-gray-50"
+              style={{ maxHeight: "calc(80vh - 160px)" }}
             >
               {isLoading ? (
-                <div className="flex justify-center items-center h-32">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+                <div className="flex flex-col items-center justify-center h-48 space-y-4">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      repeat: Infinity,
+                      duration: 1,
+                      ease: "linear",
+                    }}
+                    className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full"
+                  />
+                  <p className="text-gray-500">Loading tailors...</p>
                 </div>
               ) : error ? (
-                <div className="text-center text-red-500 p-4">{error}</div>
+                <div className="text-center p-6">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
+                    <FaTimes className="w-8 h-8 text-red-500" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Something went wrong
+                  </h3>
+                  <p className="text-red-500 max-w-md mx-auto">{error}</p>
+                </div>
               ) : filteredTailors.length === 0 ? (
-                <div className="text-center text-gray-500 p-4">
-                  {searchQuery
-                    ? "No tailors match your search"
-                    : "No tailors available"}
+                <div className="text-center p-6">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                    <BsShop className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-md font-medium text-gray-900 mb-2">
+                    {searchQuery ? "No results found" : "No tailors available"}
+                  </h3>
+                  <p className="text-gray-500 max-w-md mx-auto text-xs">
+                    {searchQuery
+                      ? "Try a different search term"
+                      : "Check back later for available tailors"}
+                  </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <motion.div
+                  className="grid grid-cols-1 md:grid-cols-2 gap-5"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ staggerChildren: 0.05 }}
+                >
                   {filteredTailors.map((tailor) => (
                     <motion.div
                       key={tailor._id}
-                      whileHover={{ scale: 1.02 }}
-                      className="flex bg-white rounded-lg overflow-hidden shadow-md border border-gray-100 hover:shadow-lg transition-shadow"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileHover={{
+                        y: -5,
+                        boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+                      }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                      className="flex bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:border-gray-200 transition-all"
                     >
-                      <div className="w-24 h-24 flex items-center justify-center bg-gray-50">
+                      <div className="w-24 h-full flex items-center justify-center bg-gray-50 p-2">
                         {tailor.logoUrl ? (
-                          <img
+                          <motion.img
                             src={tailor.logoUrl}
                             alt={tailor.shopName}
-                            className="w-20 h-20 object-contain"
+                            className="w-16 h-16 object-contain rounded-lg"
+                            whileHover={{ scale: 1.05 }}
                           />
                         ) : (
-                          <BsShop className="w-12 h-12 text-gray-400" />
+                          <div className="w-16 h-16 bg-white rounded-lg border border-gray-200 flex items-center justify-center">
+                            <BsShop className="w-8 h-8 text-gray-400" />
+                          </div>
                         )}
                       </div>
                       <div className="flex-1 p-4">
-                        <h3 className="font-semibold text-md">
-                          {tailor.shopName || tailor.name}
-                        </h3>
-                        <div className="flex items-center mt-1">
-                          {renderStars(getRating(tailor))}
-                          <span className="ml-1 text-xs text-gray-500">
-                            (
-                            {tailor.ratings?.count ||
-                              Math.floor(Math.random() * 100)}{" "}
-                            reviews)
+                        <div className="flex justify-between items-start">
+                          <h3 className="font-semibold text-gray-900">
+                            {tailor.shopName || tailor.name}
+                          </h3>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                            Available
                           </span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1 truncate">
+                        <div className="flex items-center mt-2">
+                          {renderStars(getRating(tailor))}
+                          <span className="ml-2 text-xs text-gray-500">
+                            {tailor.ratings?.count ||
+                              Math.floor(Math.random() * 100)}{" "}
+                            reviews
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-2 line-clamp-2">
                           {tailor.shopAddress || "Address not available"}
                         </p>
-                        <div className="mt-2">
+                        <div className="mt-4">
                           <CustomButton
                             text="View Profile"
                             color="primary"
                             variant="filled"
                             width="w-full"
-                            height="h-8"
-                            fontSize="text-xs"
+                            height="h-9"
+                            fontSize="text-sm"
                             onClick={() => viewTailorProfile(tailor._id)}
                           />
                         </div>
                       </div>
                     </motion.div>
                   ))}
-                </div>
+                </motion.div>
               )}
             </div>
           </motion.div>
