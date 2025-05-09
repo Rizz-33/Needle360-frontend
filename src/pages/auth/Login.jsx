@@ -52,43 +52,47 @@ const Login = () => {
   };
 
   return (
-    <div className="flex w-full h-screen overflow-auto bg-gradient-to-tr from-white to-blue-50 justify-center items-center">
-      <div className="w-1/2 hidden md:block">
+    <div className="flex flex-col md:flex-row w-full min-h-screen overflow-hidden bg-gradient-to-tr from-white to-blue-50">
+      <div className="w-full md:w-1/2 hidden md:block">
         <img
-          src="/api/placeholder/800/600"
+          src="/doodle-1.png"
           alt="Login"
-          className="w-full h-full object-cover"
+          className="h-full w-full object-cover"
         />
       </div>
-      <div className="w-full md:w-1/2 p-4 mt-9 pr-24">
-        <Form
-          formType={"login"}
-          values={values}
-          onChange={handleChange}
-          onSubmit={handleSubmit}
-          errors={{ ...errors, ...(error ? { auth: error } : {}) }}
-          disabled={disabled}
-          button="Get Started"
-          heading1={
-            roleType === 1
-              ? headingConfigs.customerLogin.heading1
-              : headingConfigs.tailorLogin.heading1
-          }
-          heading2={
-            roleType === 1
-              ? headingConfigs.customerLogin.heading2
-              : headingConfigs.tailorLogin.heading2
-          }
-          footerConfig={
-            roleType === 1
-              ? footerConfigs.customerLogin
-              : footerConfigs.tailorLogin
-          }
-          onRoleTypeChange={handleRoleTypeChange}
-        />
-        {errors.auth && (
-          <p className="text-red-500 text-sm mt-2 text-center">{errors.auth}</p>
-        )}
+      <div className="w-full md:w-1/2 p-4 md:p-6 lg:p-8 flex flex-col justify-center items-center">
+        <div className="w-full max-w-md">
+          <Form
+            formType={"login"}
+            values={values}
+            onChange={handleChange}
+            onSubmit={handleSubmit}
+            errors={{ ...errors, ...(error ? { auth: error } : {}) }}
+            disabled={disabled}
+            button="Get Started"
+            heading1={
+              roleType === 1
+                ? headingConfigs.customerLogin.heading1
+                : headingConfigs.tailorLogin.heading1
+            }
+            heading2={
+              roleType === 1
+                ? headingConfigs.customerLogin.heading2
+                : headingConfigs.tailorLogin.heading2
+            }
+            footerConfig={
+              roleType === 1
+                ? footerConfigs.customerLogin
+                : footerConfigs.tailorLogin
+            }
+            onRoleTypeChange={handleRoleTypeChange}
+          />
+          {errors.auth && (
+            <p className="text-red-500 text-sm mt-2 text-center">
+              {errors.auth}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
