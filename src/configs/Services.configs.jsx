@@ -8,15 +8,15 @@ import {
   MapPin,
   MessageSquare,
   Package,
-  PenTool,
+  Palette,
   Phone,
   Rocket,
-  Ruler,
+  Scissors,
   Share2,
   Shirt,
   Terminal,
+  Truck,
   Users,
-  ZoomIn,
 } from "lucide-react";
 
 export const bentoGridConfigs = [
@@ -86,34 +86,6 @@ export const howItWorksConfig = [
     title: "Order and Get It Delivered",
     description:
       "Place your order and have your custom outfit crafted and delivered to your doorstep. Track your order in real-time and receive updates on the progress. Enjoy a seamless hassle-free experience with our reliable delivery service.",
-  },
-];
-
-export const designFeatures = [
-  {
-    id: "customize",
-    icon: PenTool,
-    title: "Custom Design Tools",
-    description:
-      "Intuitive design interface with measurement tools and fabric selection",
-  },
-  {
-    id: "collaborate",
-    icon: Share2,
-    title: "Real-time Collaboration",
-    description: "Work directly with tailors to perfect your design choices",
-  },
-  {
-    id: "measure",
-    icon: Ruler,
-    title: "Smart Measurements",
-    description: "AI-powered measurement suggestions and size recommendations",
-  },
-  {
-    id: "preview",
-    icon: ZoomIn,
-    title: "3D Preview",
-    description: "Virtual try-on technology to visualize your designs",
   },
 ];
 
@@ -283,5 +255,75 @@ export const aboutMeConfigs = [
     expandedDetails:
       "I ensure seamless deployment through CI/CD pipelines, containerization with Docker, and cloud integration with platforms like AWS and Vercel. My deployment process minimizes downtime and maximizes reliability.",
     icon: Rocket,
+  },
+];
+
+export const designFeatures = [
+  {
+    id: "customize",
+    title: "Customize",
+    description: "Personalize garments with ease.",
+    expandedDetails:
+      "Our customization tools allow you to personalize every aspect of your garment, from fabric selection to stitching details. Use our intuitive interface to create a design that perfectly matches your style and preferences.",
+    icon: Palette,
+  },
+  {
+    id: "preview",
+    title: "Preview",
+    description: "See your design in real-time.",
+    expandedDetails:
+      "Experience real-time previews of your designs as you make changes. Our advanced rendering engine ensures you can visualize your garment in 3D, helping you make informed decisions before finalizing your order.",
+    icon: Scissors,
+  },
+  {
+    id: "collaborate",
+    title: "Collaborate",
+    description: "Work with tailors seamlessly.",
+    expandedDetails:
+      "Collaborate directly with tailors through our platform. Share your designs, get feedback, and make adjustments in real-time to ensure your vision is brought to life exactly as you imagined.",
+    icon: Share2,
+  },
+  {
+    id: "save",
+    title: "Save",
+    description: "Store your designs securely.",
+    expandedDetails:
+      "Save your designs securely on our platform for future reference. Whether you're working on multiple projects or revisiting past creations, your designs are always accessible and protected.",
+    icon: Shirt,
+  },
+];
+
+export const additionalServices = [
+  {
+    title: "Availability",
+    description: "Check tailor and fabric availability in real-time.",
+    expandedDetails:
+      "Our platform provides real-time updates on tailor availability and fabric stock, ensuring you can plan your orders efficiently. Never worry about delays due to unavailability—stay informed at every step.",
+    className: "col-span-1 row-span-1 bg-[#F0F0FF]",
+    icon: Users,
+  },
+  {
+    title: "Manage Orders",
+    description: "Streamline order tracking and fulfillment.",
+    expandedDetails:
+      "Tailors can manage orders effortlessly with our intuitive order management system. Track progress, communicate with customers, and ensure timely fulfillment, all from a single dashboard.",
+    className: "col-span-1 row-span-1 bg-[#E8E8FF]",
+    icon: Package,
+  },
+  {
+    title: "Inventories",
+    description: "Keep track of fabrics and materials.",
+    expandedDetails:
+      "Our inventory management tools help tailor shops monitor their stock of fabrics and materials. Get alerts for low stock, manage reordering, and ensure you never run out of essential supplies.",
+    className: "col-span-1 row-span-1 bg-[#D8D8FF]",
+    icon: Truck,
+  },
+  {
+    title: "Designs",
+    description: "Organize and showcase your design portfolio.",
+    expandedDetails:
+      "Tailors and customers can organize their design portfolios on our platform. Showcase your best work, get feedback from the community, and attract more customers with a stunning portfolio.",
+    className: "col-span-2 row-span-1 bg-[#E8E8FF]",
+    icon: Palette,
   },
 ];
