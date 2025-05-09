@@ -5,7 +5,6 @@ import {
   Layout,
   Lightbulb,
   Mail,
-  MapPin,
   MessageSquare,
   Package,
   Palette,
@@ -137,26 +136,26 @@ export const contactMethods = [
   {
     id: "email",
     title: "Email",
-    description: "Get in touch via email for project inquiries",
+    description: "Send us an email anytime.",
+    expandedDetails:
+      "Reach out via email at needle360.online@gmail.com. We typically respond within 24 hours to all inquiries, ensuring you get the help you need promptly.",
     icon: Mail,
   },
   {
     id: "phone",
     title: "Phone",
-    description: "Speak directly about your project requirements",
+    description: "Call us during business hours.",
+    expandedDetails:
+      "Give us a call at +94 701 244 832, Monday to Friday, 9 AM to 5 PM. Our team is ready to assist with any questions or project inquiries.",
     icon: Phone,
   },
   {
     id: "chat",
-    title: "Live Chat",
-    description: "Quick responses through our messaging platform",
+    title: "Chat",
+    description: "Live chat for instant support.",
+    expandedDetails:
+      "Use our live chat feature for immediate assistance. Available during business hours, our support team can help with design queries, order tracking, and more.",
     icon: MessageSquare,
-  },
-  {
-    id: "visit",
-    title: "Visit",
-    description: "Schedule an in-person consultation at our office",
-    icon: MapPin,
   },
 ];
 
