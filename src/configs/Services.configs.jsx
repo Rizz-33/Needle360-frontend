@@ -14,6 +14,7 @@ import {
   Share2,
   Shirt,
   Terminal,
+  TimerIcon,
   Truck,
   Users,
 } from "lucide-react";
@@ -187,11 +188,20 @@ export const aboutAppConfigs = [
     icon: Package,
   },
   {
-    title: "Design & Customization",
+    title: "Inventory Management",
     description:
-      "Customers can design garments, get feedback, and connect with the right tailor shop.",
+      "Track fabrics, materials and supplies with real-time stock monitoring.",
     expandedDetails:
-      "Customers can unleash their creativity by designing garments directly on our platform. They can upload sketches, choose fabrics, and get feedback from tailors. We match them with the best tailor shops to bring their visions to life.",
+      "Our comprehensive inventory management system helps tailors track fabrics, threads, buttons, and other materials efficiently. Set low-stock alerts, manage suppliers, categorize materials by type, and generate inventory reports to optimize procurement and reduce waste.",
+    className: "col-span-1 row-span-1 bg-[#F0F0FF]",
+    icon: Database,
+  },
+  {
+    title: "Design & Customization + 3D Preview",
+    description:
+      "Customers and tailors can design garments, get feedback, and connect with the right users.",
+    expandedDetails:
+      "Customers and tailors can unleash their creativity by designing garments directly on our platform. They can upload sketches, choose fabrics, and get feedback from other users. We match them with the best tailor shops to bring their visions to life.",
     className: "col-span-2 row-span-1 bg-[#E8E8FF]",
     icon: Shirt,
   },
@@ -214,11 +224,20 @@ export const aboutAppConfigs = [
   {
     title: "A Unique Platform",
     description:
-      "Pioneering a tailor shop-focused e-commerce experience in Sri Lanka.",
+      "Pioneering a tailor shop-focused digital experience in Sri Lanka while preserving traditional craftsmanship.",
     expandedDetails:
-      "We are the first platform in Sri Lanka dedicated to tailor shops, offering a unique e-commerce experience that prioritizes custom fashion. From design to delivery, we provide an end-to-end solution for tailors and customers alike.",
+      "We are the first platform in Sri Lanka dedicated to tailor shops, offering a unique digital experience that prioritizes custom fashion. From design to delivery, we provide an end-to-end solution for tailors and customers alike.",
     className: "col-span-2 row-span-1 bg-[#D8D8FF]",
     icon: Globe,
+  },
+  {
+    title: "Availability Management",
+    description:
+      "Tailors can display their daily availability for customers to book shop visits.",
+    expandedDetails:
+      "Our availability system allows tailors to set their working hours for each day of the week, mark special holiday closures, and show time slots for customer visits. Customers can view this real-time availability calendar to plan shop visits and fittings, reducing scheduling conflicts and wait times.",
+    className: "col-span-1 row-span-1 bg-[#E8E8FF]",
+    icon: TimerIcon,
   },
 ];
 
