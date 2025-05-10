@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
-import React from "react";
 
 const Footer = () => {
   return (
@@ -54,28 +53,28 @@ const Footer = () => {
             <h2 className="text-sm font-semibold mb-4">Follow Us</h2>
             <div className="flex justify-center md:justify-start space-x-6">
               <a
-                href="https://facebook.com"
+                href="https://www.facebook.com/share/1YmX3DxxLB/?mibextid=wwXIfr"
                 className="text-gray-200 hover:text-white"
                 aria-label="Facebook"
               >
                 <Facebook size={20} />
               </a>
               <a
-                href="https://instagram.com"
+                href="https://www.instagram.com/needle360?igsh=NDlqdmJnMWxua2Qw"
                 className="text-gray-200 hover:text-white"
                 aria-label="Instagram"
               >
                 <Instagram size={20} />
               </a>
               <a
-                href="https://twitter.com"
+                href="https://x.com/ne360_"
                 className="text-gray-200 hover:text-white"
                 aria-label="Twitter"
               >
                 <Twitter size={20} />
               </a>
               <a
-                href="https://linkedin.com"
+                href="https://www.linkedin.com/in/risini-amarathunga/"
                 className="text-gray-200 hover:text-white"
                 aria-label="LinkedIn"
               >
