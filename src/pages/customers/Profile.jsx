@@ -1,9 +1,10 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Edit2, X } from "lucide-react";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import {
   FaChevronLeft,
+  FaChevronRight,
   FaEdit,
   FaEnvelope,
   FaPalette,
@@ -63,6 +64,69 @@ const StarRating = ({ rating, setRating }) => {
           )}
         </button>
       ))}
+    </div>
+  );
+};
+
+const ImageSlider = ({ images, placeholderImg }) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const handlePreviousImage = () => {
+    setCurrentImageIndex((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prev) => Math.min(prev + 1, images.length - 1));
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative w-full max-h-[400px]">
+        <img
+          src={images[currentImageIndex] || placeholderImg}
+          alt={`Image ${currentImageIndex + 1}`}
+          className="w-full h-auto max-h-[400px] object-contain rounded-lg"
+          onError={(e) => {
+            e.target.src = placeholderImg;
+            e.target.onerror = null;
+          }}
+        />
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={handlePreviousImage}
+              disabled={currentImageIndex === 0}
+              className={`absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full ${
+                currentImageIndex === 0
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-black/70"
+              }`}
+              aria-label="Previous image"
+            >
+              <FaChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleNextImage}
+              disabled={currentImageIndex === images.length - 1}
+              className={`absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full ${
+                currentImageIndex === images.length - 1
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-black/70"
+              }`}
+              aria-label="Next image"
+            >
+              <FaChevronRight className="w-4 h-4" />
+            </button>
+          </>
+        )}
+      </div>
+      <p className="text-xs text-gray-500 mt-2 text-center">
+        {images.length > 0
+          ? currentImageIndex === 0
+            ? "Final Product"
+            : `Detail Image ${currentImageIndex}`
+          : "No Images Available"}
+      </p>
     </div>
   );
 };
@@ -439,6 +503,8 @@ const CustomerProfilePage = () => {
       profileUserId &&
       String(currentUserId) === String(profileUserId));
 
+  const placeholderImg = "/assets/placeholder-design.jpg";
+
   useEffect(() => {
     if (currentUserId) {
       initializeSocket(currentUserId, currentUser.role);
@@ -799,11 +865,15 @@ const CustomerProfilePage = () => {
             className="aspect-square bg-gray-100 relative overflow-hidden group cursor-pointer"
             onClick={() => handleDesignClick(design)}
           >
-            {design.imageUrl ? (
+            {design.imageURLs?.[0] || design.imageUrl ? (
               <img
-                src={design.imageUrl}
+                src={design.imageURLs?.[0] || design.imageUrl}
                 alt={design.title || design.itemName}
                 className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                onError={(e) => {
+                  e.target.src = placeholderImg;
+                  e.target.onerror = null;
+                }}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -1065,17 +1135,15 @@ const CustomerProfilePage = () => {
               </div>
               <div className="p-6 space-y-6">
                 <div className="rounded-xl overflow-hidden bg-gray-100">
-                  <img
-                    src={
-                      selectedDesign.imageUrl ||
-                      "/assets/placeholder-design.jpg"
+                  <ImageSlider
+                    images={
+                      selectedDesign.imageURLs?.length > 0
+                        ? selectedDesign.imageURLs
+                        : selectedDesign.imageUrl
+                        ? [selectedDesign.imageUrl]
+                        : []
                     }
-                    alt={selectedDesign.title || selectedDesign.itemName}
-                    className="w-full h-auto max-h-[400px] object-contain"
-                    onError={(e) => {
-                      e.target.src = "/assets/placeholder-design.jpg";
-                      e.target.onerror = null;
-                    }}
+                    placeholderImg={placeholderImg}
                   />
                 </div>
                 <div className="flex items-center justify-end space-x-3">
