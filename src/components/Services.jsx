@@ -14,7 +14,7 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CustomButton } from "../components/ui/Button";
 import { useChatStore } from "../store/Chat.store";
 import { useDesignStore } from "../store/Design.store";
@@ -101,9 +101,7 @@ const Services = ({ tailorId }) => {
     const loadTailorsForService = async () => {
       if (selectedService) {
         try {
-          console.log(`Loading tailors for service: ${selectedService}`);
           await fetchTailorsByService(selectedService);
-          console.log("serviceSpecificTailors:", serviceSpecificTailors);
         } catch (error) {
           console.error(
             `Error fetching tailors for ${selectedService}:`,
@@ -122,7 +120,6 @@ const Services = ({ tailorId }) => {
 
   // Update filtered tailors whenever serviceSpecificTailors changes
   useEffect(() => {
-    console.log("Updating filteredTailors:", serviceSpecificTailors);
     setFilteredTailors(serviceSpecificTailors || []);
   }, [serviceSpecificTailors]);
 

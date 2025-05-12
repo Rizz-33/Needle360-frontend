@@ -417,8 +417,6 @@ export const useChatStore = create((set, get) => ({
     // Clean up existing socket if any
     get().cleanupSocket();
 
-    console.log("Initializing socket connection...");
-
     const socket = io(BASE_API_URL, {
       withCredentials: true,
       autoConnect: true,
@@ -428,7 +426,6 @@ export const useChatStore = create((set, get) => ({
     });
 
     socket.on("connect", () => {
-      console.log("Socket connected with ID:", socket.id);
       set({ isConnected: true });
 
       // Rejoin active conversation if any
@@ -448,7 +445,6 @@ export const useChatStore = create((set, get) => ({
     });
 
     socket.on("newMessage", (message) => {
-      console.log("New message received:", message);
       const { activeConversation, messages, currentUserId } = get();
 
       // Check if this is our own message (already in state)
@@ -508,11 +504,6 @@ export const useChatStore = create((set, get) => ({
 
     // Handle read receipts
     socket.on("messagesRead", ({ conversationId, readBy, messageIds }) => {
-      console.log("Messages read event:", {
-        conversationId,
-        readBy,
-        messageIds,
-      });
       set((state) => ({
         messages: state.messages.map((msg) =>
           messageIds.includes(msg._id) && !msg.readBy.includes(readBy)
