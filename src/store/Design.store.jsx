@@ -44,7 +44,8 @@ export const useDesignStore = create((set, get) => ({
     title: design.title || design.itemName || "",
     description: design.description || "",
     price: design.price,
-    imageUrl: design.imageUrl || null,
+    imageUrl: design.imageUrl || design.imageURLs?.[0] || null, // Use first image for primary display
+    imageURLs: design.imageURLs || (design.imageUrl ? [design.imageUrl] : []), // Include all images
     tags: design.tags || [],
     tailorId: design.tailorId,
     customerId: design.customerId,
@@ -151,6 +152,9 @@ export const useDesignStore = create((set, get) => ({
       const response = await axios.post(`${BASE_API_URL}/tailors/${tailorId}`, {
         design: {
           ...designData,
+          imageURLs:
+            designData.imageURLs ||
+            (designData.image ? [designData.image] : []),
         },
       });
 
@@ -192,7 +196,9 @@ export const useDesignStore = create((set, get) => ({
         {
           design: {
             ...designData,
-            imageURLs: designData.image ? [designData.image] : [],
+            imageURLs:
+              designData.imageURLs ||
+              (designData.image ? [designData.image] : []),
           },
         }
       );
@@ -235,6 +241,9 @@ export const useDesignStore = create((set, get) => ({
         {
           design: {
             ...designData,
+            imageURLs:
+              designData.imageURLs ||
+              (designData.image ? [designData.image] : []),
           },
         }
       );
@@ -281,7 +290,9 @@ export const useDesignStore = create((set, get) => ({
         {
           design: {
             ...designData,
-            imageURLs: designData.image ? [designData.image] : [],
+            imageURLs:
+              designData.imageURLs ||
+              (designData.image ? [designData.image] : []),
           },
         }
       );

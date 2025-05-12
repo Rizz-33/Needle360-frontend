@@ -1,6 +1,12 @@
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useState } from "react";
-import { FaPortrait, FaUpload } from "react-icons/fa";
+import { useEffect, useState } from "react";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaPortrait,
+  FaTimes,
+  FaUpload,
+} from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { CustomButton } from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
@@ -8,6 +14,69 @@ import { initialCustomerProfileComponents } from "../../configs/Profile.configs"
 import { useAuthStore } from "../../store/Auth.store";
 import { useCustomerStore } from "../../store/Customer.store";
 import { useDesignStore } from "../../store/Design.store";
+
+const ImageSlider = ({ images, placeholderImg }) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const handlePreviousImage = () => {
+    setCurrentImageIndex((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prev) => Math.min(prev + 1, images.length - 1));
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative w-full max-h-48 sm:max-h-64">
+        <img
+          src={images[currentImageIndex] || placeholderImg}
+          alt={`Image ${currentImageIndex + 1}`}
+          className="w-full h-auto max-h-48 sm:max-h-64 object-contain rounded-lg"
+          onError={(e) => {
+            e.target.src = placeholderImg;
+            e.target.onerror = null;
+          }}
+        />
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={handlePreviousImage}
+              disabled={currentImageIndex === 0}
+              className={`absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full ${
+                currentImageIndex === 0
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-black/70"
+              }`}
+              aria-label="Previous image"
+            >
+              <FaChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleNextImage}
+              disabled={currentImageIndex === images.length - 1}
+              className={`absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full ${
+                currentImageIndex === images.length - 1
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-black/70"
+              }`}
+              aria-label="Next image"
+            >
+              <FaChevronRight className="w-4 h-4" />
+            </button>
+          </>
+        )}
+      </div>
+      <p className="text-xs text-gray-500 mt-2 text-center">
+        {images.length > 0
+          ? currentImageIndex === 0
+            ? "Final Product"
+            : `Detail Image ${currentImageIndex}`
+          : "No Images Available"}
+      </p>
+    </div>
+  );
+};
 
 const CustomerProfileSetup = () => {
   const { customer, fetchCustomerById, updateCustomer } = useCustomerStore();
@@ -32,8 +101,8 @@ const CustomerProfileSetup = () => {
   const [newItemData, setNewItemData] = useState({
     title: "",
     description: "",
-    tags: [], // Added tags field
-    image: null,
+    tags: [],
+    images: [],
   });
   const [editingComponent, setEditingComponent] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
@@ -42,6 +111,8 @@ const CustomerProfileSetup = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const placeholderImg = "/assets/placeholder-design.jpg";
 
   useEffect(() => {
     if (user && user._id) {
@@ -104,18 +175,30 @@ const CustomerProfileSetup = () => {
     }
   };
 
-  const handleComponentImageUpload = (e, fieldName) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setNewItemData({
-          ...newItemData,
-          [fieldName]: e.target.result,
+  const handleComponentImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      const imagePromises = files.map((file) => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(file);
         });
-      };
-      reader.readAsDataURL(file);
+      });
+      Promise.all(imagePromises).then((newImageURLs) => {
+        setNewItemData((prev) => ({
+          ...prev,
+          images: [...prev.images, ...newImageURLs],
+        }));
+      });
     }
+  };
+
+  const handleRemoveImage = (indexToRemove) => {
+    setNewItemData((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, index) => index !== indexToRemove),
+    }));
   };
 
   const handleEditItem = (item, componentId) => {
@@ -124,8 +207,13 @@ const CustomerProfileSetup = () => {
     setNewItemData({
       title: item.title || "",
       description: item.description || "",
-      tags: item.tags || [], // Added tags
-      image: item.image || item.imageUrl || null,
+      tags: item.tags || [],
+      images:
+        item.imageURLs && item.imageURLs.length > 0
+          ? item.imageURLs
+          : item.imageUrl
+          ? [item.imageUrl]
+          : [],
     });
   };
 
@@ -187,8 +275,8 @@ const CustomerProfileSetup = () => {
     setNewItemData({
       title: "",
       description: "",
-      tags: [], // Initialize tags
-      image: null,
+      tags: [],
+      images: [],
     });
   };
 
@@ -207,8 +295,8 @@ const CustomerProfileSetup = () => {
         const designData = {
           title: newItemData.title,
           description: newItemData.description,
-          tags: newItemData.tags, // Include tags
-          image: newItemData.image,
+          tags: newItemData.tags,
+          imageURLs: newItemData.images,
         };
         await createCustomerDesign(user._id, designData);
         await fetchCustomerDesignsById(user._id);
@@ -220,7 +308,7 @@ const CustomerProfileSetup = () => {
               id: Date.now().toString(),
               title: newItemData.title,
               description: newItemData.description,
-              image: newItemData.image,
+              image: newItemData.images[0], // Reviews use single image
             },
           ],
         };
@@ -231,8 +319,8 @@ const CustomerProfileSetup = () => {
       setNewItemData({
         title: "",
         description: "",
-        tags: [], // Reset tags
-        image: null,
+        tags: [],
+        images: [],
       });
       setEditingComponent(null);
     } catch (error) {
@@ -509,19 +597,34 @@ const CustomerProfileSetup = () => {
                                 </button>
                               </div>
                             </div>
-                            <div className="flex mt-2">
-                              {(item.image || item.imageUrl) && (
-                                <div className="w-16 h-16 rounded overflow-hidden mr-3">
-                                  <img
-                                    src={item.image || item.imageUrl}
-                                    alt={item.title || "Item"}
-                                    className="w-full h-full object-cover"
-                                  />
+                            <div className="mt-2">
+                              {component.id === "designs" ? (
+                                <ImageSlider
+                                  images={
+                                    item.imageURLs && item.imageURLs.length > 0
+                                      ? item.imageURLs
+                                      : item.imageUrl
+                                      ? [item.imageUrl]
+                                      : []
+                                  }
+                                  placeholderImg={placeholderImg}
+                                />
+                              ) : (
+                                <div className="flex">
+                                  {(item.image || item.imageUrl) && (
+                                    <div className="w-16 h-16 rounded overflow-hidden mr-3">
+                                      <img
+                                        src={item.image || item.imageUrl}
+                                        alt={item.title || "Item"}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                  )}
+                                  <div className="text-sm text-gray-600">
+                                    {item.description || ""}
+                                  </div>
                                 </div>
                               )}
-                              <div className="text-sm text-gray-600">
-                                {item.description || ""}
-                              </div>
                             </div>
                           </div>
                         ))}
@@ -615,13 +718,9 @@ const CustomerProfileSetup = () => {
                                         type="file"
                                         id={`${component.id}-${field.name}`}
                                         accept="image/*"
+                                        multiple
                                         className="hidden"
-                                        onChange={(e) =>
-                                          handleComponentImageUpload(
-                                            e,
-                                            field.name
-                                          )
-                                        }
+                                        onChange={handleComponentImageUpload}
                                       />
                                       <button
                                         type="button"
@@ -634,21 +733,43 @@ const CustomerProfileSetup = () => {
                                         }
                                         className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
                                       >
-                                        Select Image
+                                        Add Images
                                       </button>
-                                      {newItemData[field.name] && (
+                                      {newItemData.images.length > 0 && (
                                         <span className="ml-2 text-green-600 text-sm">
-                                          Image selected
+                                          {newItemData.images.length} image
+                                          {newItemData.images.length > 1
+                                            ? "s"
+                                            : ""}{" "}
+                                          selected
                                         </span>
                                       )}
                                     </div>
-                                    {newItemData[field.name] && (
-                                      <div className="mt-2 w-16 h-16 rounded overflow-hidden">
-                                        <img
-                                          src={newItemData[field.name]}
-                                          alt=""
-                                          className="w-full h-full object-cover"
-                                        />
+                                    {newItemData.images.length > 0 && (
+                                      <div className="mt-2 grid grid-cols-2 gap-2">
+                                        {newItemData.images.map(
+                                          (image, index) => (
+                                            <div
+                                              key={index}
+                                              className="relative w-full h-24 rounded overflow-hidden"
+                                            >
+                                              <img
+                                                src={image}
+                                                alt={`Selected ${index + 1}`}
+                                                className="w-full h-full object-cover"
+                                              />
+                                              <button
+                                                onClick={() =>
+                                                  handleRemoveImage(index)
+                                                }
+                                                className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full hover:bg-red-700"
+                                                aria-label="Remove image"
+                                              >
+                                                <FaTimes className="w-3 h-3" />
+                                              </button>
+                                            </div>
+                                          )
+                                        )}
                                       </div>
                                     )}
                                   </div>
@@ -666,7 +787,7 @@ const CustomerProfileSetup = () => {
                                   title: "",
                                   description: "",
                                   tags: [],
-                                  image: null,
+                                  images: [],
                                 });
                               }}
                             >
@@ -767,10 +888,9 @@ const CustomerProfileSetup = () => {
                                   type="file"
                                   id="item-image-edit"
                                   accept="image/*"
+                                  multiple
                                   className="hidden"
-                                  onChange={(e) =>
-                                    handleComponentImageUpload(e, field.name)
-                                  }
+                                  onChange={handleComponentImageUpload}
                                 />
                                 <button
                                   type="button"
@@ -781,21 +901,39 @@ const CustomerProfileSetup = () => {
                                   }
                                   className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
                                 >
-                                  Change Image
+                                  Add Images
                                 </button>
-                                {newItemData[field.name] && (
+                                {newItemData.images.length > 0 && (
                                   <span className="ml-2 text-green-600 text-sm">
-                                    Image selected
+                                    {newItemData.images.length} image
+                                    {newItemData.images.length > 1
+                                      ? "s"
+                                      : ""}{" "}
+                                    selected
                                   </span>
                                 )}
                               </div>
-                              {newItemData[field.name] && (
-                                <div className="mt-2 w-full h-48 rounded overflow-hidden">
-                                  <img
-                                    src={newItemData[field.name]}
-                                    alt="Preview"
-                                    className="w-full h-full object-cover"
-                                  />
+                              {newItemData.images.length > 0 && (
+                                <div className="mt-2 grid grid-cols-2 gap-2">
+                                  {newItemData.images.map((image, index) => (
+                                    <div
+                                      key={index}
+                                      className="relative w-full h-24 rounded overflow-hidden"
+                                    >
+                                      <img
+                                        src={image}
+                                        alt={`Selected ${index + 1}`}
+                                        className="w-full h-full object-cover"
+                                      />
+                                      <button
+                                        onClick={() => handleRemoveImage(index)}
+                                        className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full hover:bg-red-700"
+                                        aria-label="Remove image"
+                                      >
+                                        <FaTimes className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  ))}
                                 </div>
                               )}
                             </div>
@@ -819,7 +957,7 @@ const CustomerProfileSetup = () => {
                           title: "",
                           description: "",
                           tags: [],
-                          image: null,
+                          images: [],
                         });
                       }}
                     />
@@ -837,8 +975,8 @@ const CustomerProfileSetup = () => {
                             const designData = {
                               title: newItemData.title,
                               description: newItemData.description,
-                              tags: newItemData.tags, // Include tags
-                              image: newItemData.image,
+                              tags: newItemData.tags,
+                              imageURLs: newItemData.images,
                             };
                             await updateCustomerDesign(
                               user._id,
@@ -856,7 +994,7 @@ const CustomerProfileSetup = () => {
                                         ...item,
                                         title: newItemData.title,
                                         description: newItemData.description,
-                                        image: newItemData.image,
+                                        image: newItemData.images[0],
                                       }
                                     : item
                                 ),
@@ -871,7 +1009,7 @@ const CustomerProfileSetup = () => {
                             title: "",
                             description: "",
                             tags: [],
-                            image: null,
+                            images: [],
                           });
                         } catch (error) {
                           console.error("Error updating item:", error);
@@ -1019,53 +1157,64 @@ const CustomerProfileSetup = () => {
                             {component.items.map((item) => (
                               <div
                                 key={item.id || item._id}
-                                className="flex border-b pb-3 last:border-0 last:pb-0"
+                                className="flex flex-col border-b pb-3 last:border-0 last:pb-0"
                               >
-                                {(item.image || item.imageUrl) && (
-                                  <div className="w-16 h-16 rounded overflow-hidden mr-3 flex-shrink-0">
-                                    <img
-                                      src={item.image || item.imageUrl}
-                                      alt=""
-                                      className="w-full h-full object-cover"
-                                    />
+                                <div className="flex justify-between items-start">
+                                  <h5 className="font-semibold text-sm text-gray-800">
+                                    {item.title || ""}
+                                  </h5>
+                                </div>
+                                {component.id === "designs" ? (
+                                  <ImageSlider
+                                    images={
+                                      item.imageURLs &&
+                                      item.imageURLs.length > 0
+                                        ? item.imageURLs
+                                        : item.imageUrl
+                                        ? [item.imageUrl]
+                                        : []
+                                    }
+                                    placeholderImg={placeholderImg}
+                                  />
+                                ) : (
+                                  <div className="flex mt-2">
+                                    {(item.image || item.imageUrl) && (
+                                      <div className="w-16 h-16 rounded overflow-hidden mr-3 flex-shrink-0">
+                                        <img
+                                          src={item.image || item.imageUrl}
+                                          alt=""
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                    )}
+                                    <div className="text-sm text-gray-600">
+                                      {item.description || ""}
+                                    </div>
                                   </div>
                                 )}
-                                <div className="flex-1">
-                                  <div className="flex justify-between items-start">
-                                    <h5 className="font-semibold text-sm text-gray-800">
-                                      {item.title || ""}
-                                    </h5>
+                                {item.tags && item.tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 mt-1">
+                                    {item.tags.map((tag, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
                                   </div>
-                                  <p className="text-sm text-gray-600 mt-1">
-                                    {item.description || ""}
-                                  </p>
-                                  {item.tags && item.tags.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mt-1">
-                                      {item.tags.map((tag, idx) => (
-                                        <span
-                                          key={idx}
-                                          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
-                                        >
-                                          {tag}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  )}
-                                  {item.rating && (
-                                    <div className="flex items-center mt-1">
-                                      {Array.from({
-                                        length: parseInt(item.rating),
-                                      }).map((_, i) => (
-                                        <span
-                                          key={i}
-                                          className="text-yellow-400"
-                                        >
-                                          ⭐
-                                        </span>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
+                                )}
+                                {item.rating && (
+                                  <div className="flex items-center mt-1">
+                                    {Array.from({
+                                      length: parseInt(item.rating),
+                                    }).map((_, i) => (
+                                      <span key={i} className="text-yellow-400">
+                                        ⭐
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>

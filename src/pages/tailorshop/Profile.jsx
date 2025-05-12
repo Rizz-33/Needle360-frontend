@@ -1,10 +1,11 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Edit2 } from "lucide-react";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import {
   FaCalendarAlt,
   FaChevronLeft,
+  FaChevronRight,
   FaClock,
   FaEdit,
   FaEnvelope,
@@ -72,6 +73,69 @@ const StarRating = ({ rating, setRating }) => {
           )}
         </button>
       ))}
+    </div>
+  );
+};
+
+const ImageSlider = ({ images, placeholderImg }) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const handlePreviousImage = () => {
+    setCurrentImageIndex((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prev) => Math.min(prev + 1, images.length - 1));
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative w-full max-h-[400px]">
+        <img
+          src={images[currentImageIndex] || placeholderImg}
+          alt={`Image ${currentImageIndex + 1}`}
+          className="w-full h-auto max-h-[400px] object-contain rounded-lg"
+          onError={(e) => {
+            e.target.src = placeholderImg;
+            e.target.onerror = null;
+          }}
+        />
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={handlePreviousImage}
+              disabled={currentImageIndex === 0}
+              className={`absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full ${
+                currentImageIndex === 0
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-black/70"
+              }`}
+              aria-label="Previous image"
+            >
+              <FaChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleNextImage}
+              disabled={currentImageIndex === images.length - 1}
+              className={`absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full ${
+                currentImageIndex === images.length - 1
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-black/70"
+              }`}
+              aria-label="Next image"
+            >
+              <FaChevronRight className="w-4 h-4" />
+            </button>
+          </>
+        )}
+      </div>
+      <p className="text-xs text-gray-500 mt-2 text-center">
+        {images.length > 0
+          ? currentImageIndex === 0
+            ? "Final Product"
+            : `Detail Image ${currentImageIndex}`
+          : "No Images Available"}
+      </p>
     </div>
   );
 };
@@ -220,18 +284,17 @@ const TailorProfilePage = () => {
     createReview,
   } = useReviewStore();
   const { fetchCustomerById } = useCustomerStore();
-  const { createOrder } = useOrderStore(); // Added for order creation
+  const { createOrder } = useOrderStore();
 
   const [activeTab, setActiveTab] = useState("designs");
   const [showAllBio, setShowAllBio] = useState(false);
   const [selectedDesign, setSelectedDesign] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false); // New state for order modal
-  const [reviewers, setReviewers] = useState({});
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [reviewersData, setReviewersData] = useState({});
   const [rating, setRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false); // New state for submission status
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderForm, setOrderForm] = useState({
     orderType: "",
     totalAmount: "",
@@ -244,6 +307,7 @@ const TailorProfilePage = () => {
   const tailorId = id || currentUserId;
   const isOwnProfile = !id || (user && (user._id === id || user.id === id));
   const loadingReviewerIdsRef = useRef(new Set());
+  const placeholderImg = "/assets/placeholder-design.jpg";
 
   const loadReviewerDetails = useCallback(
     async (reviewClientId) => {
@@ -456,8 +520,6 @@ const TailorProfilePage = () => {
         customerContact: orderForm.customerContact,
         notes: orderForm.notes,
       };
-
-      console.log("Submitting order data:", orderData);
 
       await createOrder(orderData, selectedDesign.tailorId);
       toast.success("Order created successfully!");
@@ -748,11 +810,15 @@ const TailorProfilePage = () => {
             className="aspect-square bg-gray-100 relative overflow-hidden group cursor-pointer"
             onClick={() => handleDesignClick(design)}
           >
-            {design.imageUrl ? (
+            {design.imageURLs?.[0] || design.imageUrl ? (
               <img
-                src={design.imageUrl}
+                src={design.imageURLs?.[0] || design.imageUrl}
                 alt={design.title || "Tailor Design"}
                 className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                onError={(e) => {
+                  e.target.src = placeholderImg;
+                  e.target.onerror = null;
+                }}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -885,73 +951,17 @@ const TailorProfilePage = () => {
             <Loader />
           </div>
         ) : reviews && reviews.length > 0 ? (
-          reviews.map((review, index) => {
-            const reviewer = reviewersData[review.clientId] || {
-              name: "Anonymous User",
-              profileImage: null,
-              type: null,
-            };
-
-            return (
-              <motion.div
-                key={review._id || index}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="bg-white p-3 rounded-lg shadow-sm border border-gray-100"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center">
-                    <div className="mr-3 w-10 h-10 rounded-full overflow-hidden">
-                      {reviewer.profileImage ? (
-                        <img
-                          src={reviewer.profileImage}
-                          alt={reviewer.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                          <FaUser className="text-gray-500" />
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-gray-800 text-sm">
-                        {reviewer.name}
-                        {reviewer.type && (
-                          <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                            {reviewer.type === "tailor" ? "Tailor" : "Customer"}
-                          </span>
-                        )}
-                      </h3>
-                      <div className="flex items-center mt-1">
-                        <div className="flex mr-2">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <span key={star}>
-                              {star <= review.rating ? (
-                                <FaStar className="text-yellow-400 text-xs" />
-                              ) : (
-                                <FaRegStar className="text-yellow-400 text-xs" />
-                              )}
-                            </span>
-                          ))}
-                        </div>
-                        <span className="text-xs text-gray-500">
-                          {review.rating.toFixed(0)}/5
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center text-xs text-gray-500">
-                    {formatDate(review.createdAt || review.date)}
-                  </div>
-                </div>
-                {review.comment && (
-                  <p className="text-xs text-gray-600 mt-2">{review.comment}</p>
-                )}
-              </motion.div>
-            );
-          })
+          reviews.map((review, index) => (
+            <motion.div
+              key={review._id || index}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="bg-white p-3 rounded-lg shadow-sm border border-gray-100"
+            >
+              <ReviewItem review={review} />
+            </motion.div>
+          ))
         ) : (
           <div className="py-10 text-center text-gray-500 text-sm">
             <FaStar className="text-2xl mx-auto mb-2 text-gray-300" />
@@ -1140,17 +1150,15 @@ const TailorProfilePage = () => {
               </div>
               <div className="p-6 space-y-6">
                 <div className="rounded-xl overflow-hidden bg-gray-100">
-                  <img
-                    src={
-                      selectedDesign.imageUrl ||
-                      "/assets/placeholder-design.jpg"
+                  <ImageSlider
+                    images={
+                      selectedDesign.imageURLs?.length > 0
+                        ? selectedDesign.imageURLs
+                        : selectedDesign.imageUrl
+                        ? [selectedDesign.imageUrl]
+                        : []
                     }
-                    alt={selectedDesign.title || "Design Image"}
-                    className="w-full h-auto max-h-[400px] object-contain"
-                    onError={(e) => {
-                      e.target.src = "/assets/placeholder-design.jpg";
-                      e.target.onerror = null;
-                    }}
+                    placeholderImg={placeholderImg}
                   />
                 </div>
                 <div className="flex items-center justify-end space-x-3">
