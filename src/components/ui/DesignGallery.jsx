@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FaChevronDown,
+  FaChevronLeft,
+  FaChevronRight,
   FaChevronUp,
   FaEdit,
   FaEnvelope,
@@ -182,6 +184,7 @@ const DesignCard = ({ design }) => {
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [isOwnDesign, setIsOwnDesign] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [orderForm, setOrderForm] = useState({
     orderType: "",
     totalAmount: "",
@@ -193,8 +196,17 @@ const DesignCard = ({ design }) => {
   const { createOrder } = useOrderStore();
   const { user } = useAuthStore();
 
+  const images =
+    design.imageURLs && design.imageURLs.length > 0
+      ? design.imageURLs
+      : design.imageUrl
+      ? [design.imageUrl]
+      : [];
+  const placeholderImg = "/assets/placeholder-design.jpg";
+
   const handleViewDetails = () => {
     setShowModal(true);
+    setCurrentImageIndex(0); // Reset to first image when opening modal
     fetchCreatorDetails();
     fetchDesignReviews();
   };
@@ -227,6 +239,7 @@ const DesignCard = ({ design }) => {
     setShowModal(false);
     setRating(0);
     setReview("");
+    setCurrentImageIndex(0);
   };
 
   const closeOrderModal = () => {
@@ -400,8 +413,6 @@ const DesignCard = ({ design }) => {
     return "Not For Sale";
   };
 
-  const placeholderImg = "/assets/placeholder-design.jpg";
-
   const isEdited =
     design.createdAt &&
     design.updatedAt &&
@@ -410,6 +421,14 @@ const DesignCard = ({ design }) => {
 
   const averageRating = design.averageRating || 0;
   const reviewCount = design.reviewCount || 0;
+
+  const handlePreviousImage = () => {
+    setCurrentImageIndex((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prev) => Math.min(prev + 1, images.length - 1));
+  };
 
   return (
     <>
@@ -526,16 +545,68 @@ const DesignCard = ({ design }) => {
               </div>
             </div>
             <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-              <div className="rounded-xl overflow-hidden bg-gray-100">
-                <img
-                  src={design.imageUrl || placeholderImg}
-                  alt={design.title || "Design Image"}
-                  className="w-full h-auto max-h-72 sm:max-h-96 object-contain"
-                  onError={(e) => {
-                    e.target.src = placeholderImg;
-                    e.target.onerror = null;
-                  }}
-                />
+              <div className="relative bg-gray-100 rounded-xl p-4">
+                {images.length > 0 ? (
+                  <div className="flex flex-col items-center">
+                    <div className="relative w-full max-h-48 sm:max-h-64">
+                      <img
+                        src={images[currentImageIndex] || placeholderImg}
+                        alt={`${design.title || "Design"} Image ${
+                          currentImageIndex + 1
+                        }`}
+                        className="w-full h-auto max-h-48 sm:max-h-64 object-contain rounded-lg"
+                        onError={(e) => {
+                          e.target.src = placeholderImg;
+                          e.target.onerror = null;
+                        }}
+                      />
+                      {images.length > 1 && (
+                        <>
+                          <button
+                            onClick={handlePreviousImage}
+                            disabled={currentImageIndex === 0}
+                            className={`absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full ${
+                              currentImageIndex === 0
+                                ? "opacity-50 cursor-not-allowed"
+                                : "hover:bg-black/70"
+                            }`}
+                            aria-label="Previous image"
+                          >
+                            <FaChevronLeft className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={handleNextImage}
+                            disabled={currentImageIndex === images.length - 1}
+                            className={`absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full ${
+                              currentImageIndex === images.length - 1
+                                ? "opacity-50 cursor-not-allowed"
+                                : "hover:bg-black/70"
+                            }`}
+                            aria-label="Next image"
+                          >
+                            <FaChevronRight className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2 text-center">
+                      {currentImageIndex === 0
+                        ? "Final Product"
+                        : `Detail Image ${currentImageIndex}`}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <img
+                      src={placeholderImg}
+                      alt="No Image Available"
+                      className="w-full h-auto max-h-48 sm:max-h-64 object-contain rounded-lg"
+                    />
+                    <p className="text-xs text-gray-500 mt-2 text-center">
+                      No Images Available
+                    </p>
+                  </div>
+                )}
               </div>
               <div className="flex items-center justify-end space-x-2 sm:space-x-3">
                 <div className="flex items-center text-gray-500 text-xs">
@@ -1156,7 +1227,7 @@ const DesignGallery = () => {
 
   return (
     <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8 px-8">
         <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 mb-4 sm:mb-0">
           Design Gallery
         </h2>
@@ -1177,9 +1248,9 @@ const DesignGallery = () => {
             hover_color="hoverAccent"
             variant={activeFilter === "customer" ? "filled" : "outlined"}
             height="h-7 sm:h-8"
-            width="w-40 sm:w-32"
+            width="w-28 sm:w-24"
             onClick={() => handleFilterChange("customer")}
-            aria-label="Show customer requests"
+            aria-label="Show customer designs"
           />
           <CustomButton
             text="All Designs"
@@ -1187,7 +1258,7 @@ const DesignGallery = () => {
             hover_color="hoverAccent"
             variant={activeFilter === "all" ? "filled" : "outlined"}
             height="h-7 sm:h-8"
-            width="w-28 sm:w-20"
+            width="w-28 sm:w-24"
             onClick={() => handleFilterChange("all")}
             aria-label="Show all designs"
           />
@@ -1195,189 +1266,195 @@ const DesignGallery = () => {
             text={showFilters ? "Hide Filters" : "Show Filters"}
             color="primary"
             hover_color="hoverAccent"
-            variant="text"
-            height="h-7 sm:h-10"
-            width="w-28"
-            iconRight={showFilters ? <FaChevronUp /> : <FaChevronDown />}
+            variant="outlined"
+            height="h-7 sm:h-8"
+            width="w-28 sm:w-24"
             onClick={() => setShowFilters(!showFilters)}
+            icon={showFilters ? <FaChevronUp /> : <FaChevronDown />}
             aria-label={showFilters ? "Hide filters" : "Show filters"}
           />
         </div>
       </div>
 
       {showFilters && (
-        <div className="bg-gray-50 p-4 sm:p-6 rounded-2xl shadow-md mb-6 sm:mb-8">
+        <div className="bg-gray-50 p-4 sm:p-6 rounded-xl mb-6 sm:mb-8 shadow-sm">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <div>
-              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 mb-1 sm:mb-2">
-                Price Range (LKR)
-              </h3>
-              <div className="flex space-x-2">
-                <input
-                  type="number"
-                  name="priceMin"
-                  placeholder="Min"
-                  value={filters.priceMin}
-                  onChange={handleInputChange}
-                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  aria-label="Minimum price"
-                />
-                <input
-                  type="number"
-                  name="priceMax"
-                  placeholder="Max"
-                  value={filters.priceMax}
-                  onChange={handleInputChange}
-                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  aria-label="Maximum price"
-                />
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 mb-1 sm:mb-2">
-                Creation Date
-              </h3>
-              <div className="flex space-x-2">
-                <input
-                  type="date"
-                  name="dateFrom"
-                  value={filters.dateFrom}
-                  onChange={handleInputChange}
-                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  aria-label="Date from"
-                />
-                <input
-                  type="date"
-                  name="dateTo"
-                  value={filters.dateTo}
-                  onChange={handleInputChange}
-                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  aria-label="Date to"
-                />
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 mb-1 sm:mb-2">
-                Creator Address
-              </h3>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">
+                Minimum Price (LKR)
+              </label>
               <input
-                type="text"
-                name="address"
-                placeholder="Enter city or address"
-                value={filters.address}
+                type="number"
+                name="priceMin"
+                value={filters.priceMin}
                 onChange={handleInputChange}
-                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                aria-label="Creator address"
+                placeholder="Min price"
+                className="w-full px-3 py-1.5 sm:py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary text-xs sm:text-sm"
+                min="0"
               />
             </div>
-
-            <div className="col-span-1 sm:col-span-2 lg:col-span-3">
-              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 mb-1 sm:mb-2">
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">
+                Maximum Price (LKR)
+              </label>
+              <input
+                type="number"
+                name="priceMax"
+                value={filters.priceMax}
+                onChange={handleInputChange}
+                placeholder="Max price"
+                className="w-full px-3 py-1.5 sm:py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary text-xs sm:text-sm"
+                min="0"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">
                 Tags
-              </h3>
-              <div className="flex flex-wrap gap-1 sm:gap-2">
-                {predefinedServices.map((tag) => (
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {predefinedServices.slice(0, 5).map((tag) => (
                   <button
                     key={tag}
                     onClick={() => handleTagToggle(tag)}
-                    className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    className={`px-2 py-1 rounded-full text-xs ${
                       filters.tags.includes(tag)
                         ? "bg-primary text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        : "bg-gray-200 text-gray-600"
                     }`}
-                    aria-label={`Toggle tag ${tag}`}
                   >
                     {tag}
                   </button>
                 ))}
               </div>
             </div>
-
             <div>
-              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 mb-1 sm:mb-2">
-                Minimum Rating
-              </h3>
-              <StarRating
-                rating={filters.minRating}
-                setRating={handleRatingChange}
+              <label className="text-xs font-medium text-gray-500 mb-1 block">
+                Location
+              </label>
+              <input
+                type="text"
+                name="address"
+                value={filters.address}
+                onChange={handleInputChange}
+                placeholder="Enter location"
+                className="w-full px-3 py-1.5 sm:py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary text-xs sm:text-sm"
               />
             </div>
-
             <div>
-              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 mb-1 sm:mb-2">
+              <label className="text-xs font-medium text-gray-500 mb-1 block">
+                Minimum Rating
+              </label>
+              <div className="flex">
+                {[0, 1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => handleRatingChange(star)}
+                    className="focus:outline-none p-1"
+                  >
+                    {star <= filters.minRating ? (
+                      <FaStar className="text-yellow-400 text-sm" />
+                    ) : (
+                      <FaRegStar className="text-yellow-400 text-sm" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">
                 Sort By
-              </h3>
+              </label>
               <select
                 name="sortBy"
                 value={filters.sortBy}
                 onChange={handleInputChange}
-                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                aria-label="Sort by"
+                className="w-full px-3 py-1.5 sm:py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary text-xs sm:text-sm"
               >
                 <option value="createdAt">Date Created</option>
                 <option value="price">Price</option>
                 <option value="rating">Rating</option>
               </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">
+                Sort Order
+              </label>
               <select
                 name="sortOrder"
                 value={filters.sortOrder}
                 onChange={handleInputChange}
-                className="w-full mt-1 sm:mt-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                aria-label="Sort order"
+                className="w-full px-3 py-1.5 sm:py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary text-xs sm:text-sm"
               >
                 <option value="desc">Descending</option>
                 <option value="asc">Ascending</option>
               </select>
             </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">
+                From Date
+              </label>
+              <input
+                type="date"
+                name="dateFrom"
+                value={filters.dateFrom}
+                onChange={handleInputChange}
+                className="w-full px-3 py-1.5 sm:py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary text-xs sm:text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">
+                To Date
+              </label>
+              <input
+                type="date"
+                name="dateTo"
+                value={filters.dateTo}
+                onChange={handleInputChange}
+                className="w-full px-3 py-1.5 sm:py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary text-xs sm:text-sm"
+              />
+            </div>
           </div>
-          <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row sm:justify-end space-y-2 sm:space-y-0 sm:space-x-2">
+          <div className="flex flex-col sm:flex-row sm:justify-end gap-2 sm:gap-3 mt-4 sm:mt-6">
             <CustomButton
-              text={isFiltering ? "Applying Filters..." : "Apply Filters"}
+              text="Reset Filters"
+              color="gray"
+              hover_color="hoverGray"
+              variant="outlined"
+              width="w-full sm:w-1/4"
+              height="h-9 sm:h-10"
+              onClick={resetFilters}
+            />
+            <CustomButton
+              text={isFiltering ? "Applying..." : "Apply Filters"}
               color="primary"
               hover_color="hoverAccent"
               variant="filled"
+              width="w-full sm:w-1/4"
               height="h-9 sm:h-10"
-              width="w-full sm:w-32"
               onClick={applyFilters}
               disabled={isFiltering}
-              aria-label="Apply filters"
-            />
-            <CustomButton
-              text={isLoading ? "Resetting Filters..." : "Reset Filters"}
-              color="primary"
-              hover_color="hoverAccent"
-              variant="outlined"
-              height="h-9 sm:h-10"
-              width="w-full sm:w-32"
-              onClick={resetFilters}
-              aria-label="Reset filters"
             />
           </div>
         </div>
       )}
 
       {isLoading ? (
-        <div className="flex justify-center items-center h-64">
+        <div className="flex justify-center py-8">
           <Loader />
         </div>
       ) : error ? (
-        <div className="text-center text-red-500 p-4">
-          Error loading designs: {error}
-        </div>
-      ) : filteredDesigns.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-          {filteredDesigns.map((design, index) => (
-            <DesignCard
-              key={design._id || design.id || index}
-              design={design}
-            />
-          ))}
+        <div className="text-center text-red-500 py-8">{error}</div>
+      ) : filteredDesigns.length === 0 ? (
+        <div className="text-center text-gray-500 py-8">
+          No designs found. Try adjusting your filters.
         </div>
       ) : (
-        <div className="text-center py-12">
-          <Loader />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 px-8">
+          {filteredDesigns.map((design) => (
+            <div key={design._id} className="flex justify-center">
+              <DesignCard design={design} />
+            </div>
+          ))}
         </div>
       )}
     </div>
