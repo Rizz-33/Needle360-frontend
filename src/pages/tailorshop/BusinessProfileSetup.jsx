@@ -1,6 +1,12 @@
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useState } from "react";
-import { FaPortrait, FaUpload } from "react-icons/fa";
+import { useEffect, useState } from "react";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaPortrait,
+  FaTimes,
+  FaUpload,
+} from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { CustomButton } from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
@@ -12,6 +18,78 @@ import { useDesignStore } from "../../store/Design.store";
 import { useOfferStore } from "../../store/Offer.store";
 import { useServiceStore } from "../../store/Service.store";
 import { useShopStore } from "../../store/Shop.store";
+
+const ImageSlider = ({ images, placeholderImg, onRemoveImage }) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const handlePreviousImage = () => {
+    setCurrentImageIndex((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prev) => Math.min(prev + 1, images.length - 1));
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative w-full max-h-[200px]">
+        <img
+          src={images[currentImageIndex] || placeholderImg}
+          alt={`Image ${currentImageIndex + 1}`}
+          className="w-full h-auto max-h-[200px] object-contain rounded-lg"
+          onError={(e) => {
+            e.target.src = placeholderImg;
+            e.target.onerror = null;
+          }}
+        />
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={handlePreviousImage}
+              disabled={currentImageIndex === 0}
+              className={`absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full ${
+                currentImageIndex === 0
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-black/70"
+              }`}
+              aria-label="Previous image"
+            >
+              <FaChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleNextImage}
+              disabled={currentImageIndex === images.length - 1}
+              className={`absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full ${
+                currentImageIndex === images.length - 1
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-black/70"
+              }`}
+              aria-label="Next image"
+            >
+              <FaChevronRight className="w-4 h-4" />
+            </button>
+          </>
+        )}
+        {onRemoveImage && images[currentImageIndex] && (
+          <button
+            onClick={() => onRemoveImage(currentImageIndex)}
+            className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full hover:bg-red-700"
+            aria-label="Remove image"
+          >
+            <FaTimes className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+      <p className="text-xs text-gray-500 mt-2 text-center">
+        {images.length > 0
+          ? currentImageIndex === 0
+            ? "Final Product"
+            : `Detail Image ${currentImageIndex}`
+          : "No Images Available"}
+      </p>
+    </div>
+  );
+};
 
 const BusinessProfileSetup = () => {
   const { tailor, fetchTailorById, updateTailor } = useShopStore();
@@ -68,9 +146,9 @@ const BusinessProfileSetup = () => {
     to: "17:00",
     isOpen: true,
     status: "available",
-    image: null,
+    images: [],
     price: "",
-    tags: [], // Added tags to state
+    tags: [],
   });
   const [editingComponent, setEditingComponent] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
@@ -89,6 +167,8 @@ const BusinessProfileSetup = () => {
     "Saturday",
     "Sunday",
   ];
+
+  const placeholderImg = "/assets/placeholder-design.jpg";
 
   useEffect(() => {
     if (user && user._id) {
@@ -165,9 +245,14 @@ const BusinessProfileSetup = () => {
           id: design._id,
           title: design.title || "",
           description: design.description || "",
-          image: design.imageUrl || null,
+          images:
+            design.imageURLs?.length > 0
+              ? design.imageURLs
+              : design.imageUrl
+              ? [design.imageUrl]
+              : [],
           price: design.price || "",
-          tags: design.tags || [], // Added tags
+          tags: design.tags || [],
         }));
       }
 
@@ -226,17 +311,30 @@ const BusinessProfileSetup = () => {
   };
 
   const handleComponentImageUpload = (e, fieldName) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setNewItemData({
-          ...newItemData,
-          [fieldName]: e.target.result,
-        });
-      };
-      reader.readAsDataURL(file);
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      const newImages = [];
+      files.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          newImages.push(e.target.result);
+          if (newImages.length === files.length) {
+            setNewItemData((prev) => ({
+              ...prev,
+              [fieldName]: [...(prev[fieldName] || []), ...newImages],
+            }));
+          }
+        };
+        reader.readAsDataURL(file);
+      });
     }
+  };
+
+  const handleRemoveImage = (index) => {
+    setNewItemData((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index),
+    }));
   };
 
   const handleEditItem = (item, componentId) => {
@@ -248,8 +346,8 @@ const BusinessProfileSetup = () => {
         title: item.title,
         description: item.description,
         price: item.price,
-        image: item.image,
-        tags: item.tags || [], // Added tags
+        images: item.images || [],
+        tags: item.tags || [],
       });
     } else if (componentId === "offers") {
       setNewItemData({
@@ -353,9 +451,9 @@ const BusinessProfileSetup = () => {
       to: "17:00",
       isOpen: true,
       status: "available",
-      image: null,
+      images: [],
       price: "",
-      tags: [], // Initialize tags
+      tags: [],
     });
   };
 
@@ -375,8 +473,8 @@ const BusinessProfileSetup = () => {
           title: newItemData.title || "",
           description: newItemData.description || "",
           price: newItemData.price || "",
-          imageURLs: newItemData.image ? [newItemData.image] : [],
-          tags: newItemData.tags || [], // Include tags
+          imageURLs: newItemData.images || [],
+          tags: newItemData.tags || [],
         };
         await createTailorDesign(user._id, newDesign);
         await fetchTailorDesignsById(user._id);
@@ -434,9 +532,9 @@ const BusinessProfileSetup = () => {
         to: "17:00",
         isOpen: true,
         status: "available",
-        image: null,
+        images: [],
         price: "",
-        tags: [], // Reset tags
+        tags: [],
       });
       setEditingComponent(null);
     } catch (error) {
@@ -744,7 +842,25 @@ const BusinessProfileSetup = () => {
                               )}
                             </div>
                             <div className="flex mt-2">
-                              {item.image && (
+                              {component.id === "designs" &&
+                              item.images?.length > 0 ? (
+                                <div className="w-16 h-16 rounded overflow-hidden mr-3">
+                                  <img
+                                    src={item.images[0] || placeholderImg}
+                                    alt={item.title || "Item"}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.target.src = placeholderImg;
+                                      e.target.onerror = null;
+                                    }}
+                                  />
+                                  {item.images.length > 1 && (
+                                    <span className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1 rounded">
+                                      +{item.images.length - 1}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : component.id === "offers" && item.image ? (
                                 <div className="w-16 h-16 rounded overflow-hidden mr-3">
                                   <img
                                     src={item.image}
@@ -752,7 +868,7 @@ const BusinessProfileSetup = () => {
                                     className="w-full h-full object-cover"
                                   />
                                 </div>
-                              )}
+                              ) : null}
                               <div className="text-sm text-gray-600">
                                 {item.description ||
                                   (component.id === "availability" &&
@@ -893,6 +1009,130 @@ const BusinessProfileSetup = () => {
                                   Hold Ctrl/Cmd to select multiple services
                                 </p>
                               </div>
+                            ) : component.id === "designs" ? (
+                              <>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Title
+                                  </label>
+                                  <input
+                                    type="text"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                    value={newItemData.title || ""}
+                                    onChange={(e) =>
+                                      handleNewItemChange(
+                                        "title",
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Price
+                                  </label>
+                                  <input
+                                    type="text"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                    value={newItemData.price || ""}
+                                    onChange={(e) =>
+                                      handleNewItemChange(
+                                        "price",
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                </div>
+                                <div className="md:col-span-2">
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Description
+                                  </label>
+                                  <textarea
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                    rows="3"
+                                    value={newItemData.description || ""}
+                                    onChange={(e) =>
+                                      handleNewItemChange(
+                                        "description",
+                                        e.target.value
+                                      )
+                                    }
+                                  ></textarea>
+                                </div>
+                                <div className="md:col-span-2">
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Tags
+                                  </label>
+                                  <select
+                                    multiple
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                    value={newItemData.tags || []}
+                                    onChange={(e) =>
+                                      handleNewItemChange(
+                                        "tags",
+                                        Array.from(
+                                          e.target.selectedOptions,
+                                          (option) => option.value
+                                        )
+                                      )
+                                    }
+                                  >
+                                    {predefinedServices.map((service) => (
+                                      <option key={service} value={service}>
+                                        {service}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Hold Ctrl/Cmd to select multiple tags
+                                  </p>
+                                </div>
+                                <div className="md:col-span-2">
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Images
+                                  </label>
+                                  <div className="flex items-center">
+                                    <input
+                                      type="file"
+                                      id={`${component.id}-images`}
+                                      accept="image/*"
+                                      multiple
+                                      className="hidden"
+                                      onChange={(e) =>
+                                        handleComponentImageUpload(e, "images")
+                                      }
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        document
+                                          .getElementById(
+                                            `${component.id}-images`
+                                          )
+                                          .click()
+                                      }
+                                      className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
+                                    >
+                                      Select Images
+                                    </button>
+                                    {newItemData.images?.length > 0 && (
+                                      <span className="ml-2 text-green-600 text-sm">
+                                        {newItemData.images.length} image(s)
+                                        selected
+                                      </span>
+                                    )}
+                                  </div>
+                                  {newItemData.images?.length > 0 && (
+                                    <div className="mt-2">
+                                      <ImageSlider
+                                        images={newItemData.images}
+                                        placeholderImg={placeholderImg}
+                                        onRemoveImage={handleRemoveImage}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </>
                             ) : (
                               component.contentFields.map((field) => (
                                 <div
@@ -1063,7 +1303,7 @@ const BusinessProfileSetup = () => {
                                   to: "17:00",
                                   isOpen: true,
                                   status: "available",
-                                  image: null,
+                                  images: [],
                                   price: "",
                                   tags: [],
                                 });
@@ -1289,41 +1529,42 @@ const BusinessProfileSetup = () => {
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Image
+                            Images
                           </label>
                           <div className="flex items-center">
                             <input
                               type="file"
-                              id="item-image-edit"
+                              id="item-images-edit"
                               accept="image/*"
+                              multiple
                               className="hidden"
                               onChange={(e) =>
-                                handleComponentImageUpload(e, "image")
+                                handleComponentImageUpload(e, "images")
                               }
                             />
                             <button
                               type="button"
                               onClick={() =>
                                 document
-                                  .getElementById("item-image-edit")
+                                  .getElementById("item-images-edit")
                                   .click()
                               }
                               className="px-3 py-2 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200 text-sm"
                             >
-                              Change Image
+                              Select Images
                             </button>
-                            {newItemData.image && (
+                            {newItemData.images?.length > 0 && (
                               <span className="ml-2 text-green-600 text-sm">
-                                Image selected
+                                {newItemData.images.length} image(s) selected
                               </span>
                             )}
                           </div>
-                          {newItemData.image && (
-                            <div className="mt-2 w-16 h-16 rounded overflow-hidden">
-                              <img
-                                src={newItemData.image}
-                                alt=""
-                                className="w-full h-full object-cover"
+                          {newItemData.images?.length > 0 && (
+                            <div className="mt-2">
+                              <ImageSlider
+                                images={newItemData.images}
+                                placeholderImg={placeholderImg}
+                                onRemoveImage={handleRemoveImage}
                               />
                             </div>
                           )}
@@ -1466,7 +1707,7 @@ const BusinessProfileSetup = () => {
                           to: "17:00",
                           isOpen: true,
                           status: "available",
-                          image: null,
+                          images: [],
                           price: "",
                           tags: [],
                         });
@@ -1487,9 +1728,8 @@ const BusinessProfileSetup = () => {
                               title: newItemData.title,
                               description: newItemData.description,
                               price: newItemData.price,
-                              imageUrl:
-                                newItemData.image || editingItem.imageUrl,
-                              tags: newItemData.tags, // Include tags
+                              imageURLs: newItemData.images,
+                              tags: newItemData.tags,
                             });
                           } else if (editingComponent === "offers") {
                             await updateOffer(user._id, editingItem.id, {
@@ -1543,7 +1783,7 @@ const BusinessProfileSetup = () => {
                             to: "17:00",
                             isOpen: true,
                             status: "available",
-                            image: null,
+                            images: [],
                             price: "",
                             tags: [],
                           });
@@ -1701,7 +1941,25 @@ const BusinessProfileSetup = () => {
                                 key={item.id}
                                 className="flex border-b pb-3 last:border-0 last:pb-0"
                               >
-                                {item.image && (
+                                {component.id === "designs" &&
+                                item.images?.length > 0 ? (
+                                  <div className="w-16 h-16 rounded overflow-hidden mr-3 flex-shrink-0 relative">
+                                    <img
+                                      src={item.images[0] || placeholderImg}
+                                      alt={item.title || ""}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.target.src = placeholderImg;
+                                        e.target.onerror = null;
+                                      }}
+                                    />
+                                    {item.images.length > 1 && (
+                                      <span className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1 rounded">
+                                        +{item.images.length - 1}
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : component.id === "offers" && item.image ? (
                                   <div className="w-16 h-16 rounded overflow-hidden mr-3 flex-shrink-0">
                                     <img
                                       src={item.image}
@@ -1709,7 +1967,7 @@ const BusinessProfileSetup = () => {
                                       className="w-full h-full object-cover"
                                     />
                                   </div>
-                                )}
+                                ) : null}
                                 <div className="flex-1">
                                   <div className="flex justify-between items-start">
                                     <h5 className="font-semibold text-sm text-gray-800">
@@ -1909,7 +2167,7 @@ const BusinessProfileSetup = () => {
                 onClick={prevStep}
               />
             ) : (
-              <div className="w-20" /> // Placeholder to maintain alignment
+              <div className="w-20" />
             )}
 
             <CustomButton
@@ -1917,19 +2175,17 @@ const BusinessProfileSetup = () => {
                 currentStep === steps.length - 1
                   ? isSaving
                     ? "Saving..."
-                    : saveSuccess
-                    ? "Saved!"
-                    : "Save and Complete Setup"
-                  : "Continue"
+                    : "Save & Finish"
+                  : "Next"
               }
               color="primary"
               hover_color="hoverAccent"
               variant="filled"
-              width="w-1/3"
+              width="w-28"
               height="h-9"
-              type="button"
-              disabled={isSaving}
+              type="submit"
               onClick={nextStep}
+              disabled={isSaving}
             />
           </div>
         </motion.div>
