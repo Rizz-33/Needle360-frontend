@@ -25,7 +25,6 @@ export const useServiceStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await axios.get(`${BASE_API_URL}`);
-      console.log("fetchAllServices response:", response.data);
       set({
         allServices: response.data.services || [],
         tailors: response.data.tailors || [],
@@ -54,7 +53,6 @@ export const useServiceStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await axios.get(`${BASE_API_URL}/${tailorId}`);
-      console.log(`fetchServices for tailor ${tailorId}:`, response.data);
       set({ services: response.data.services || [], isLoading: false });
       return response.data;
     } catch (error) {
@@ -73,17 +71,12 @@ export const useServiceStore = create((set, get) => ({
     try {
       // Normalize service name
       const normalizedServiceName = serviceName.trim();
-      console.log(`Fetching tailors for service: ${normalizedServiceName}`);
 
       // Try backend API
       let serviceTailors = [];
       try {
         const response = await axios.get(
           `${BASE_API_URL}/service/${encodeURIComponent(normalizedServiceName)}`
-        );
-        console.log(
-          `Backend response for ${normalizedServiceName}:`,
-          response.data
         );
         serviceTailors = response.data.tailors || [];
       } catch (apiError) {
@@ -95,12 +88,10 @@ export const useServiceStore = create((set, get) => ({
 
       // Fallback to client-side filtering if backend returns no tailors
       if (!serviceTailors || serviceTailors.length === 0) {
-        console.log("Performing client-side filtering");
         const shopStore = useShopStore.getState();
         let tailors = shopStore.tailors;
 
         if (!tailors || tailors.length === 0) {
-          console.log("Fetching all tailors from useShopStore");
           tailors = await shopStore.fetchTailors();
         }
 
@@ -111,10 +102,6 @@ export const useServiceStore = create((set, get) => ({
               service.trim().toLowerCase() ===
               normalizedServiceName.toLowerCase()
           )
-        );
-        console.log(
-          `Client-side filtered tailors for ${normalizedServiceName}:`,
-          serviceTailors
         );
       }
 
