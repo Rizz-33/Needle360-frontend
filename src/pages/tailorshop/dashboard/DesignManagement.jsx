@@ -1,10 +1,73 @@
-import { Edit, Eye, Trash2, X } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, Edit, Eye, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { CustomButton } from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
 import { predefinedServices } from "../../../configs/Services.configs";
 import { useAuthStore } from "../../../store/Auth.store";
 import { useDesignStore } from "../../../store/Design.store";
+
+const ImageSlider = ({ images, placeholderImg }) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const handlePreviousImage = () => {
+    setCurrentImageIndex((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prev) => Math.min(prev + 1, images.length - 1));
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative w-full max-h-[400px]">
+        <img
+          src={images[currentImageIndex] || placeholderImg}
+          alt={`Image ${currentImageIndex + 1}`}
+          className="w-full h-auto max-h-[400px] object-contain rounded-lg"
+          onError={(e) => {
+            e.target.src = placeholderImg;
+            e.target.onerror = null;
+          }}
+        />
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={handlePreviousImage}
+              disabled={currentImageIndex === 0}
+              className={`absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full ${
+                currentImageIndex === 0
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-black/70"
+              }`}
+              aria-label="Previous image"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleNextImage}
+              disabled={currentImageIndex === images.length - 1}
+              className={`absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full ${
+                currentImageIndex === images.length - 1
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-black/70"
+              }`}
+              aria-label="Next image"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </>
+        )}
+      </div>
+      <p className="text-xs text-gray-500 mt-2 text-center">
+        {images.length > 0
+          ? currentImageIndex === 0
+            ? "Final Product"
+            : `Detail Image ${currentImageIndex}`
+          : "No Images Available"}
+      </p>
+    </div>
+  );
+};
 
 const DesignManagement = () => {
   const {
@@ -27,14 +90,14 @@ const DesignManagement = () => {
     description: "",
     price: "",
     tags: [],
-    imageUrl: "",
+    imageURLs: [],
   });
   const [newDesign, setNewDesign] = useState({
     title: "",
     description: "",
     price: "",
     tags: [],
-    imageUrl: "",
+    imageURLs: [],
   });
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -43,16 +106,16 @@ const DesignManagement = () => {
     selectedTags: [],
     priceRange: { min: "", max: "" },
   });
-  const [showMoreFormTags, setShowMoreFormTags] = useState(false); // For Add New Design form
-  const [showMoreFilterTags, setShowMoreFilterTags] = useState(false); // For Filter Designs section
-  const [showMoreEditTags, setShowMoreEditTags] = useState(false); // For Edit modal
+  const [showMoreFormTags, setShowMoreFormTags] = useState(false);
+  const [showMoreFilterTags, setShowMoreFilterTags] = useState(false);
+  const [showMoreEditTags, setShowMoreEditTags] = useState(false);
+  const [imageInput, setImageInput] = useState(""); // For comma-separated image URLs
 
-  // Number of tags to show initially
   const initialTagLimit = 4;
+  const placeholderImg = "/assets/placeholder-design.jpg";
 
   useEffect(() => {
     if (user?.id) {
-      // Construct filter object for API (client-side filtering as fallback)
       const filterParams = {
         title: filters.titleSearch || undefined,
         tags:
@@ -68,7 +131,6 @@ const DesignManagement = () => {
     }
   }, [user, fetchTailorDesignsById, filters]);
 
-  // Helper function to format price safely
   const formatPrice = (price) => {
     const numericPrice = parseFloat(price);
     return isNaN(numericPrice) ? "N/A" : `LKR ${numericPrice.toFixed(2)}`;
@@ -77,10 +139,20 @@ const DesignManagement = () => {
   // Handle form field changes for new design
   const handleNewDesignChange = (e) => {
     const { name, value } = e.target;
-    setNewDesign((prev) => ({ ...prev, [name]: value }));
+    if (name === "imageURLs") {
+      // Split comma-separated URLs into an array
+      const urls = value
+        .split(",")
+        .map((url) => url.trim())
+        .filter(Boolean);
+      setNewDesign((prev) => ({ ...prev, imageURLs: urls }));
+      setImageInput(value);
+    } else {
+      setNewDesign((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
-  // Handle tags change for new design (tag chips)
+  // Handle tags change for new design
   const handleNewTagsChange = (tag) => {
     setNewDesign((prev) => {
       const newTags = prev.tags.includes(tag)
@@ -93,10 +165,19 @@ const DesignManagement = () => {
   // Handle form field changes for edit modal
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setDesignForm((prev) => ({ ...prev, [name]: value }));
+    if (name === "imageURLs") {
+      const urls = value
+        .split(",")
+        .map((url) => url.trim())
+        .filter(Boolean);
+      setDesignForm((prev) => ({ ...prev, imageURLs: urls }));
+      setImageInput(value);
+    } else {
+      setDesignForm((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
-  // Handle tags change for edit modal (tag chips)
+  // Handle tags change for edit modal
   const handleTagsChange = (tag) => {
     setDesignForm((prev) => {
       const newTags = prev.tags.includes(tag)
@@ -122,7 +203,7 @@ const DesignManagement = () => {
     }
   };
 
-  // Handle tag filter changes (tag chips)
+  // Handle tag filter changes
   const handleTagFilterChange = (tag) => {
     setFilters((prev) => {
       const newSelectedTags = prev.selectedTags.includes(tag)
@@ -138,7 +219,6 @@ const DesignManagement = () => {
     setError(null);
     setSuccess(null);
 
-    // Validation
     if (!newDesign.title) {
       setError("Title is required");
       return;
@@ -156,8 +236,8 @@ const DesignManagement = () => {
       setError("At least one tag is required");
       return;
     }
-    if (!newDesign.imageUrl) {
-      setError("Image URL is required");
+    if (newDesign.imageURLs.length === 0) {
+      setError("At least one image URL is required");
       return;
     }
 
@@ -167,7 +247,7 @@ const DesignManagement = () => {
         description: newDesign.description,
         price: priceValue,
         tags: newDesign.tags,
-        imageUrl: newDesign.imageUrl,
+        imageURLs: newDesign.imageURLs,
       };
       await createTailorDesign(user.id, designData);
       setNewDesign({
@@ -175,8 +255,9 @@ const DesignManagement = () => {
         description: "",
         price: "",
         tags: [],
-        imageUrl: "",
+        imageURLs: [],
       });
+      setImageInput("");
       setSuccess("Design added successfully");
       setTimeout(() => setSuccess(null), 1500);
     } catch (error) {
@@ -192,8 +273,17 @@ const DesignManagement = () => {
       description: design.description,
       price: design.price ? design.price.toString() : "",
       tags: design.tags || [],
-      imageUrl: design.imageUrl || "",
+      imageURLs: design.imageURLs?.length
+        ? design.imageURLs
+        : design.imageUrl
+        ? [design.imageUrl]
+        : [],
     });
+    setImageInput(
+      design.imageURLs?.length
+        ? design.imageURLs.join(", ")
+        : design.imageUrl || ""
+    );
     setEditModalOpen(true);
     setError(null);
     setSuccess(null);
@@ -205,7 +295,6 @@ const DesignManagement = () => {
     setError(null);
     setSuccess(null);
 
-    // Validation
     if (!designForm.title) {
       setError("Title is required");
       return;
@@ -223,8 +312,8 @@ const DesignManagement = () => {
       setError("At least one tag is required");
       return;
     }
-    if (!designForm.imageUrl) {
-      setError("Image URL is required");
+    if (designForm.imageURLs.length === 0) {
+      setError("At least one image URL is required");
       return;
     }
 
@@ -234,7 +323,7 @@ const DesignManagement = () => {
         description: designForm.description,
         price: priceValue,
         tags: designForm.tags,
-        imageUrl: designForm.imageUrl,
+        imageURLs: designForm.imageURLs,
       };
       await updateTailorDesign(user.id, selectedDesign._id, updatedData);
       setSuccess("Design updated successfully");
@@ -369,15 +458,15 @@ const DesignManagement = () => {
           </div>
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">
-              Image URL
+              Image URLs (comma-separated)
             </label>
             <input
               type="text"
-              name="imageUrl"
-              value={newDesign.imageUrl}
+              name="imageURLs"
+              value={imageInput}
               onChange={handleNewDesignChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-              placeholder="e.g., https://example.com/image.jpg"
+              placeholder="e.g., https://example.com/image1.jpg, https://example.com/image2.jpg"
             />
           </div>
           <div className="flex items-end">
@@ -489,6 +578,9 @@ const DesignManagement = () => {
                 Tags
               </th>
               <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                Images
+              </th>
+              <th className="px-6 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -503,6 +595,13 @@ const DesignManagement = () => {
                   </td>
                   <td className="p-2 text-gray-800 text-sm">
                     {design.tags.join(", ")}
+                  </td>
+                  <td className="p-2 text-gray-800 text-sm">
+                    {design.imageURLs?.length
+                      ? `${design.imageURLs.length} images`
+                      : design.imageUrl
+                      ? "1 image"
+                      : "No images"}
                   </td>
                   <td className="p-2 flex space-x-2">
                     <button
@@ -531,7 +630,7 @@ const DesignManagement = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="4" className="p-4 text-center text-gray-500">
+                <td colSpan="5" className="p-4 text-center text-gray-500">
                   {isLoading ? <Loader /> : "No designs found"}
                 </td>
               </tr>
@@ -589,19 +688,20 @@ const DesignManagement = () => {
                     {selectedDesign.tags.join(", ")}
                   </p>
                 </div>
-                <div>
+                <div className="md:col-span-2">
                   <h3 className="text-xs font-medium text-gray-500 mb-1">
-                    Image
+                    Images
                   </h3>
-                  {selectedDesign.imageUrl ? (
-                    <img
-                      src={selectedDesign.imageUrl}
-                      alt={selectedDesign.title}
-                      className="w-32 h-32 object-cover rounded"
-                    />
-                  ) : (
-                    <p className="text-gray-800">No image available</p>
-                  )}
+                  <ImageSlider
+                    images={
+                      selectedDesign.imageURLs?.length
+                        ? selectedDesign.imageURLs
+                        : selectedDesign.imageUrl
+                        ? [selectedDesign.imageUrl]
+                        : []
+                    }
+                    placeholderImg={placeholderImg}
+                  />
                 </div>
                 <div>
                   <h3 className="text-xs font-medium text-gray-500 mb-1">
@@ -744,15 +844,24 @@ const DesignManagement = () => {
                 </div>
                 <div>
                   <label className="text-xs font-medium text-gray-500 mb-1 block">
-                    Image URL
+                    Image URLs (comma-separated)
                   </label>
                   <input
                     type="text"
-                    name="imageUrl"
-                    value={designForm.imageUrl}
+                    name="imageURLs"
+                    value={imageInput}
                     onChange={handleFormChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                    placeholder="e.g., https://example.com/image.jpg"
+                    placeholder="e.g., https://example.com/image1.jpg, https://example.com/image2.jpg"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-1 block">
+                    Preview Images
+                  </label>
+                  <ImageSlider
+                    images={designForm.imageURLs}
+                    placeholderImg={placeholderImg}
                   />
                 </div>
               </div>
