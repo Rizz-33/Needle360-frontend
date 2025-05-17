@@ -1,11 +1,12 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Form from "../../components/Form";
+import { CustomButton } from "../../components/ui/Button";
 import { footerConfigs, headingConfigs } from "../../configs/Form.configs";
 import { useAuthStore } from "../../store/Auth.store";
 
 const Signup = () => {
-  const [roleType, setRoleType] = useState(1); // 1 for user, 4 for tailor shop
+  const [roleType, setRoleType] = useState(1);
   const [values, setValues] = useState({
     name: "",
     shopName: "",
@@ -21,10 +22,35 @@ const Signup = () => {
     logoUrl: "",
   });
 
-  const { signup, error, isLoading } = useAuthStore();
+  const { signup, googleLogin, error, isLoading } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const [errors, setErrors] = useState({});
   const [disabled] = useState({});
+
+  // Handle Google OAuth callback
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    const token = query.get("token");
+    const user = query.get("user");
+    const error = query.get("error");
+
+    if (error) {
+      setErrors({ submit: "Google authentication failed. Please try again." });
+      return;
+    }
+
+    if (token && user) {
+      try {
+        const userData = JSON.parse(decodeURIComponent(user));
+        googleLogin(token, userData).then(() => {
+          navigate(userData.isVerified ? "/design" : "/verify-email");
+        });
+      } catch (err) {
+        setErrors({ submit: "Failed to process Google authentication." });
+      }
+    }
+  }, [location, googleLogin, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -92,6 +118,13 @@ const Signup = () => {
     }
   };
 
+  const handleGoogleSignup = () => {
+    // Redirect to backend Google OAuth endpoint
+    window.location.href = `${
+      import.meta.env.VITE_API_URL || "http://localhost:4000"
+    }/api/auth/google`;
+  };
+
   return (
     <div className="flex flex-col md:flex-row w-full min-h-screen overflow-hidden bg-gradient-to-tr from-white to-blue-50">
       <div className="w-full md:w-1/2 hidden md:block">
@@ -133,7 +166,28 @@ const Signup = () => {
               onRoleTypeChange={handleRoleTypeChange}
             />
           )}
-
+          {roleType === 1 && (
+            <div className="mt-8 text-center">
+              <CustomButton
+                text="Continue with Google"
+                color="primary"
+                hover_color="hoverAccent"
+                variant="outlined"
+                width="w-full"
+                height="h-9"
+                type="submit"
+                onClick={handleGoogleSignup}
+                className="mt-2"
+                iconLeft={
+                  <img
+                    src="https://www.google.com/favicon.ico"
+                    alt="Google"
+                    className="w-5 h-5 mr-2"
+                  />
+                }
+              />
+            </div>
+          )}
           {(errors.submit || error) && (
             <p className="text-red-500 text-sm mt-2 text-center">
               {errors.submit || error}

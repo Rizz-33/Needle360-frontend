@@ -128,6 +128,35 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  googleLogin: async (token, userData) => {
+    set({ isLoading: true, error: null });
+    try {
+      localStorage.setItem("token", token);
+      const normalizedUser = {
+        ...userData,
+        id: userData._id || userData.id,
+        registrationNumber: userData.registrationNumber,
+      };
+
+      set({
+        user: normalizedUser,
+        isAuthenticated: true,
+        error: null,
+        isApproved: normalizedUser.isApproved || false,
+      });
+
+      return { user: normalizedUser, token };
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        "We couldn’t log you in with Google. Please try again.";
+      set({ error: errorMessage });
+      throw new Error(errorMessage);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
   logout: async () => {
     set({ isLoading: true, error: null });
     try {
