@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Form from "../../components/Form";
+import { CustomButton } from "../../components/ui/Button";
 import { footerConfigs, headingConfigs } from "../../configs/Form.configs";
 import { useAuthStore } from "../../store/Auth.store";
 
@@ -12,10 +13,34 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [disabled] = useState({});
   const [roleType, setRoleType] = useState(1);
-  const { login, error } = useAuthStore();
+  const { login, googleLogin, error } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Handle input change
+  // Handle Google OAuth callback
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    const token = query.get("token");
+    const user = query.get("user");
+    const error = query.get("error");
+
+    if (error) {
+      setErrors({ auth: "Google authentication failed. Please try again." });
+      return;
+    }
+
+    if (token && user) {
+      try {
+        const userData = JSON.parse(decodeURIComponent(user));
+        googleLogin(token, userData).then(() => {
+          navigate(userData.isVerified ? "/design" : "/verify-email");
+        });
+      } catch (err) {
+        setErrors({ auth: "Failed to process Google authentication." });
+      }
+    }
+  }, [location, googleLogin, navigate]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setValues((prevValues) => ({
@@ -24,17 +49,14 @@ const Login = () => {
     }));
   };
 
-  // Handle role type change
   const handleRoleTypeChange = (newRoleType) => {
     setRoleType(newRoleType);
   };
 
-  // Handle form submission
   const handleSubmit = async (formValues) => {
     try {
       const result = await login(formValues.email, formValues.password);
 
-      // Check if the logged-in user's role matches the selected roleType
       if (result.user.role !== roleType) {
         setErrors({
           auth: `Invalid credentials for ${
@@ -46,9 +68,15 @@ const Login = () => {
 
       navigate("/");
     } catch (error) {
-      // Avoid logging sensitive data
       setErrors({ auth: error.message || "Login failed." });
     }
+  };
+
+  const handleGoogleLogin = () => {
+    // Redirect to backend Google OAuth endpoint
+    window.location.href = `${
+      import.meta.env.VITE_API_URL || "http://localhost:4000"
+    }/api/auth/google`;
   };
 
   return (
@@ -87,6 +115,26 @@ const Login = () => {
             }
             onRoleTypeChange={handleRoleTypeChange}
           />
+          <div className="mt-8 text-center">
+            <CustomButton
+              text="Continue with Google"
+              color="primary"
+              hover_color="hoverAccent"
+              variant="outlined"
+              width="w-full"
+              height="h-9"
+              type="submit"
+              onClick={handleGoogleLogin}
+              className="mt-2"
+              iconLeft={
+                <img
+                  src="https://www.google.com/favicon.ico"
+                  alt="Google"
+                  className="w-5 h-5 mr-2"
+                />
+              }
+            />
+          </div>
           {errors.auth && (
             <p className="text-red-500 text-sm mt-2 text-center">
               {errors.auth}
