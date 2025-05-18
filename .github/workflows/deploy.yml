@@ -103,9 +103,11 @@ jobs:
           docker run -d \
             -p 80:80 \
             -p 443:443 \
-            -v /home/ubuntu/needle360/ssl:/etc/nginx/ssl \
-            --network needle360-network \
+            -v /etc/ssl/needle360:/etc/ssl/needle360:ro \
             --name needle360-frontend-container \
+            --restart unless-stopped \
+            --network needle360-network \
+            -e NODE_ENV=production \
             rizz336/needle360-frontend:latest
 
       - name: Verify deployment
