@@ -103,9 +103,8 @@ jobs:
           docker run -d \
             -p 80:80 \
             -p 443:443 \
-            -v ~/needle360/ssl:/etc/nginx/ssl \
-            -e NGINX_SSL_CERT=/etc/nginx/ssl/combined.crt \
-            -e NGINX_SSL_KEY=/etc/nginx/ssl/private.key \
+            -v /home/ubuntu/needle360/ssl:/etc/nginx/ssl \
+            --network needle360-network \
             --name needle360-frontend-container \
             rizz336/needle360-frontend:latest
 
