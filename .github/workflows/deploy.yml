@@ -62,18 +62,18 @@ jobs:
 
       - name: Verify SSL certificates
         run: |
-          if ! sudo test -f "/etc/ssl/needle360/needle360.online.crt"; then
-            echo "SSL certificate not found at /etc/ssl/needle360/needle360.online.crt"
-            sudo ls -la /etc/ssl/needle360/ || true
+          if ! sudo test -f "/home/ubuntu/needle360/ssl/needle360_online.crt"; then
+            echo "SSL certificate not found at /home/ubuntu/needle360/ssl/needle360_online.crt"
+            sudo ls -la /home/ubuntu/needle360/ssl/ || true
             exit 1
           fi
-          if ! sudo test -f "/etc/ssl/needle360/needle360.online.key"; then
-            echo "SSL key not found at /etc/ssl/needle360/needle360.online.key"
-            sudo ls -la /etc/ssl/needle360/ || true
+          if ! sudo test -f "/home/ubuntu/needle360/ssl/private.key"; then
+            echo "SSL key not found at /home/ubuntu/needle360/ssl/private.key"
+            sudo ls -la /home/ubuntu/needle360/ssl/ || true
             exit 1
           fi
           echo "SSL files verified successfully"
-          sudo ls -la /etc/ssl/needle360/ | grep -E 'needle360\.online\.(crt|key)'
+          sudo ls -la /home/ubuntu/needle360/ssl/ | grep -E 'needle360_online\.crt|private\.key'
 
       - name: Pull new images
         run: |
@@ -103,7 +103,7 @@ jobs:
           docker run -d \
             -p 80:80 \
             -p 443:443 \
-            -v /etc/ssl/needle360:/etc/ssl/needle360:ro \
+            -v /home/ubuntu/needle360/ssl:/home/ubuntu/needle360/ssl:ro \
             --name needle360-frontend-container \
             --restart unless-stopped \
             --network needle360-network \
