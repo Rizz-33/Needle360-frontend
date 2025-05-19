@@ -1,14 +1,62 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo-white-short.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>needle360°</title>
-    <!-- import this BEFORE any scripts -->
-    <!-- <script src="https://unpkg.com/react-scan/dist/auto.global.js"></script> -->
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background-color: #0d0d0d;
+        font-family: "Nunito", sans-serif;
+        margin: 0;
+        padding: 20px;
+        color: white;
+      }
+      .search-preview {
+        max-width: 700px;
+        margin-bottom: 40px;
+      }
+      .search-preview .url {
+        color: #aaa;
+        font-size: 14px;
+      }
+      .search-preview .title {
+        color: #b683ff;
+        font-size: 20px;
+        font-weight: 700;
+        margin: 4px 0;
+      }
+      .search-preview .description {
+        color: #ccc;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .search-preview .description strong {
+        color: white;
+      }
+    </style>
+  </head>
   <body>
+    <!-- Search style preview -->
+    <div class="search-preview">
+      <div class="url">https://www.needle360.online</div>
+      <div class="title">
+        needle360° – Design, Explore, and Order Tailored Just for You
+      </div>
+      <div class="description">
+        <strong>needle360°</strong> is your first and best platform to design,
+        explore, and order tailor-made clothing. Choose from expert tailors,
+        upload your own designs, and bring your fashion dreams to life
+        effortlessly.
+      </div>
+    </div>
+
+    <!-- React mount -->
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
