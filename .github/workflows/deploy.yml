@@ -25,7 +25,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build and Push
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://needle360.online' }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
         run: |
           docker build -t rizz336/needle360-frontend:$GITHUB_SHA \
             --build-arg VITE_API_URL=$VITE_API_URL \
