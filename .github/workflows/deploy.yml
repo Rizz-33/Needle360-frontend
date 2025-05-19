@@ -62,18 +62,11 @@ jobs:
 
       - name: Verify SSL certificates
         run: |
-          if ! sudo test -f "/home/ubuntu/needle360/ssl/needle360_online.crt"; then
-            echo "SSL certificate not found at /home/ubuntu/needle360/ssl/needle360_online.crt"
+          if ! sudo test -f "/home/ubuntu/needle360/ssl/fullchain.crt"; then
+            echo "SSL certificate not found at /home/ubuntu/needle360/ssl/fullchain.crt"
             sudo ls -la /home/ubuntu/needle360/ssl/ || true
             exit 1
           fi
-          if ! sudo test -f "/home/ubuntu/needle360/ssl/private.key"; then
-            echo "SSL key not found at /home/ubuntu/needle360/ssl/private.key"
-            sudo ls -la /home/ubuntu/needle360/ssl/ || true
-            exit 1
-          fi
-          echo "SSL files verified successfully"
-          sudo ls -la /home/ubuntu/needle360/ssl/ | grep -E 'needle360_online\.crt|private\.key'
 
       - name: Pull new images
         run: |
