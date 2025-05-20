@@ -70,7 +70,10 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google`;
+    // Add role parameter to Google auth URL
+    window.location.href = `${
+      import.meta.env.VITE_API_URL
+    }/api/auth/google?role=${roleType}`;
   };
 
   return (

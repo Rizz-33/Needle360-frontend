@@ -119,10 +119,10 @@ const Signup = () => {
   };
 
   const handleGoogleSignup = () => {
-    // Redirect to backend Google OAuth endpoint
+    // Add role parameter to Google auth URL
     window.location.href = `${
       import.meta.env.VITE_API_URL || "http://localhost:4000"
-    }/api/auth/google`;
+    }/api/auth/google?role=${roleType}`;
   };
 
   return (
