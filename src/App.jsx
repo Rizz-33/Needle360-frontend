@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import ChatPopup from "./components/chat/ChatPopup";
@@ -32,19 +32,17 @@ import { useAuthStore } from "./store/Auth.store";
 // Component to protect routes that require authentication
 const ProtectedRoute = ({ children }) => {
   const [isInitialized, setIsInitialized] = useState(false);
-  const { isApproved, isAuthenticated, user, checkAuth, checkApproval } =
+  const { isAuthenticated, isApproved, user, checkAuth, checkApproval } =
     useAuthStore();
   const location = useLocation();
 
   useEffect(() => {
-    const verifyAuthAndApproval = async () => {
+    const verifyAuth = async () => {
       try {
-        // First check authentication
-        const authResult = await checkAuth();
-
-        // Then check approval status if authenticated
-        if (authResult && authResult.user) {
-          const approvalResult = await checkApproval();
+        await checkAuth();
+        if (isAuthenticated && user?.role !== 9) {
+          // Skip approval check for admin
+          await checkApproval();
         }
       } catch (error) {
         console.error("Verification Error:", error);
@@ -53,39 +51,48 @@ const ProtectedRoute = ({ children }) => {
       }
     };
 
-    verifyAuthAndApproval();
-  }, []);
+    verifyAuth();
+  }, [location.pathname]);
 
-  // Wait for initialization before rendering
   if (!isInitialized) {
     return <Loader />;
   }
 
+  // Handle token in URL for Google auth callback
+  const queryParams = new URLSearchParams(location.search);
+  const token = queryParams.get("token");
+  const userParam = queryParams.get("user");
+
+  if (token && userParam) {
+    try {
+      const userData = JSON.parse(decodeURIComponent(userParam));
+      if (userData.isVerified) {
+        return children;
+      }
+    } catch (e) {
+      console.error("Error parsing user data:", e);
+    }
+  }
+
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace={false} />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (!user.isVerified && !isApproved) {
-    return (
-      <Navigate to="/verify-email" state={{ from: location }} replace={false} />
-    );
+  if (!user.isVerified) {
+    return <Navigate to="/verify-email" state={{ from: location }} replace />;
   }
 
-  if (!isApproved) {
-    console.warn("User not approved, redirecting to pending approval");
+  if (!isApproved && user.role !== 1) {
+    // Only check approval for non-customers
     return (
-      <Navigate
-        to="/pending-approval"
-        state={{ from: location }}
-        replace={false}
-      />
+      <Navigate to="/pending-approval" state={{ from: location }} replace />
     );
   }
 
   return children;
 };
 
-// Component to protect admin routes that require authentication and admin role
+// Component to protect admin routes
 const AdminProtectedRoute = ({ children }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const { isAuthenticated, user, checkAuth } = useAuthStore();
@@ -103,17 +110,14 @@ const AdminProtectedRoute = ({ children }) => {
     };
 
     verifyAuth();
-  }, [checkAuth]); // Add checkAuth as a dependency
+  }, [location.pathname]);
 
-  // Wait for initialization before rendering
   if (!isInitialized) {
-    return null; // Or a loading spinner
+    return <Loader />;
   }
 
   if (!isAuthenticated) {
-    return (
-      <Navigate to="/admin-login" state={{ from: location }} replace={false} />
-    );
+    return <Navigate to="/admin-login" state={{ from: location }} replace />;
   }
 
   if (!user || user.role !== 9) {
@@ -127,30 +131,25 @@ const AdminProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Component to redirect authenticated users away from login/signup pages
+// Component to redirect authenticated users away from auth pages
 const RedirectAuthenticatedUser = ({ children }) => {
   const { isAuthenticated, user } = useAuthStore();
   const location = useLocation();
 
-  if (
-    isAuthenticated &&
-    user.isVerified &&
-    (location.pathname === "/login" || location.pathname === "/signup")
-  ) {
-    const from = location.state?.from?.pathname || "/design";
-    return <Navigate to={from} replace={true} />;
+  if (isAuthenticated && user?.isVerified) {
+    const from = location.state?.from?.pathname || "/";
+    return <Navigate to={from} replace />;
   }
 
   return children;
 };
 
-// App.jsx
 function App() {
   const { checkAuth } = useAuthStore();
 
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+  }, []);
 
   return (
     <div className="max-h-screen bg-white text-black flex items-center justify-center relative overflow-hidden">
