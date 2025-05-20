@@ -44,7 +44,7 @@ const Signup = () => {
       try {
         const userData = JSON.parse(decodeURIComponent(user));
         googleLogin(token, userData).then(() => {
-          navigate(userData.isVerified ? "/design" : "/verify-email");
+          navigate(userData.isVerified ? "/" : "/verify-email"); // Changed here
         });
       } catch (err) {
         setErrors({ submit: "Failed to process Google authentication." });

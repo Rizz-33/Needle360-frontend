@@ -32,7 +32,7 @@ const Login = () => {
       try {
         const userData = JSON.parse(decodeURIComponent(user));
         googleLogin(token, userData).then(() => {
-          navigate(userData.isVerified ? "/design" : "/verify-email");
+          navigate(userData.isVerified ? "/" : "/verify-email");
         });
       } catch (err) {
         setErrors({ auth: "Failed to process Google authentication." });
