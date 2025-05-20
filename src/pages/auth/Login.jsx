@@ -54,28 +54,8 @@ const Login = () => {
 
   const handleSubmit = async (formValues) => {
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/auth/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: formValues.email,
-            password: formValues.password,
-          }),
-          credentials: "include", // Important for cookies
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Login failed");
-      }
-
-      if (data.user.role !== roleType) {
+      const result = await login(formValues.email, formValues.password);
+      if (result.user.role !== roleType) {
         setErrors({
           auth: `Invalid credentials for ${
             roleType === 1 ? "Customer" : "Tailor"
@@ -83,16 +63,9 @@ const Login = () => {
         });
         return;
       }
-
-      // Store user data in context/state
-      loginSuccess(data.token, data.user);
       navigate("/");
     } catch (error) {
-      setErrors({
-        auth: error.message.includes("Invalid email or password")
-          ? "Invalid email or password"
-          : "Login failed. Please try again.",
-      });
+      setErrors({ auth: error.message || "Login failed." });
     }
   };
 
