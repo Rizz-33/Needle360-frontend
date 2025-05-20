@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import ChatPopup from "./components/chat/ChatPopup";
@@ -36,23 +36,31 @@ const ProtectedRoute = ({ children }) => {
     useAuthStore();
   const location = useLocation();
 
-  useEffect(() => {
-    const verifyAuth = async () => {
-      try {
-        await checkAuth();
-        if (isAuthenticated && user?.role !== 9) {
-          // Skip approval check for admin
-          await checkApproval();
-        }
-      } catch (error) {
-        console.error("Verification Error:", error);
-      } finally {
-        setIsInitialized(true);
+  const verifyAuth = useCallback(async () => {
+    if (isAuthenticated && user) {
+      // Skip checkAuth if already authenticated
+      if (user.role !== 9 && !isApproved) {
+        await checkApproval();
       }
-    };
+      setIsInitialized(true);
+      return;
+    }
 
+    try {
+      await checkAuth();
+      if (isAuthenticated && user?.role !== 9) {
+        await checkApproval();
+      }
+    } catch (error) {
+      console.error("Verification Error:", error);
+    } finally {
+      setIsInitialized(true);
+    }
+  }, [checkAuth, checkApproval, isAuthenticated, user, isApproved]);
+
+  useEffect(() => {
     verifyAuth();
-  }, [checkAuth, checkApproval, isAuthenticated, user, location.pathname]);
+  }, [location.pathname, verifyAuth]);
 
   if (!isInitialized) {
     return <Loader />;
@@ -67,7 +75,6 @@ const ProtectedRoute = ({ children }) => {
     try {
       const userData = JSON.parse(decodeURIComponent(userParam));
       if (userData.isVerified) {
-        // If the user is verified, ensure the token is set and auth state is updated
         localStorage.setItem("token", token);
         return children;
       }
@@ -85,7 +92,6 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!isApproved && user.role !== 1) {
-    // Only check approval for non-customers
     return (
       <Navigate to="/pending-approval" state={{ from: location }} replace />
     );
