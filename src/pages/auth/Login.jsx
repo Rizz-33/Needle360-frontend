@@ -32,7 +32,9 @@ const Login = () => {
       try {
         const userData = JSON.parse(decodeURIComponent(user));
         googleLogin(token, userData).then(() => {
-          navigate(userData.isVerified ? "/" : "/verify-email");
+          navigate(userData.isVerified ? "/" : "/verify-email", {
+            replace: true,
+          });
         });
       } catch (err) {
         setErrors({ auth: "Failed to process Google authentication." });
@@ -58,21 +60,24 @@ const Login = () => {
       if (result.user.role !== roleType) {
         setErrors({
           auth: `Invalid credentials for ${
-            roleType === 1 ? "Customer" : "Tailor"
+            roleType === 1 ? "Customer" : roleType === 4 ? "Tailor" : "Admin"
           } account.`,
         });
         return;
       }
-      navigate("/");
+      navigate("/", { replace: true });
     } catch (error) {
       setErrors({ auth: error.message || "Login failed." });
     }
   };
 
   const handleGoogleLogin = () => {
-    // Add role parameter to Google auth URL
+    if (roleType !== 1) {
+      setErrors({ auth: "Google login is only available for customers." });
+      return;
+    }
     window.location.href = `${
-      import.meta.env.VITE_API_URL
+      import.meta.env.VITE_API_URL || "http://localhost:4000"
     }/api/auth/google?role=${roleType}`;
   };
 
@@ -98,22 +103,28 @@ const Login = () => {
             heading1={
               roleType === 1
                 ? headingConfigs.customerLogin.heading1
-                : headingConfigs.tailorLogin.heading1
+                : roleType === 4
+                ? headingConfigs.tailorLogin.heading1
+                : headingConfigs.adminLogin.heading1
             }
             heading2={
               roleType === 1
                 ? headingConfigs.customerLogin.heading2
-                : headingConfigs.tailorLogin.heading2
+                : roleType === 4
+                ? headingConfigs.tailorLogin.heading2
+                : headingConfigs.adminLogin.heading2
             }
             footerConfig={
               roleType === 1
                 ? footerConfigs.customerLogin
-                : footerConfigs.tailorLogin
+                : roleType === 4
+                ? footerConfigs.tailorLogin
+                : footerConfigs.adminLogin
             }
             onRoleTypeChange={handleRoleTypeChange}
           />
           <div className="mt-8 text-center">
-            {roleType === 1 ? (
+            {roleType === 1 && (
               <CustomButton
                 text="Continue with Google"
                 color="primary"
@@ -121,7 +132,7 @@ const Login = () => {
                 variant="outlined"
                 width="w-full"
                 height="h-9"
-                type="submit"
+                type="button"
                 onClick={handleGoogleLogin}
                 className="mt-2"
                 iconLeft={
@@ -132,7 +143,7 @@ const Login = () => {
                   />
                 }
               />
-            ) : null}
+            )}
           </div>
           {errors.auth && (
             <p className="text-red-500 text-sm mt-2 text-center">

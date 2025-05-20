@@ -52,7 +52,7 @@ const ProtectedRoute = ({ children }) => {
     };
 
     verifyAuth();
-  }, [location.pathname]);
+  }, [checkAuth, checkApproval, isAuthenticated, user, location.pathname]);
 
   if (!isInitialized) {
     return <Loader />;
@@ -67,6 +67,8 @@ const ProtectedRoute = ({ children }) => {
     try {
       const userData = JSON.parse(decodeURIComponent(userParam));
       if (userData.isVerified) {
+        // If the user is verified, ensure the token is set and auth state is updated
+        localStorage.setItem("token", token);
         return children;
       }
     } catch (e) {
@@ -110,7 +112,7 @@ const AdminProtectedRoute = ({ children }) => {
     };
 
     verifyAuth();
-  }, [location.pathname]);
+  }, [checkAuth, location.pathname]);
 
   if (!isInitialized) {
     return <Loader />;
@@ -149,7 +151,7 @@ function App() {
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   return (
     <div className="max-h-screen bg-white text-black flex items-center justify-center relative overflow-hidden">

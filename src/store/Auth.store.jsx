@@ -61,6 +61,8 @@ export const useAuthStore = create((set, get) => ({
         registrationNumber: userData.registrationNumber,
       };
 
+      localStorage.setItem("token", response.data.token);
+
       set({
         user: normalizedUser,
         isAuthenticated: true,
@@ -138,6 +140,15 @@ export const useAuthStore = create((set, get) => ({
         registrationNumber: userData.registrationNumber,
       };
 
+      // Verify the token with the backend
+      const response = await axios.get(`${BASE_API_URL}/check-auth`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
+
       set({
         user: normalizedUser,
         isAuthenticated: true,
@@ -147,6 +158,7 @@ export const useAuthStore = create((set, get) => ({
 
       return { user: normalizedUser, token };
     } catch (error) {
+      localStorage.removeItem("token");
       const errorMessage =
         error.response?.data?.message ||
         "We couldn’t log you in with Google. Please try again.";
@@ -195,6 +207,8 @@ export const useAuthStore = create((set, get) => ({
         id: userData._id || userData.id,
         registrationNumber: userData.registrationNumber,
       };
+
+      localStorage.setItem("token", response.data.token);
 
       set({
         user: normalizedUser,

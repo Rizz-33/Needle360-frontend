@@ -44,7 +44,9 @@ const Signup = () => {
       try {
         const userData = JSON.parse(decodeURIComponent(user));
         googleLogin(token, userData).then(() => {
-          navigate(userData.isVerified ? "/" : "/verify-email"); // Changed here
+          navigate(userData.isVerified ? "/" : "/verify-email", {
+            replace: true,
+          });
         });
       } catch (err) {
         setErrors({ submit: "Failed to process Google authentication." });
@@ -78,7 +80,7 @@ const Signup = () => {
 
     if (roleType === 1) {
       if (!values.name) newErrors.name = "Name is required";
-    } else {
+    } else if (roleType === 4) {
       if (!values.shopName) newErrors.shopName = "Business name is required";
       if (!values.logoUrl) newErrors.logoUrl = "Shop logo is required";
     }
@@ -109,7 +111,7 @@ const Signup = () => {
 
     try {
       await signup(values, roleType);
-      navigate("/verify-email");
+      navigate("/verify-email", { replace: true });
     } catch (error) {
       setErrors((prev) => ({
         ...prev,
@@ -119,7 +121,10 @@ const Signup = () => {
   };
 
   const handleGoogleSignup = () => {
-    // Add role parameter to Google auth URL
+    if (roleType !== 1) {
+      setErrors({ submit: "Google signup is only available for customers." });
+      return;
+    }
     window.location.href = `${
       import.meta.env.VITE_API_URL || "http://localhost:4000"
     }/api/auth/google?role=${roleType}`;
@@ -160,34 +165,44 @@ const Signup = () => {
               errors={errors}
               disabled={disabled}
               button={isLoading ? "Loading..." : "Sign Up"}
-              heading1={headingConfigs.customerSignup.heading1}
-              heading2={headingConfigs.customerSignup.heading2}
-              footerConfig={footerConfigs.customerSignup}
+              heading1={
+                roleType === 1
+                  ? headingConfigs.customerSignup.heading1
+                  : headingConfigs.adminSignup.heading1
+              }
+              heading2={
+                roleType === 1
+                  ? headingConfigs.customerSignup.heading2
+                  : headingConfigs.adminSignup.heading2
+              }
+              footerConfig={
+                roleType === 1
+                  ? footerConfigs.customerSignup
+                  : footerConfigs.adminSignup
+              }
               onRoleTypeChange={handleRoleTypeChange}
             />
           )}
           {roleType === 1 && (
             <div className="mt-8 text-center">
-              {roleType === 1 ? (
-                <CustomButton
-                  text="Continue with Google"
-                  color="primary"
-                  hover_color="hoverAccent"
-                  variant="outlined"
-                  width="w-full"
-                  height="h-9"
-                  type="submit"
-                  onClick={handleGoogleSignup}
-                  className="mt-2"
-                  iconLeft={
-                    <img
-                      src="https://www.google.com/favicon.ico"
-                      alt="Google"
-                      className="w-5 h-5 mr-2"
-                    />
-                  }
-                />
-              ) : null}
+              <CustomButton
+                text="Continue with Google"
+                color="primary"
+                hover_color="hoverAccent"
+                variant="outlined"
+                width="w-full"
+                height="h-9"
+                type="button"
+                onClick={handleGoogleSignup}
+                className="mt-2"
+                iconLeft={
+                  <img
+                    src="https://www.google.com/favicon.ico"
+                    alt="Google"
+                    className="w-5 h-5 mr-2"
+                  />
+                }
+              />
             </div>
           )}
           {(errors.submit || error) && (
