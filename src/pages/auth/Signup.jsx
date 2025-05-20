@@ -168,24 +168,26 @@ const Signup = () => {
           )}
           {roleType === 1 && (
             <div className="mt-8 text-center">
-              <CustomButton
-                text="Continue with Google"
-                color="primary"
-                hover_color="hoverAccent"
-                variant="outlined"
-                width="w-full"
-                height="h-9"
-                type="submit"
-                onClick={handleGoogleSignup}
-                className="mt-2"
-                iconLeft={
-                  <img
-                    src="https://www.google.com/favicon.ico"
-                    alt="Google"
-                    className="w-5 h-5 mr-2"
-                  />
-                }
-              />
+              {roleType === 1 ? (
+                <CustomButton
+                  text="Continue with Google"
+                  color="primary"
+                  hover_color="hoverAccent"
+                  variant="outlined"
+                  width="w-full"
+                  height="h-9"
+                  type="submit"
+                  onClick={handleGoogleSignup}
+                  className="mt-2"
+                  iconLeft={
+                    <img
+                      src="https://www.google.com/favicon.ico"
+                      alt="Google"
+                      className="w-5 h-5 mr-2"
+                    />
+                  }
+                />
+              ) : null}
             </div>
           )}
           {(errors.submit || error) && (
