@@ -44,7 +44,9 @@ const Signup = () => {
       try {
         const userData = JSON.parse(decodeURIComponent(user));
         googleLogin(token, userData).then(() => {
-          navigate(userData.isVerified ? "/design" : "/verify-email");
+          navigate(userData.isVerified ? "/" : "/verify-email", {
+            replace: true,
+          });
         });
       } catch (err) {
         setErrors({ submit: "Failed to process Google authentication." });
@@ -78,7 +80,7 @@ const Signup = () => {
 
     if (roleType === 1) {
       if (!values.name) newErrors.name = "Name is required";
-    } else {
+    } else if (roleType === 4) {
       if (!values.shopName) newErrors.shopName = "Business name is required";
       if (!values.logoUrl) newErrors.logoUrl = "Shop logo is required";
     }
@@ -109,7 +111,7 @@ const Signup = () => {
 
     try {
       await signup(values, roleType);
-      navigate("/verify-email");
+      navigate("/verify-email", { replace: true });
     } catch (error) {
       setErrors((prev) => ({
         ...prev,
@@ -119,10 +121,13 @@ const Signup = () => {
   };
 
   const handleGoogleSignup = () => {
-    // Redirect to backend Google OAuth endpoint
+    if (roleType !== 1) {
+      setErrors({ submit: "Google signup is only available for customers." });
+      return;
+    }
     window.location.href = `${
       import.meta.env.VITE_API_URL || "http://localhost:4000"
-    }/api/auth/google`;
+    }/api/auth/google?role=${roleType}`;
   };
 
   return (
@@ -160,9 +165,21 @@ const Signup = () => {
               errors={errors}
               disabled={disabled}
               button={isLoading ? "Loading..." : "Sign Up"}
-              heading1={headingConfigs.customerSignup.heading1}
-              heading2={headingConfigs.customerSignup.heading2}
-              footerConfig={footerConfigs.customerSignup}
+              heading1={
+                roleType === 1
+                  ? headingConfigs.customerSignup.heading1
+                  : headingConfigs.adminSignup.heading1
+              }
+              heading2={
+                roleType === 1
+                  ? headingConfigs.customerSignup.heading2
+                  : headingConfigs.adminSignup.heading2
+              }
+              footerConfig={
+                roleType === 1
+                  ? footerConfigs.customerSignup
+                  : footerConfigs.adminSignup
+              }
               onRoleTypeChange={handleRoleTypeChange}
             />
           )}
@@ -175,7 +192,7 @@ const Signup = () => {
                 variant="outlined"
                 width="w-full"
                 height="h-9"
-                type="submit"
+                type="button"
                 onClick={handleGoogleSignup}
                 className="mt-2"
                 iconLeft={

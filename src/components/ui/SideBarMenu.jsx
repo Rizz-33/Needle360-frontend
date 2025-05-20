@@ -167,7 +167,7 @@ const SideBarMenu = () => {
                 transition={{ duration: 0.2 }}
               >
                 <motion.a
-                  href="#"
+                  href="/tailor-management"
                   className="flex items-center py-2 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-sm"
                   whileHover={{
                     backgroundColor: "rgba(59, 130, 246, 0.1)",
@@ -178,7 +178,7 @@ const SideBarMenu = () => {
                   <span className="ml-3">Tailor Management</span>
                 </motion.a>
                 <motion.a
-                  href="#"
+                  href="/user-management"
                   className="flex items-center py-2 px-4 rounded-lg transition duration-200 hover:bg-blue-50 text-sm"
                   whileHover={{
                     backgroundColor: "rgba(59, 130, 246, 0.1)",

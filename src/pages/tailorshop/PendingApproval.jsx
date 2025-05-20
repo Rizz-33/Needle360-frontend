@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Loader from "../../components/ui/Loader";
 import { useAuthStore } from "../../store/Auth.store";
@@ -76,10 +76,10 @@ const PendingApproval = () => {
       <div className="text-xs text-primary/40 mt-8">
         If you need immediate assistance, please contact
         <a
-          href="mailto:needle360.app@gmail.com"
+          href="mailto:needle360.online@gmail.com"
           className="text-primary hover:text-primary/80 ml-1"
         >
-          needle360.app@gmail.com
+          needle360.online@gmail.com
         </a>
       </div>
 
@@ -144,7 +144,7 @@ const PendingApproval = () => {
                     Read Our Blog
                   </a>
                   <a
-                    href="mailto:needle360.app@gmail.com"
+                    href="mailto:needle360.online@gmail.com"
                     className="text-xs text-primary hover:underline"
                   >
                     Contact Support

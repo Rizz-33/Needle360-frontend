@@ -24,6 +24,7 @@ export const useAuthStore = create((set, get) => ({
   isLoading: false,
   isCheckingAuth: true,
   isApproved: false,
+  lastAuthCheck: null, // Cache timestamp
 
   signup: async (values, roleType) => {
     const mappedValues = {
@@ -61,11 +62,14 @@ export const useAuthStore = create((set, get) => ({
         registrationNumber: userData.registrationNumber,
       };
 
+      localStorage.setItem("token", response.data.token);
+
       set({
         user: normalizedUser,
         isAuthenticated: true,
         isApproved: normalizedUser.isApproved || false,
         error: null,
+        lastAuthCheck: Date.now(),
       });
 
       return response.data;
@@ -111,6 +115,7 @@ export const useAuthStore = create((set, get) => ({
         isAuthenticated: true,
         error: null,
         isApproved: normalizedUser.isApproved || false,
+        lastAuthCheck: Date.now(),
       });
 
       return {
@@ -138,15 +143,26 @@ export const useAuthStore = create((set, get) => ({
         registrationNumber: userData.registrationNumber,
       };
 
+      // Verify the token with the backend
+      const response = await axios.get(`${BASE_API_URL}/check-auth`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
+
       set({
         user: normalizedUser,
         isAuthenticated: true,
         error: null,
         isApproved: normalizedUser.isApproved || false,
+        lastAuthCheck: Date.now(),
       });
 
       return { user: normalizedUser, token };
     } catch (error) {
+      localStorage.removeItem("token");
       const errorMessage =
         error.response?.data?.message ||
         "We couldn’t log you in with Google. Please try again.";
@@ -165,7 +181,12 @@ export const useAuthStore = create((set, get) => ({
         throw new Error(response.data.message);
       }
       localStorage.removeItem("token");
-      set({ user: null, isAuthenticated: false, error: null });
+      set({
+        user: null,
+        isAuthenticated: false,
+        error: null,
+        lastAuthCheck: null,
+      });
       return response.data;
     } catch (error) {
       const errorMessage =
@@ -196,10 +217,13 @@ export const useAuthStore = create((set, get) => ({
         registrationNumber: userData.registrationNumber,
       };
 
+      localStorage.setItem("token", response.data.token);
+
       set({
         user: normalizedUser,
         isAuthenticated: true,
         isApproved: normalizedUser.isApproved || false,
+        lastAuthCheck: Date.now(),
       });
 
       return response.data;
@@ -262,6 +286,20 @@ export const useAuthStore = create((set, get) => ({
   },
 
   checkAuth: async () => {
+    const { lastAuthCheck, isAuthenticated, user } = get();
+    const now = Date.now();
+    const cacheDuration = 5 * 60 * 1000; // 5 minutes
+
+    // Skip API call if auth state is valid and cache is fresh
+    if (
+      isAuthenticated &&
+      user &&
+      lastAuthCheck &&
+      now - lastAuthCheck < cacheDuration
+    ) {
+      return { user, isAuthenticated: true };
+    }
+
     set({ isCheckingAuth: true, error: null });
     try {
       const token = localStorage.getItem("token");
@@ -272,6 +310,7 @@ export const useAuthStore = create((set, get) => ({
           isAuthenticated: false,
           isApproved: false,
           error: null,
+          lastAuthCheck: null,
         });
         return { user: null, isAuthenticated: false };
       }
@@ -298,6 +337,7 @@ export const useAuthStore = create((set, get) => ({
         isAuthenticated: true,
         isApproved: normalizedUser.isApproved || false,
         error: null,
+        lastAuthCheck: now,
       });
 
       return { user: normalizedUser, isAuthenticated: true };
@@ -317,6 +357,7 @@ export const useAuthStore = create((set, get) => ({
           isAuthenticated: false,
           isApproved: false,
           error: null,
+          lastAuthCheck: null,
         });
         return { user: null, isAuthenticated: false };
       }
@@ -326,6 +367,7 @@ export const useAuthStore = create((set, get) => ({
         isAuthenticated: false,
         isApproved: false,
         error: errorMessage,
+        lastAuthCheck: null,
       });
       return { user: null, isAuthenticated: false };
     } finally {
