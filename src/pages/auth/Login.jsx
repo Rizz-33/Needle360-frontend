@@ -17,7 +17,6 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Handle Google OAuth callback
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     const token = query.get("token");
@@ -56,7 +55,6 @@ const Login = () => {
   const handleSubmit = async (formValues) => {
     try {
       const result = await login(formValues.email, formValues.password);
-
       if (result.user.role !== roleType) {
         setErrors({
           auth: `Invalid credentials for ${
@@ -65,7 +63,6 @@ const Login = () => {
         });
         return;
       }
-
       navigate("/");
     } catch (error) {
       setErrors({ auth: error.message || "Login failed." });
@@ -73,10 +70,7 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
-    // Redirect to backend Google OAuth endpoint
-    window.location.href = `${
-      import.meta.env.VITE_API_URL || "http://localhost:4000"
-    }/api/auth/google`;
+    window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google`;
   };
 
   return (
