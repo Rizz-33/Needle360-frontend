@@ -1,4 +1,3 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import { CustomButton } from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
@@ -41,10 +40,10 @@ const UnauthorizedAccess = () => {
       <div className="text-xs text-primary/40 mt-8">
         If you need immediate assistance, please contact
         <a
-          href="mailto:needle360.app@gmail.com"
+          href="mailto:needle360.online@gmail.com"
           className="text-primary hover:text-primary/80 ml-1"
         >
-          needle360.app@gmail.com
+          needle360.online@gmail.com
         </a>
       </div>
     </div>
