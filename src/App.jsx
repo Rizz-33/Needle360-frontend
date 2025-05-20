@@ -7,7 +7,9 @@ import Loader from "./components/ui/Loader";
 import { SidebarProvider } from "./components/ui/SideBarMenu";
 import About from "./pages/About";
 import AdminLogin from "./pages/admin/AdminLogin";
+import CustomerManagement from "./pages/admin/CustomerManagement";
 import Dashboard from "./pages/admin/Dashboard";
+import TailorManagement from "./pages/admin/TailorManagement";
 import TailorRequest from "./pages/admin/TailorRequest";
 import UnauthorizedAccess from "./pages/admin/UnauthorizedPage";
 import EmailVerification from "./pages/auth/EmailVerification";
@@ -252,6 +254,22 @@ function App() {
             element={
               <AdminProtectedRoute>
                 <TailorRequest />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/user-management"
+            element={
+              <AdminProtectedRoute>
+                <CustomerManagement />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/tailor-management"
+            element={
+              <AdminProtectedRoute>
+                <TailorManagement />
               </AdminProtectedRoute>
             }
           />
