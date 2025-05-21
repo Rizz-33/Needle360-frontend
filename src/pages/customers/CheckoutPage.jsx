@@ -20,39 +20,27 @@ import { CustomButton } from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
 import { useOrderStore } from "../../store/Order.store";
 import { useShopStore } from "../../store/Shop.store";
-import StripePaymentForm from "./StripePaymentForm"; // Import the separate StripePaymentForm component
-
-// Load stripe outside of component render to avoid recreating the Stripe object on every render
-let stripePromise;
+import StripePaymentForm from "./StripePaymentForm";
 
 // Initialize Stripe with better error handling
-// Improved Stripe initialization
 const initializeStripe = async () => {
-  if (!stripePromise) {
-    const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-    if (!key) {
-      console.error("Stripe publishable key is missing!");
-      throw new Error("Stripe publishable key is missing");
-    }
-
-    try {
-      stripePromise = loadStripe(key);
-      // Verify the Stripe object was created
-      const stripe = await stripePromise;
-      if (!stripe) {
-        throw new Error("Failed to initialize Stripe");
-      }
-      return stripePromise;
-    } catch (err) {
-      console.error("Error initializing Stripe:", err);
-      throw err;
-    }
+  const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+  if (!key) {
+    console.error("Stripe publishable key is missing!");
+    throw new Error("Stripe publishable key is missing");
   }
-  return stripePromise;
-};
 
-// Try to initialize Stripe immediately
-initializeStripe();
+  try {
+    const stripe = await loadStripe(key);
+    if (!stripe) {
+      throw new Error("Failed to initialize Stripe");
+    }
+    return stripe;
+  } catch (err) {
+    console.error("Error initializing Stripe:", err);
+    throw err;
+  }
+};
 
 const CheckoutPage = () => {
   const { orderId } = useParams();
@@ -78,16 +66,16 @@ const CheckoutPage = () => {
   const [paymentMethod, setPaymentMethod] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
-  const [stripeInitialized, setStripeInitialized] = useState(false);
+  const [stripePromise, setStripePromise] = useState(null);
 
-  // Check if Stripe is initialized
+  // Initialize Stripe when component mounts
   useEffect(() => {
-    const checkStripe = async () => {
-      const stripe = await initializeStripe();
-      setStripeInitialized(!!stripe);
-    };
-
-    checkStripe();
+    initializeStripe()
+      .then((stripe) => setStripePromise(stripe))
+      .catch((err) => {
+        console.error("Failed to initialize Stripe:", err);
+        setError("Payment system unavailable. Please try again later.");
+      });
   }, []);
 
   // Fetch current order data
@@ -100,7 +88,6 @@ const CheckoutPage = () => {
       }
 
       try {
-        // Make sure we have the latest orders data
         if (orders.length === 0) {
           await fetchOrders();
         }
@@ -110,7 +97,6 @@ const CheckoutPage = () => {
         if (foundOrder) {
           setOrder(foundOrder);
 
-          // Fetch tailor details if we have a tailor ID
           if (foundOrder.tailor) {
             fetchTailorById(foundOrder.tailor);
           }
@@ -150,7 +136,8 @@ const CheckoutPage = () => {
       !paymentMethod ||
       paymentMethod !== "card" ||
       clientSecret ||
-      isProcessing
+      isProcessing ||
+      !stripePromise
     ) {
       return;
     }
@@ -172,13 +159,33 @@ const CheckoutPage = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [order, paymentMethod, clientSecret, createPaymentIntent, isProcessing]);
+  }, [
+    order,
+    paymentMethod,
+    clientSecret,
+    createPaymentIntent,
+    isProcessing,
+    stripePromise,
+  ]);
 
   useEffect(() => {
-    if (paymentMethod === "card" && order && !clientSecret && !isProcessing) {
+    if (
+      paymentMethod === "card" &&
+      order &&
+      !clientSecret &&
+      !isProcessing &&
+      stripePromise
+    ) {
       initializePayment();
     }
-  }, [paymentMethod, order, clientSecret, initializePayment, isProcessing]);
+  }, [
+    paymentMethod,
+    order,
+    clientSecret,
+    initializePayment,
+    isProcessing,
+    stripePromise,
+  ]);
 
   const handleCODPayment = async () => {
     if (!order) {
@@ -206,14 +213,12 @@ const CheckoutPage = () => {
     navigate("/");
   };
 
-  // Determine if we're in a loading state
   const isLoadingState =
     isLoading ||
     tailorLoading ||
     !order ||
     (paymentMethod === "card" && !clientSecret && !error);
 
-  // Handle any errors from the store
   const combinedError = error || orderError || tailorError;
 
   if (isLoadingState) {
@@ -246,8 +251,7 @@ const CheckoutPage = () => {
     );
   }
 
-  // Make sure Stripe is loaded for card payments
-  if (paymentMethod === "card" && !stripeInitialized) {
+  if (paymentMethod === "card" && !stripePromise) {
     return (
       <div className="min-h-screen w-full bg-blue-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center">
@@ -282,7 +286,6 @@ const CheckoutPage = () => {
         className="w-full max-w-7xl mx-auto"
       >
         <div className="relative flex items-center justify-center mb-8">
-          {/* Back Arrow - absolutely positioned on the left */}
           <div
             className="absolute left-0 flex items-center cursor-pointer"
             onClick={() => navigate(`/checkout/${orderId}`)}
@@ -290,7 +293,6 @@ const CheckoutPage = () => {
             <ChevronLeft size={20} className="text-gray-600 mr-2" />
           </div>
 
-          {/* Centered Heading */}
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900">
               {paymentMethod === "card" ? "Secure Payment" : "Cash on Delivery"}
@@ -304,7 +306,6 @@ const CheckoutPage = () => {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Order Summary Section (2/3 width) */}
           <div className="w-full lg:w-2/3 space-y-6">
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
               <div className="p-6 sm:p-8">
@@ -419,7 +420,6 @@ const CheckoutPage = () => {
             </div>
           </div>
 
-          {/* Payment Section (1/3 width) */}
           <div className="w-full lg:w-1/3 space-y-6">
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
               <div className="p-6 sm:p-8">
@@ -431,7 +431,7 @@ const CheckoutPage = () => {
 
                 {paymentMethod === "card" ? (
                   clientSecret && stripePromise ? (
-                    <Elements stripe={stripePromise}>
+                    <Elements stripe={stripePromise} options={{ clientSecret }}>
                       <StripePaymentForm
                         order={order}
                         clientSecret={clientSecret}
