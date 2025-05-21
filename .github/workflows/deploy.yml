@@ -44,9 +44,11 @@ jobs:
           echo "Creating .env file in $(pwd)"
           echo "VITE_API_URL=$VITE_API_URL" > .env
           echo "VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY" >> .env
+          chmod 644 .env
           cat .env
           ls -la
-          echo "Verifying .env file exists:"
+          echo "Verifying .env file contents:"
+          cat .env
           if [ -f .env ]; then
             echo ".env file created successfully"
           else
@@ -55,17 +57,16 @@ jobs:
           fi
       - name: Clear Vite cache
         run: rm -rf node_modules/.vite
-      - name: Build and Push
-        env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
-          VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
+      - name: Run Vite build
         run: |
-          echo "Building with environment variables:"
-          echo "VITE_API_URL=$VITE_API_URL"
-          echo "VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY"
+          echo "Running Vite build"
+          npm run build
+          ls -la dist
+          ls -la dist/assets
+          grep -r pk_test_51RH5dSPCpJjalvEJ dist/assets || echo "Warning: No Stripe key found in built assets"
+      - name: Build and Push
+        run: |
           docker build \
-            --build-arg VITE_API_URL=$VITE_API_URL \
-            --build-arg VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY \
             --no-cache \
             -t rizz336/needle360-frontend:$GITHUB_SHA \
             -t rizz336/needle360-frontend:latest \
