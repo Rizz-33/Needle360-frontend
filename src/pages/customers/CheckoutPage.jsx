@@ -26,20 +26,26 @@ import StripePaymentForm from "./StripePaymentForm"; // Import the separate Stri
 let stripePromise;
 
 // Initialize Stripe with better error handling
-const initializeStripe = () => {
-  // Only initialize if not already done
+// Improved Stripe initialization
+const initializeStripe = async () => {
   if (!stripePromise) {
+    const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+    if (!key) {
+      console.error("Stripe publishable key is missing!");
+      throw new Error("Stripe publishable key is missing");
+    }
+
     try {
-      const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-      if (!key) {
-        console.error("Stripe publishable key is missing!");
-        return null;
-      }
       stripePromise = loadStripe(key);
+      // Verify the Stripe object was created
+      const stripe = await stripePromise;
+      if (!stripe) {
+        throw new Error("Failed to initialize Stripe");
+      }
       return stripePromise;
     } catch (err) {
       console.error("Error initializing Stripe:", err);
-      return null;
+      throw err;
     }
   }
   return stripePromise;
