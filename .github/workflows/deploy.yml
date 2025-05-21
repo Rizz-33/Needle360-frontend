@@ -80,19 +80,6 @@ jobs:
           docker rm needle360-frontend-container || true
           docker network create needle360-network || true
 
-      - name: Verify port availability
-        run: |
-          if sudo lsof -i :80; then sudo fuser -k 80/tcp; fi
-          if sudo lsof -i :443; then sudo fuser -k 443/tcp; fi
-          sleep 2
-
-      - name: Pull latest image
-        run: |
-          docker pull rizz336/needle360-frontend:latest || {
-            echo "Failed to pull frontend image"
-            exit 1
-          }
-
       - name: Verify backend status
         run: |
           echo "Checking if backend is ready..."
