@@ -15,7 +15,6 @@ import {
   Users,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { CustomButton } from "../components/ui/Button";
 import { useChatStore } from "../store/Chat.store";
 import { useDesignStore } from "../store/Design.store";
 import { useServiceStore } from "../store/Service.store";
@@ -356,28 +355,6 @@ const Services = ({ tailorId }) => {
             Discover our {selectedService.toLowerCase()} service. Contact us to
             schedule an appointment or request a quote.
           </p>
-          <div className="mt-4 flex space-x-3">
-            <CustomButton
-              text="Book Now"
-              variant="filled"
-              color="primary"
-              hover_color="hoverAccent"
-              width="w-24"
-              height="h-10"
-              type="submit"
-              onClick={() => (window.location.href = "/book-appointment")}
-            />
-            <CustomButton
-              text="Request Info"
-              variant="outline"
-              color="primary"
-              hover_color="hoverAccent"
-              width="w-24"
-              height="h-10"
-              type="submit"
-              onClick={() => (window.location.href = "/book-appointment")}
-            />
-          </div>
 
           {/* Tailors Section */}
           <div className="mt-8">
