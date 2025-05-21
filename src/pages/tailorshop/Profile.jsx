@@ -638,7 +638,7 @@ const TailorProfilePage = () => {
 
     return (
       <div className="space-y-6">
-        <div className="flex overflow-x-auto pb-2 justify-center">
+        <div className="flex flex-col sm:flex-row overflow-x-auto pb-2 gap-2 sm:gap-4 px-2 sm:px-4">
           {daysOfWeek.map((day) => {
             const daySlots = groupedSlots?.[day] || [];
             const isToday = day === currentDayName;
@@ -649,7 +649,7 @@ const TailorProfilePage = () => {
             return (
               <div
                 key={day}
-                className={`flex-shrink-0 w-36 mr-8 last:mr-0 rounded-lg p-3 transition-all ${
+                className={`flex-1 min-w-[150px] sm:min-w-[180px] rounded-lg p-3 transition-all ${
                   isToday
                     ? "bg-blue-50 border-2 border-blue-200"
                     : hasSlots
