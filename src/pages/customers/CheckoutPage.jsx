@@ -16,9 +16,10 @@ import {
   MapPin,
   Package,
   Phone,
+  Shield,
   Store,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import BankCard from "../../components/ui/BankCard";
@@ -27,45 +28,98 @@ import Loader from "../../components/ui/Loader";
 import { useOrderStore } from "../../store/Order.store";
 import { useShopStore } from "../../store/Shop.store";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+// Load stripe outside of component render to avoid recreating the Stripe object on every render
+// Use a try-catch to handle potential issues with environment variables
+let stripePromise;
+try {
+  const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+  if (!key) {
+    console.error("Stripe publishable key is missing!");
+  } else {
+    stripePromise = loadStripe(key);
+  }
+} catch (err) {
+  console.error("Error initializing Stripe:", err);
+}
 
 const StripePaymentForm = ({ order, clientSecret, onSuccess }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
+  const [cardComplete, setCardComplete] = useState(false);
+
+  // Handle card input change
+  const handleCardChange = (event) => {
+    setCardComplete(event.complete);
+    if (event.error) {
+      setError(event.error.message);
+    } else {
+      setError(null);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsProcessing(true);
-    setError(null);
 
-    if (!stripe || !elements) {
-      setIsProcessing(false);
+    if (!stripe || !elements || !clientSecret) {
+      setError("Payment system is not ready. Please try again.");
       return;
     }
 
+    setIsProcessing(true);
+    setError(null);
+
     const cardElement = elements.getElement(CardElement);
+
+    if (!cardElement) {
+      setError("Card element not found. Please refresh and try again.");
+      setIsProcessing(false);
+      return;
+    }
 
     try {
       const { error: stripeError, paymentIntent } =
         await stripe.confirmCardPayment(clientSecret, {
           payment_method: {
             card: cardElement,
+            billing_details: {
+              name: order.customerName || "Customer",
+            },
           },
         });
 
       if (stripeError) {
-        setError(stripeError.message);
-        setIsProcessing(false);
+        setError(stripeError.message || "Payment failed. Please try again.");
+        toast.error(stripeError.message || "Payment failed");
         return;
       }
 
       if (paymentIntent.status === "succeeded") {
+        toast.success("Payment successful!");
         onSuccess();
+      } else if (paymentIntent.status === "requires_action") {
+        // Handle 3D Secure authentication if needed
+        const { error, paymentIntent: updatedIntent } =
+          await stripe.confirmCardPayment(clientSecret);
+
+        if (error) {
+          setError(error.message || "Authentication failed. Please try again.");
+          toast.error(error.message || "Authentication failed");
+        } else if (updatedIntent.status === "succeeded") {
+          toast.success("Payment successful!");
+          onSuccess();
+        } else {
+          setError("Payment was not completed. Please try again.");
+          toast.error("Payment was not completed");
+        }
+      } else {
+        setError("Payment was not completed. Please try again.");
+        toast.error("Payment was not completed");
       }
     } catch (err) {
-      setError(err.message || "Payment failed");
+      console.error("Payment error:", err);
+      setError(err.message || "Payment failed. Please try again.");
       toast.error(err.message || "Payment failed");
     } finally {
       setIsProcessing(false);
@@ -109,7 +163,13 @@ const StripePaymentForm = ({ order, clientSecret, onSuccess }) => {
               },
             },
           }}
+          onChange={handleCardChange}
         />
+      </div>
+
+      <div className="flex items-center text-xs text-gray-500 mb-4">
+        <Shield size={14} className="mr-2 text-green-600" />
+        Secured by Stripe. Your card details are encrypted and secure.
       </div>
 
       <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -119,9 +179,15 @@ const StripePaymentForm = ({ order, clientSecret, onSuccess }) => {
           color="primary"
           variant="filled"
           width="w-full"
-          height="h-8"
+          height="h-12"
           size="lg"
-          disabled={isProcessing || !stripe || !elements}
+          disabled={
+            isProcessing ||
+            !stripe ||
+            !elements ||
+            !cardComplete ||
+            !clientSecret
+          }
           icon={
             isProcessing ? (
               <LoaderIcon className="animate-spin" size={20} />
@@ -139,81 +205,126 @@ const CheckoutPage = () => {
   const { orderId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { orders, createPaymentIntent, selectCOD, isLoading, error } =
-    useOrderStore();
+  const {
+    orders,
+    createPaymentIntent,
+    selectCOD,
+    isLoading,
+    error: orderError,
+    fetchOrders,
+  } = useOrderStore();
   const {
     fetchTailorById,
     tailor,
     isLoading: tailorLoading,
     error: tailorError,
   } = useShopStore();
+
   const [order, setOrder] = useState(null);
   const [clientSecret, setClientSecret] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
 
+  // Fetch current order data
   useEffect(() => {
+    const loadOrderData = async () => {
+      if (!orderId) {
+        toast.error("No order selected");
+        navigate("/checkout");
+        return;
+      }
+
+      try {
+        // Make sure we have the latest orders data
+        if (orders.length === 0) {
+          await fetchOrders();
+        }
+
+        const foundOrder = orders.find((o) => o._id === orderId);
+
+        if (foundOrder) {
+          setOrder(foundOrder);
+
+          // Fetch tailor details if we have a tailor ID
+          if (foundOrder.tailor) {
+            fetchTailorById(foundOrder.tailor);
+          }
+
+          if (foundOrder.paymentStatus === "paid") {
+            toast.error("This order is already paid");
+            navigate("/");
+          }
+        } else {
+          toast.error("Order not found");
+          navigate("/");
+        }
+      } catch (err) {
+        console.error("Error loading order data:", err);
+        setError("Failed to load order data. Please try again.");
+      }
+    };
+
     const queryParams = new URLSearchParams(location.search);
     const method = queryParams.get("method");
     setPaymentMethod(method);
 
-    if (!orderId) {
-      toast.error("No order selected");
-      navigate("/checkout");
+    loadOrderData();
+  }, [
+    orderId,
+    orders,
+    navigate,
+    location.search,
+    fetchTailorById,
+    fetchOrders,
+  ]);
+
+  // Initialize payment intent for card payments
+  const initializePayment = useCallback(async () => {
+    if (!order || !paymentMethod || paymentMethod !== "card" || clientSecret) {
       return;
     }
 
-    const foundOrder = orders.find((o) => o._id === orderId);
-    if (foundOrder) {
-      setOrder(foundOrder);
-
-      // Fetch tailor details if we have a tailor ID
-      if (foundOrder.tailor) {
-        fetchTailorById(foundOrder.tailor);
-      }
-
-      if (foundOrder.paymentStatus === "paid") {
-        toast.error("This order is already paid");
-        navigate("/");
-      }
-    } else {
-      toast.error("Order not found");
-      navigate("/");
-    }
-  }, [orderId, orders, navigate, location.search, fetchTailorById]);
-
-  useEffect(() => {
-    if (paymentMethod === "card" && order && !clientSecret) {
-      const initPayment = async () => {
-        try {
-          setIsProcessing(true);
-          const { clientSecret } = await createPaymentIntent(order._id);
-          setClientSecret(clientSecret);
-        } catch (err) {
-          toast.error(err.message || "Error initiating payment");
-          navigate(`/checkout/${orderId}`);
-        } finally {
-          setIsProcessing(false);
-        }
-      };
-      initPayment();
-    }
-  }, [
-    paymentMethod,
-    order,
-    clientSecret,
-    createPaymentIntent,
-    orderId,
-    navigate,
-  ]);
-
-  const handleCODPayment = async () => {
     try {
       setIsProcessing(true);
+      setError(null);
+      const { clientSecret: secret } = await createPaymentIntent(order._id);
+
+      if (!secret) {
+        throw new Error("Failed to get payment details from server");
+      }
+
+      setClientSecret(secret);
+    } catch (err) {
+      console.error("Payment initialization error:", err);
+      setError(err.message || "Error initiating payment. Please try again.");
+      toast.error(err.message || "Error initiating payment");
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [order, paymentMethod, clientSecret, createPaymentIntent]);
+
+  useEffect(() => {
+    if (paymentMethod === "card" && order && !clientSecret && !isProcessing) {
+      initializePayment();
+    }
+  }, [paymentMethod, order, clientSecret, initializePayment, isProcessing]);
+
+  const handleCODPayment = async () => {
+    if (!order) {
+      toast.error("Order information not available");
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      setError(null);
       await selectCOD(order._id);
       toast.success("COD selected successfully! You will pay upon delivery.");
       navigate("/");
     } catch (err) {
+      console.error("COD selection error:", err);
+      setError(err.message || "Error selecting COD. Please try again.");
       toast.error(err.message || "Error selecting COD");
     } finally {
       setIsProcessing(false);
@@ -225,12 +336,17 @@ const CheckoutPage = () => {
     navigate("/");
   };
 
-  if (
+  // Determine if we're in a loading state
+  const isLoadingState =
     isLoading ||
     tailorLoading ||
     !order ||
-    (paymentMethod === "card" && !clientSecret)
-  ) {
+    (paymentMethod === "card" && !clientSecret && !error);
+
+  // Handle any errors from the store
+  const combinedError = error || orderError || tailorError;
+
+  if (isLoadingState) {
     return (
       <div className="min-h-screen w-full bg-blue-50 flex items-center justify-center">
         <Loader />
@@ -238,7 +354,7 @@ const CheckoutPage = () => {
     );
   }
 
-  if (error || tailorError) {
+  if (combinedError) {
     return (
       <div className="min-h-screen w-full bg-blue-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center">
@@ -246,7 +362,34 @@ const CheckoutPage = () => {
             <AlertCircle className="w-12 h-12 mx-auto" />
           </div>
           <h3 className="text-xl font-bold text-gray-800 mb-2">Error</h3>
-          <p className="text-gray-600 mb-6">{error || tailorError}</p>
+          <p className="text-gray-600 mb-6">{combinedError}</p>
+          <CustomButton
+            onClick={() => navigate(`/checkout/${orderId}`)}
+            text="Back to Order Summary"
+            color="primary"
+            variant="filled"
+            width="w-full"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Make sure Stripe is loaded for card payments
+  if (paymentMethod === "card" && !stripePromise) {
+    return (
+      <div className="min-h-screen w-full bg-blue-50 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center">
+          <div className="text-red-500 mb-4">
+            <AlertCircle className="w-12 h-12 mx-auto" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-800 mb-2">
+            Payment System Error
+          </h3>
+          <p className="text-gray-600 mb-6">
+            The payment system failed to initialize. Please try again or choose
+            a different payment method.
+          </p>
           <CustomButton
             onClick={() => navigate(`/checkout/${orderId}`)}
             text="Back to Order Summary"
@@ -296,11 +439,11 @@ const CheckoutPage = () => {
               <div className="p-6 sm:p-8">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-semibold text-gray-800">
-                    Order #...{order._id?.slice(-6) || ""}
+                    Order #{order?._id?.slice(-6) || ""}
                   </h2>
                   <div className="flex items-center space-x-3">
                     <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
-                      {order.orderType || "N/A"}
+                      {order?.orderType || "N/A"}
                     </span>
                   </div>
                 </div>
@@ -316,7 +459,7 @@ const CheckoutPage = () => {
                           Due Date
                         </h3>
                         <p className="text-gray-800 font-medium text-sm">
-                          {order.dueDate
+                          {order?.dueDate
                             ? new Date(order.dueDate).toLocaleDateString(
                                 "en-US",
                                 {
@@ -342,7 +485,7 @@ const CheckoutPage = () => {
                           Total Amount
                         </h3>
                         <p className="text-2xl font-bold text-gray-800">
-                          LKR {order.totalAmount?.toFixed(2) || "0.00"}
+                          LKR {order?.totalAmount?.toFixed(2) || "0.00"}
                         </p>
                       </div>
                     </div>
@@ -416,13 +559,25 @@ const CheckoutPage = () => {
                 </h2>
 
                 {paymentMethod === "card" ? (
-                  <Elements stripe={stripePromise}>
-                    <StripePaymentForm
-                      order={order}
-                      clientSecret={clientSecret}
-                      onSuccess={handlePaymentSuccess}
-                    />
-                  </Elements>
+                  clientSecret ? (
+                    <Elements stripe={stripePromise}>
+                      <StripePaymentForm
+                        order={order}
+                        clientSecret={clientSecret}
+                        onSuccess={handlePaymentSuccess}
+                      />
+                    </Elements>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-6">
+                      <LoaderIcon
+                        className="animate-spin text-primary mb-4"
+                        size={32}
+                      />
+                      <p className="text-gray-600">
+                        Preparing payment system...
+                      </p>
+                    </div>
+                  )
                 ) : (
                   <>
                     <div className="flex flex-col items-center justify-center mb-6">
@@ -432,7 +587,7 @@ const CheckoutPage = () => {
                       <p className="text-gray-600 text-center mb-6">
                         You'll pay{" "}
                         <span className="font-bold">
-                          LKR {order.totalAmount.toFixed(2)}
+                          LKR {order?.totalAmount?.toFixed(2) || "0.00"}
                         </span>{" "}
                         when you receive your order.
                       </p>
@@ -451,7 +606,7 @@ const CheckoutPage = () => {
                         color="primary"
                         variant="filled"
                         width="w-full"
-                        height="h-8"
+                        height="h-12"
                         size="lg"
                         disabled={isProcessing}
                         icon={
@@ -477,7 +632,7 @@ const CheckoutPage = () => {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal</span>
                     <span className="font-medium">
-                      LKR {order.totalAmount?.toFixed(2) || "0.00"}
+                      LKR {order?.totalAmount?.toFixed(2) || "0.00"}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -487,7 +642,7 @@ const CheckoutPage = () => {
                   <div className="border-t border-gray-200 pt-3 mt-2 flex justify-between">
                     <span className="text-gray-900 font-semibold">Total</span>
                     <span className="text-gray-900 font-bold">
-                      LKR {order.totalAmount?.toFixed(2) || "0.00"}
+                      LKR {order?.totalAmount?.toFixed(2) || "0.00"}
                     </span>
                   </div>
                 </div>

@@ -2,12 +2,22 @@ import axios from "axios";
 import { io } from "socket.io-client";
 import { create } from "zustand";
 
-const BASE_API_URL = `${
-  import.meta.env.VITE_API_URL || "http://localhost:4000"
-}/api/order`;
+// Get API URL from environment variables with fallback
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const BASE_API_URL = `${API_URL}/api/order`;
 
+// Configure axios defaults
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common["Content-Type"] = "application/json";
+
+// Add axios interceptors for better error handling
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error("API Error:", error.response?.data || error.message || error);
+    return Promise.reject(error);
+  }
+);
 
 export const useOrderStore = create((set, get) => ({
   orders: [],
@@ -18,64 +28,88 @@ export const useOrderStore = create((set, get) => ({
   error: null,
   socket: null,
   paymentOrderId: null,
+  paymentProcessing: false,
 
   initializeSocket: (userId, role) => {
-    const socket = io(import.meta.env.VITE_API_URL || "http://localhost:4000", {
-      withCredentials: true,
-    });
+    if (get().socket) {
+      // Disconnect existing socket if it exists
+      get().disconnectSocket();
+    }
 
-    socket.on("connect", () => {
-      console.log("Connected to WebSocket server");
-      socket.emit("joinRoom", {
-        userId,
-        role: role === 4 ? "tailor" : "customer",
+    try {
+      const socket = io(API_URL, {
+        withCredentials: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
       });
-    });
 
-    socket.on("orderCreated", (order) => {
-      set((state) => ({
-        orders: [order, ...state.orders],
-        total: state.total + 1,
-      }));
-    });
+      socket.on("connect", () => {
+        console.log("Connected to WebSocket server");
+        socket.emit("joinRoom", {
+          userId,
+          role: role === 4 ? "tailor" : "customer",
+        });
+      });
 
-    socket.on("orderStatusUpdated", (updatedOrder) => {
-      set((state) => ({
-        orders: state.orders.map((order) =>
-          order._id === updatedOrder._id ? updatedOrder : order
-        ),
-      }));
-    });
+      socket.on("orderCreated", (order) => {
+        set((state) => ({
+          orders: [order, ...state.orders],
+          total: state.total + 1,
+        }));
+      });
 
-    socket.on("orderDeleted", ({ id }) => {
-      set((state) => ({
-        orders: state.orders.filter((order) => order._id !== id),
-        total: state.total - 1,
-      }));
-    });
-
-    socket.on(
-      "paymentStatusUpdated",
-      ({ orderId, paymentStatus, paymentMethod }) => {
+      socket.on("orderStatusUpdated", (updatedOrder) => {
         set((state) => ({
           orders: state.orders.map((order) =>
-            order._id === orderId
-              ? { ...order, paymentStatus, paymentMethod }
-              : order
+            order._id === updatedOrder._id ? updatedOrder : order
           ),
         }));
-      }
-    );
+      });
 
-    socket.on("orderReadyForPayment", ({ orderId }) => {
-      set({ paymentOrderId: orderId });
-    });
+      socket.on("orderDeleted", ({ id }) => {
+        set((state) => ({
+          orders: state.orders.filter((order) => order._id !== id),
+          total: state.total - 1,
+        }));
+      });
 
-    socket.on("connect_error", (err) => {
-      console.error("WebSocket connection error:", err);
-    });
+      socket.on(
+        "paymentStatusUpdated",
+        ({ orderId, paymentStatus, paymentMethod }) => {
+          set((state) => ({
+            orders: state.orders.map((order) =>
+              order._id === orderId
+                ? { ...order, paymentStatus, paymentMethod }
+                : order
+            ),
+          }));
+        }
+      );
 
-    set({ socket });
+      socket.on("orderReadyForPayment", ({ orderId }) => {
+        set({ paymentOrderId: orderId });
+      });
+
+      socket.on("connect_error", (err) => {
+        console.error("WebSocket connection error:", err);
+      });
+
+      socket.on("disconnect", (reason) => {
+        console.log(`Socket disconnected: ${reason}`);
+        if (reason === "io server disconnect") {
+          // the disconnection was initiated by the server, reconnect manually
+          socket.connect();
+        }
+      });
+
+      set({ socket });
+      return socket;
+    } catch (err) {
+      console.error("Socket initialization error:", err);
+      set({ error: "Failed to connect to notification service" });
+      return null;
+    }
   },
 
   disconnectSocket: () => {
@@ -109,8 +143,11 @@ export const useOrderStore = create((set, get) => ({
 
       return response.data;
     } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Error fetching orders";
+      console.error(errorMessage, error);
       set({
-        error: error.response?.data?.message || "Error fetching orders",
+        error: errorMessage,
         isLoading: false,
       });
       throw error;
@@ -142,9 +179,11 @@ export const useOrderStore = create((set, get) => ({
 
       return response.data;
     } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Error fetching customer orders";
+      console.error(errorMessage, error);
       set({
-        error:
-          error.response?.data?.message || "Error fetching customer orders",
+        error: errorMessage,
         isLoading: false,
       });
       throw error;
@@ -158,8 +197,11 @@ export const useOrderStore = create((set, get) => ({
       set({ isLoading: false });
       return response.data;
     } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Error creating order";
+      console.error(errorMessage, error);
       set({
-        error: error.response?.data?.message || "Error creating order",
+        error: errorMessage,
         isLoading: false,
       });
       throw error;
@@ -175,9 +217,11 @@ export const useOrderStore = create((set, get) => ({
       set({ isLoading: false });
       return response.data;
     } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Error approving/rejecting order";
+      console.error(errorMessage, error);
       set({
-        error:
-          error.response?.data?.message || "Error approving/rejecting order",
+        error: errorMessage,
         isLoading: false,
       });
       throw error;
@@ -191,8 +235,11 @@ export const useOrderStore = create((set, get) => ({
       set({ isLoading: false });
       return response.data;
     } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Error updating order";
+      console.error(errorMessage, error);
       set({
-        error: error.response?.data?.message || "Error updating order",
+        error: errorMessage,
         isLoading: false,
       });
       throw error;
@@ -208,8 +255,11 @@ export const useOrderStore = create((set, get) => ({
       set({ isLoading: false });
       return response.data;
     } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Error updating order status";
+      console.error(errorMessage, error);
       set({
-        error: error.response?.data?.message || "Error updating order status",
+        error: errorMessage,
         isLoading: false,
       });
       throw error;
@@ -223,8 +273,11 @@ export const useOrderStore = create((set, get) => ({
       set({ isLoading: false });
       return true;
     } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Error deleting order";
+      console.error(errorMessage, error);
       set({
-        error: error.response?.data?.message || "Error deleting order",
+        error: errorMessage,
         isLoading: false,
       });
       throw error;
@@ -232,17 +285,42 @@ export const useOrderStore = create((set, get) => ({
   },
 
   createPaymentIntent: async (orderId) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, paymentProcessing: true });
     try {
-      const response = await axios.post(`${BASE_API_URL}/payment/intent`, {
-        orderId,
-      });
-      set({ isLoading: false });
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+      const response = await axios.post(
+        `${BASE_API_URL}/payment/intent`,
+        { orderId },
+        { signal: controller.signal }
+      );
+
+      clearTimeout(timeoutId);
+      set({ isLoading: false, paymentProcessing: false });
+
+      if (!response.data.clientSecret) {
+        throw new Error("No client secret received from payment service");
+      }
+
       return response.data;
     } catch (error) {
+      let errorMessage = "Error creating payment intent";
+
+      if (error.name === "AbortError") {
+        errorMessage = "Payment request timed out. Please try again.";
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      console.error(errorMessage, error);
       set({
-        error: error.response?.data?.message || "Error creating payment intent",
+        error: errorMessage,
         isLoading: false,
+        paymentProcessing: false,
       });
       throw error;
     }
@@ -254,11 +332,24 @@ export const useOrderStore = create((set, get) => ({
       const response = await axios.post(`${BASE_API_URL}/payment/cod`, {
         orderId,
       });
-      set({ isLoading: false });
+
+      // Update the order in the local state
+      set((state) => ({
+        orders: state.orders.map((order) =>
+          order._id === orderId
+            ? { ...order, paymentStatus: "cod", paymentMethod: "cod" }
+            : order
+        ),
+        isLoading: false,
+      }));
+
       return response.data;
     } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Error selecting COD";
+      console.error(errorMessage, error);
       set({
-        error: error.response?.data?.message || "Error selecting COD",
+        error: errorMessage,
         isLoading: false,
       });
       throw error;
@@ -272,6 +363,10 @@ export const useOrderStore = create((set, get) => ({
     return get().fetchOrders({ page: 1, limit: get().limit });
   },
 
+  clearError: () => {
+    set({ error: null });
+  },
+
   reset: () => {
     set({
       orders: [],
@@ -281,6 +376,7 @@ export const useOrderStore = create((set, get) => ({
       isLoading: false,
       error: null,
       paymentOrderId: null,
+      paymentProcessing: false,
     });
   },
 }));
