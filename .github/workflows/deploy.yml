@@ -36,16 +36,27 @@ jobs:
           fi
           echo "VITE_API_URL=${{ secrets.VITE_API_URL }}"
           echo "VITE_STRIPE_PUBLISHABLE_KEY is set (length: ${#VITE_STRIPE_PUBLISHABLE_KEY})"
-      - name: Create .env File
+      - name: Create .env file for Vite
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
         run: |
-          echo "VITE_API_URL=${{ secrets.VITE_API_URL }}" > .env
-          echo "VITE_STRIPE_PUBLISHABLE_KEY=${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}" >> .env
+          echo "Creating .env file"
+          echo "VITE_API_URL=$VITE_API_URL" > .env
+          echo "VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY" >> .env
           cat .env
+          ls -la
+      - name: Clear Vite cache
+        run: rm -rf node_modules/.vite
       - name: Build and Push
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
         run: |
           docker build \
-            --build-arg VITE_API_URL=${{ secrets.VITE_API_URL }} \
-            --build-arg VITE_STRIPE_PUBLISHABLE_KEY=${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }} \
+            --build-arg VITE_API_URL=$VITE_API_URL \
+            --build-arg VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY \
+            --no-cache \
             -t rizz336/needle360-frontend:$GITHUB_SHA \
             -t rizz336/needle360-frontend:latest \
             -f Dockerfile .
