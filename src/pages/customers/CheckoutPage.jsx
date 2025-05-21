@@ -26,8 +26,10 @@ import StripePaymentForm from "./StripePaymentForm";
 const initializeStripe = async () => {
   const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
   if (!key) {
-    console.error("Stripe publishable key is missing!");
-    throw new Error("Stripe publishable key is missing");
+    console.error("Stripe publishable key is missing in environment variables");
+    throw new Error(
+      "Payment system configuration is missing. Please contact support or try a different payment method."
+    );
   }
 
   try {
@@ -74,7 +76,8 @@ const CheckoutPage = () => {
       .then((stripe) => setStripePromise(stripe))
       .catch((err) => {
         console.error("Failed to initialize Stripe:", err);
-        setError("Payment system unavailable. Please try again later.");
+        setError(err.message);
+        toast.error(err.message);
       });
   }, []);
 
@@ -112,6 +115,7 @@ const CheckoutPage = () => {
       } catch (err) {
         console.error("Error loading order data:", err);
         setError("Failed to load order data. Please try again.");
+        toast.error("Failed to load order data. Please try again.");
       }
     };
 
@@ -262,8 +266,8 @@ const CheckoutPage = () => {
             Payment System Error
           </h3>
           <p className="text-gray-600 mb-6">
-            The payment system failed to initialize. Please try again or choose
-            a different payment method.
+            The payment system failed to initialize. Please try a different
+            payment method or contact support.
           </p>
           <CustomButton
             onClick={() => navigate(`/checkout/${orderId}`)}
