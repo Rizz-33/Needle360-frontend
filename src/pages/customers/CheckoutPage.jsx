@@ -22,13 +22,17 @@ import { useOrderStore } from "../../store/Order.store";
 import { useShopStore } from "../../store/Shop.store";
 import StripePaymentForm from "./StripePaymentForm";
 
-// Initialize Stripe with better error handling
+// Initialize Stripe with enhanced error handling and logging
 const initializeStripe = async () => {
   const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+  console.log(
+    "Attempting to load Stripe with key:",
+    key ? "Key present" : "Key missing"
+  );
   if (!key) {
     console.error("Stripe publishable key is missing in environment variables");
     throw new Error(
-      "Payment system configuration is missing. Please contact support or try a different payment method."
+      "Payment system configuration is missing. Please try a different payment method or contact support."
     );
   }
 
@@ -37,6 +41,7 @@ const initializeStripe = async () => {
     if (!stripe) {
       throw new Error("Failed to initialize Stripe");
     }
+    console.log("Stripe initialized successfully");
     return stripe;
   } catch (err) {
     console.error("Error initializing Stripe:", err);
@@ -73,7 +78,10 @@ const CheckoutPage = () => {
   // Initialize Stripe when component mounts
   useEffect(() => {
     initializeStripe()
-      .then((stripe) => setStripePromise(stripe))
+      .then((stripe) => {
+        setStripePromise(stripe);
+        console.log("Stripe promise set");
+      })
       .catch((err) => {
         console.error("Failed to initialize Stripe:", err);
         setError(err.message);

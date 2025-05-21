@@ -34,11 +34,15 @@ jobs:
             echo "Error: VITE_STRIPE_PUBLISHABLE_KEY is not set"
             exit 1
           fi
+          echo "VITE_STRIPE_PUBLISHABLE_KEY is set to: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}"
       - name: Build and Push
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
         run: |
+          # Debug environment variables
+          echo "Building with VITE_API_URL=$VITE_API_URL"
+          echo "Building with VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY"
           # Build the image with proper tagging
           docker build \
             --build-arg VITE_API_URL=$VITE_API_URL \
