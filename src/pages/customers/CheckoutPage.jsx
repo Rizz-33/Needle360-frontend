@@ -1,16 +1,10 @@
-import {
-  CardElement,
-  Elements,
-  useElements,
-  useStripe,
-} from "@stripe/react-stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   AlertCircle,
   Calendar,
   ChevronLeft,
-  CreditCard,
   DollarSign,
   Loader as LoaderIcon,
   MapPin,
@@ -22,184 +16,37 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import BankCard from "../../components/ui/BankCard";
 import { CustomButton } from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
 import { useOrderStore } from "../../store/Order.store";
 import { useShopStore } from "../../store/Shop.store";
+import StripePaymentForm from "./StripePaymentForm"; // Import the separate StripePaymentForm component
 
 // Load stripe outside of component render to avoid recreating the Stripe object on every render
-// Use a try-catch to handle potential issues with environment variables
 let stripePromise;
-try {
-  const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-  if (!key) {
-    console.error("Stripe publishable key is missing!");
-  } else {
-    stripePromise = loadStripe(key);
-  }
-} catch (err) {
-  console.error("Error initializing Stripe:", err);
-}
 
-const StripePaymentForm = ({ order, clientSecret, onSuccess }) => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState(null);
-  const [cardComplete, setCardComplete] = useState(false);
-
-  // Handle card input change
-  const handleCardChange = (event) => {
-    setCardComplete(event.complete);
-    if (event.error) {
-      setError(event.error.message);
-    } else {
-      setError(null);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!stripe || !elements || !clientSecret) {
-      setError("Payment system is not ready. Please try again.");
-      return;
-    }
-
-    setIsProcessing(true);
-    setError(null);
-
-    const cardElement = elements.getElement(CardElement);
-
-    if (!cardElement) {
-      setError("Card element not found. Please refresh and try again.");
-      setIsProcessing(false);
-      return;
-    }
-
+// Initialize Stripe with better error handling
+const initializeStripe = () => {
+  // Only initialize if not already done
+  if (!stripePromise) {
     try {
-      const { error: stripeError, paymentIntent } =
-        await stripe.confirmCardPayment(clientSecret, {
-          payment_method: {
-            card: cardElement,
-            billing_details: {
-              name: order.customerName || "Customer",
-            },
-          },
-        });
-
-      if (stripeError) {
-        setError(stripeError.message || "Payment failed. Please try again.");
-        toast.error(stripeError.message || "Payment failed");
-        return;
+      const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+      if (!key) {
+        console.error("Stripe publishable key is missing!");
+        return null;
       }
-
-      if (paymentIntent.status === "succeeded") {
-        toast.success("Payment successful!");
-        onSuccess();
-      } else if (paymentIntent.status === "requires_action") {
-        // Handle 3D Secure authentication if needed
-        const { error, paymentIntent: updatedIntent } =
-          await stripe.confirmCardPayment(clientSecret);
-
-        if (error) {
-          setError(error.message || "Authentication failed. Please try again.");
-          toast.error(error.message || "Authentication failed");
-        } else if (updatedIntent.status === "succeeded") {
-          toast.success("Payment successful!");
-          onSuccess();
-        } else {
-          setError("Payment was not completed. Please try again.");
-          toast.error("Payment was not completed");
-        }
-      } else {
-        setError("Payment was not completed. Please try again.");
-        toast.error("Payment was not completed");
-      }
+      stripePromise = loadStripe(key);
+      return stripePromise;
     } catch (err) {
-      console.error("Payment error:", err);
-      setError(err.message || "Payment failed. Please try again.");
-      toast.error(err.message || "Payment failed");
-    } finally {
-      setIsProcessing(false);
+      console.error("Error initializing Stripe:", err);
+      return null;
     }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg text-sm"
-          >
-            <AlertCircle size={16} />
-            {error}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="mb-6">
-        <BankCard interactive={true} cardType="visa" />
-      </div>
-
-      <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-        <CardElement
-          options={{
-            style: {
-              base: {
-                fontSize: "16px",
-                color: "#1f2937",
-                "::placeholder": {
-                  color: "#9ca3af",
-                },
-                padding: "10px",
-              },
-              invalid: {
-                color: "#dc2626",
-              },
-            },
-          }}
-          onChange={handleCardChange}
-        />
-      </div>
-
-      <div className="flex items-center text-xs text-gray-500 mb-4">
-        <Shield size={14} className="mr-2 text-green-600" />
-        Secured by Stripe. Your card details are encrypted and secure.
-      </div>
-
-      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-        <CustomButton
-          type="submit"
-          text={isProcessing ? "Processing Payment..." : "Pay Now"}
-          color="primary"
-          variant="filled"
-          width="w-full"
-          height="h-12"
-          size="lg"
-          disabled={
-            isProcessing ||
-            !stripe ||
-            !elements ||
-            !cardComplete ||
-            !clientSecret
-          }
-          icon={
-            isProcessing ? (
-              <LoaderIcon className="animate-spin" size={20} />
-            ) : (
-              <CreditCard size={20} />
-            )
-          }
-        />
-      </motion.div>
-    </form>
-  );
+  }
+  return stripePromise;
 };
+
+// Try to initialize Stripe immediately
+initializeStripe();
 
 const CheckoutPage = () => {
   const { orderId } = useParams();
@@ -225,6 +72,17 @@ const CheckoutPage = () => {
   const [paymentMethod, setPaymentMethod] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
+  const [stripeInitialized, setStripeInitialized] = useState(false);
+
+  // Check if Stripe is initialized
+  useEffect(() => {
+    const checkStripe = async () => {
+      const stripe = await initializeStripe();
+      setStripeInitialized(!!stripe);
+    };
+
+    checkStripe();
+  }, []);
 
   // Fetch current order data
   useEffect(() => {
@@ -281,7 +139,13 @@ const CheckoutPage = () => {
 
   // Initialize payment intent for card payments
   const initializePayment = useCallback(async () => {
-    if (!order || !paymentMethod || paymentMethod !== "card" || clientSecret) {
+    if (
+      !order ||
+      !paymentMethod ||
+      paymentMethod !== "card" ||
+      clientSecret ||
+      isProcessing
+    ) {
       return;
     }
 
@@ -302,7 +166,7 @@ const CheckoutPage = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [order, paymentMethod, clientSecret, createPaymentIntent]);
+  }, [order, paymentMethod, clientSecret, createPaymentIntent, isProcessing]);
 
   useEffect(() => {
     if (paymentMethod === "card" && order && !clientSecret && !isProcessing) {
@@ -369,6 +233,7 @@ const CheckoutPage = () => {
             color="primary"
             variant="filled"
             width="w-full"
+            height="h-12"
           />
         </div>
       </div>
@@ -376,7 +241,7 @@ const CheckoutPage = () => {
   }
 
   // Make sure Stripe is loaded for card payments
-  if (paymentMethod === "card" && !stripePromise) {
+  if (paymentMethod === "card" && !stripeInitialized) {
     return (
       <div className="min-h-screen w-full bg-blue-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center">
@@ -559,7 +424,7 @@ const CheckoutPage = () => {
                 </h2>
 
                 {paymentMethod === "card" ? (
-                  clientSecret ? (
+                  clientSecret && stripePromise ? (
                     <Elements stripe={stripePromise}>
                       <StripePaymentForm
                         order={order}
@@ -645,6 +510,17 @@ const CheckoutPage = () => {
                       LKR {order?.totalAmount?.toFixed(2) || "0.00"}
                     </span>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Shield size={16} className="text-green-600" />
+                  <p className="text-xs">
+                    Your payment information is encrypted and secure.
+                  </p>
                 </div>
               </div>
             </div>
