@@ -41,11 +41,18 @@ jobs:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
         run: |
-          echo "Creating .env file"
+          echo "Creating .env file in $(pwd)"
           echo "VITE_API_URL=$VITE_API_URL" > .env
           echo "VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY" >> .env
           cat .env
           ls -la
+          echo "Verifying .env file exists:"
+          if [ -f .env ]; then
+            echo ".env file created successfully"
+          else
+            echo "Error: .env file not created"
+            exit 1
+          fi
       - name: Clear Vite cache
         run: rm -rf node_modules/.vite
       - name: Build and Push
@@ -53,6 +60,9 @@ jobs:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
         run: |
+          echo "Building with environment variables:"
+          echo "VITE_API_URL=$VITE_API_URL"
+          echo "VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY"
           docker build \
             --build-arg VITE_API_URL=$VITE_API_URL \
             --build-arg VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY \
