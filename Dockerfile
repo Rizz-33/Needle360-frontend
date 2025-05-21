@@ -11,10 +11,10 @@ RUN npm install --legacy-peer-deps
 # Copy the rest of the files
 COPY . .
 
-ARG VITE_API_URL
-ARG VITE_STRIPE_PUBLISHABLE_KEY
-ENV VITE_API_URL=$VITE_API_URL
-ENV VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY
+# Debug environment variables
+RUN echo "VITE_API_URL=$VITE_API_URL" > /tmp/env.log
+RUN echo "VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY" >> /tmp/env.log
+RUN cat /tmp/env.log
 
 # Build the app
 RUN npm run build
