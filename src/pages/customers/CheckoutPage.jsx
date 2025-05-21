@@ -1,219 +1,234 @@
-import {
-  CardElement,
-  Elements,
-  useElements,
-  useStripe,
-} from "@stripe/react-stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   AlertCircle,
   Calendar,
   ChevronLeft,
-  CreditCard,
   DollarSign,
   Loader as LoaderIcon,
   MapPin,
   Package,
   Phone,
+  Shield,
   Store,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import BankCard from "../../components/ui/BankCard";
 import { CustomButton } from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
 import { useOrderStore } from "../../store/Order.store";
 import { useShopStore } from "../../store/Shop.store";
+import StripePaymentForm from "./StripePaymentForm";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
-
-const StripePaymentForm = ({ order, clientSecret, onSuccess }) => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState(null);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsProcessing(true);
-    setError(null);
-
-    if (!stripe || !elements) {
-      setIsProcessing(false);
-      return;
-    }
-
-    const cardElement = elements.getElement(CardElement);
-
-    try {
-      const { error: stripeError, paymentIntent } =
-        await stripe.confirmCardPayment(clientSecret, {
-          payment_method: {
-            card: cardElement,
-          },
-        });
-
-      if (stripeError) {
-        setError(stripeError.message);
-        setIsProcessing(false);
-        return;
-      }
-
-      if (paymentIntent.status === "succeeded") {
-        onSuccess();
-      }
-    } catch (err) {
-      setError(err.message || "Payment failed");
-      toast.error(err.message || "Payment failed");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg text-sm"
-          >
-            <AlertCircle size={16} />
-            {error}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="mb-6">
-        <BankCard interactive={true} cardType="visa" />
-      </div>
-
-      <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-        <CardElement
-          options={{
-            style: {
-              base: {
-                fontSize: "16px",
-                color: "#1f2937",
-                "::placeholder": {
-                  color: "#9ca3af",
-                },
-                padding: "10px",
-              },
-              invalid: {
-                color: "#dc2626",
-              },
-            },
-          }}
-        />
-      </div>
-
-      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-        <CustomButton
-          type="submit"
-          text={isProcessing ? "Processing Payment..." : "Pay Now"}
-          color="primary"
-          variant="filled"
-          width="w-full"
-          height="h-8"
-          size="lg"
-          disabled={isProcessing || !stripe || !elements}
-          icon={
-            isProcessing ? (
-              <LoaderIcon className="animate-spin" size={20} />
-            ) : (
-              <CreditCard size={20} />
-            )
-          }
-        />
-      </motion.div>
-    </form>
+// Initialize Stripe with detailed debugging
+const initializeStripe = async () => {
+  const key =
+    import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ||
+    "pk_test_51RH5dSPCpJjalvEJpbV7YEKl7iFhFPvvNRsExsvz2PtwHXiwe8RgflUllJ6YlBEkKVipeST0SkYVGvodI45b2I3c00BJpV89El";
+  console.log(
+    "VITE_STRIPE_PUBLISHABLE_KEY at build time:",
+    key ? `Key present (length: ${key.length})` : "Key missing"
   );
+  console.log(
+    "VITE_API_URL at build time:",
+    import.meta.env.VITE_API_URL || "Missing"
+  );
+  if (!key) {
+    console.error("Stripe publishable key is missing in environment variables");
+    throw new Error(
+      "Payment system configuration is missing. Please try a different payment method or contact support."
+    );
+  }
+
+  try {
+    const stripe = await loadStripe(key);
+    if (!stripe) {
+      throw new Error("Failed to initialize Stripe");
+    }
+    console.log("Stripe initialized successfully");
+    return stripe;
+  } catch (err) {
+    console.error("Error initializing Stripe:", err);
+    throw err;
+  }
 };
 
 const CheckoutPage = () => {
   const { orderId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { orders, createPaymentIntent, selectCOD, isLoading, error } =
-    useOrderStore();
+  const {
+    orders,
+    createPaymentIntent,
+    selectCOD,
+    isLoading,
+    error: orderError,
+    fetchOrders,
+  } = useOrderStore();
   const {
     fetchTailorById,
     tailor,
     isLoading: tailorLoading,
     error: tailorError,
   } = useShopStore();
+
   const [order, setOrder] = useState(null);
   const [clientSecret, setClientSecret] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
+  const [stripePromise, setStripePromise] = useState(null);
 
+  // Debug environment variables on mount
   useEffect(() => {
+    console.log("Environment variables:", import.meta.env);
+    console.log(
+      "VITE_STRIPE_PUBLISHABLE_KEY in useEffect:",
+      import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+    );
+  }, []);
+
+  // Initialize Stripe
+  useEffect(() => {
+    initializeStripe()
+      .then((stripe) => {
+        setStripePromise(stripe);
+        console.log("Stripe promise set");
+      })
+      .catch((err) => {
+        console.error("Failed to initialize Stripe:", err);
+        setError(err.message);
+        toast.error(err.message);
+      });
+  }, []);
+
+  // Fetch order data
+  useEffect(() => {
+    const loadOrderData = async () => {
+      if (!orderId) {
+        toast.error("No order selected");
+        navigate("/checkout");
+        return;
+      }
+
+      try {
+        if (orders.length === 0) {
+          await fetchOrders();
+        }
+
+        const foundOrder = orders.find((o) => o._id === orderId);
+
+        if (foundOrder) {
+          setOrder(foundOrder);
+
+          if (foundOrder.tailor) {
+            fetchTailorById(foundOrder.tailor);
+          }
+
+          if (foundOrder.paymentStatus === "paid") {
+            toast.error("This order is already paid");
+            navigate("/");
+          }
+        } else {
+          toast.error("Order not found");
+          navigate("/");
+        }
+      } catch (err) {
+        console.error("Error loading order data:", err);
+        setError("Failed to load order data. Please try again.");
+        toast.error("Failed to load order data. Please try again.");
+      }
+    };
+
     const queryParams = new URLSearchParams(location.search);
     const method = queryParams.get("method");
     setPaymentMethod(method);
 
-    if (!orderId) {
-      toast.error("No order selected");
-      navigate("/checkout");
+    loadOrderData();
+  }, [
+    orderId,
+    orders,
+    navigate,
+    location.search,
+    fetchTailorById,
+    fetchOrders,
+  ]);
+
+  // Initialize payment intent for card payments
+  const initializePayment = useCallback(async () => {
+    if (
+      !order ||
+      !paymentMethod ||
+      paymentMethod !== "card" ||
+      clientSecret ||
+      isProcessing ||
+      !stripePromise
+    ) {
       return;
     }
 
-    const foundOrder = orders.find((o) => o._id === orderId);
-    if (foundOrder) {
-      setOrder(foundOrder);
+    try {
+      setIsProcessing(true);
+      setError(null);
+      const { clientSecret: secret } = await createPaymentIntent(order._id);
 
-      // Fetch tailor details if we have a tailor ID
-      if (foundOrder.tailor) {
-        fetchTailorById(foundOrder.tailor);
+      if (!secret) {
+        throw new Error("Failed to get payment details from server");
       }
 
-      if (foundOrder.paymentStatus === "paid") {
-        toast.error("This order is already paid");
-        navigate("/");
-      }
-    } else {
-      toast.error("Order not found");
-      navigate("/");
+      setClientSecret(secret);
+    } catch (err) {
+      console.error("Payment initialization error:", err);
+      setError(err.message || "Error initiating payment. Please try again.");
+      toast.error(err.message || "Error initiating payment");
+    } finally {
+      setIsProcessing(false);
     }
-  }, [orderId, orders, navigate, location.search, fetchTailorById]);
+  }, [
+    order,
+    paymentMethod,
+    clientSecret,
+    createPaymentIntent,
+    isProcessing,
+    stripePromise,
+  ]);
 
   useEffect(() => {
-    if (paymentMethod === "card" && order && !clientSecret) {
-      const initPayment = async () => {
-        try {
-          setIsProcessing(true);
-          const { clientSecret } = await createPaymentIntent(order._id);
-          setClientSecret(clientSecret);
-        } catch (err) {
-          toast.error(err.message || "Error initiating payment");
-          navigate(`/checkout/${orderId}`);
-        } finally {
-          setIsProcessing(false);
-        }
-      };
-      initPayment();
+    if (
+      paymentMethod === "card" &&
+      order &&
+      !clientSecret &&
+      !isProcessing &&
+      stripePromise
+    ) {
+      initializePayment();
     }
   }, [
     paymentMethod,
     order,
     clientSecret,
-    createPaymentIntent,
-    orderId,
-    navigate,
+    initializePayment,
+    isProcessing,
+    stripePromise,
   ]);
 
   const handleCODPayment = async () => {
+    if (!order) {
+      toast.error("Order information not available");
+      return;
+    }
+
     try {
       setIsProcessing(true);
+      setError(null);
       await selectCOD(order._id);
       toast.success("COD selected successfully! You will pay upon delivery.");
       navigate("/");
     } catch (err) {
+      console.error("COD selection error:", err);
+      setError(err.message || "Error selecting COD. Please try again.");
       toast.error(err.message || "Error selecting COD");
     } finally {
       setIsProcessing(false);
@@ -225,12 +240,15 @@ const CheckoutPage = () => {
     navigate("/");
   };
 
-  if (
+  const isLoadingState =
     isLoading ||
     tailorLoading ||
     !order ||
-    (paymentMethod === "card" && !clientSecret)
-  ) {
+    (paymentMethod === "card" && !clientSecret && !error);
+
+  const combinedError = error || orderError || tailorError;
+
+  if (isLoadingState) {
     return (
       <div className="min-h-screen w-full bg-blue-50 flex items-center justify-center">
         <Loader />
@@ -238,7 +256,7 @@ const CheckoutPage = () => {
     );
   }
 
-  if (error || tailorError) {
+  if (combinedError) {
     return (
       <div className="min-h-screen w-full bg-blue-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center">
@@ -246,7 +264,34 @@ const CheckoutPage = () => {
             <AlertCircle className="w-12 h-12 mx-auto" />
           </div>
           <h3 className="text-xl font-bold text-gray-800 mb-2">Error</h3>
-          <p className="text-gray-600 mb-6">{error || tailorError}</p>
+          <p className="text-gray-600 mb-6">{combinedError}</p>
+          <CustomButton
+            onClick={() => navigate(`/checkout/${orderId}`)}
+            text="Back to Order Summary"
+            color="primary"
+            variant="filled"
+            width="w-full"
+            height="h-12"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (paymentMethod === "card" && !stripePromise) {
+    return (
+      <div className="min-h-screen w-full bg-blue-50 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center">
+          <div className="text-red-500 mb-4">
+            <AlertCircle className="w-12 h-12 mx-auto" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-800 mb-2">
+            Payment System Error
+          </h3>
+          <p className="text-gray-600 mb-6">
+            The payment system failed to initialize. Please try a different
+            payment method or contact support.
+          </p>
           <CustomButton
             onClick={() => navigate(`/checkout/${orderId}`)}
             text="Back to Order Summary"
@@ -268,7 +313,6 @@ const CheckoutPage = () => {
         className="w-full max-w-7xl mx-auto"
       >
         <div className="relative flex items-center justify-center mb-8">
-          {/* Back Arrow - absolutely positioned on the left */}
           <div
             className="absolute left-0 flex items-center cursor-pointer"
             onClick={() => navigate(`/checkout/${orderId}`)}
@@ -276,7 +320,6 @@ const CheckoutPage = () => {
             <ChevronLeft size={20} className="text-gray-600 mr-2" />
           </div>
 
-          {/* Centered Heading */}
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900">
               {paymentMethod === "card" ? "Secure Payment" : "Cash on Delivery"}
@@ -290,17 +333,16 @@ const CheckoutPage = () => {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Order Summary Section (2/3 width) */}
           <div className="w-full lg:w-2/3 space-y-6">
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
               <div className="p-6 sm:p-8">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-semibold text-gray-800">
-                    Order #...{order._id?.slice(-6) || ""}
+                    Order #{order?._id?.slice(-6) || ""}
                   </h2>
                   <div className="flex items-center space-x-3">
                     <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
-                      {order.orderType || "N/A"}
+                      {order?.orderType || "N/A"}
                     </span>
                   </div>
                 </div>
@@ -316,7 +358,7 @@ const CheckoutPage = () => {
                           Due Date
                         </h3>
                         <p className="text-gray-800 font-medium text-sm">
-                          {order.dueDate
+                          {order?.dueDate
                             ? new Date(order.dueDate).toLocaleDateString(
                                 "en-US",
                                 {
@@ -342,7 +384,7 @@ const CheckoutPage = () => {
                           Total Amount
                         </h3>
                         <p className="text-2xl font-bold text-gray-800">
-                          LKR {order.totalAmount?.toFixed(2) || "0.00"}
+                          LKR {order?.totalAmount?.toFixed(2) || "0.00"}
                         </p>
                       </div>
                     </div>
@@ -405,7 +447,6 @@ const CheckoutPage = () => {
             </div>
           </div>
 
-          {/* Payment Section (1/3 width) */}
           <div className="w-full lg:w-1/3 space-y-6">
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
               <div className="p-6 sm:p-8">
@@ -416,13 +457,25 @@ const CheckoutPage = () => {
                 </h2>
 
                 {paymentMethod === "card" ? (
-                  <Elements stripe={stripePromise}>
-                    <StripePaymentForm
-                      order={order}
-                      clientSecret={clientSecret}
-                      onSuccess={handlePaymentSuccess}
-                    />
-                  </Elements>
+                  clientSecret && stripePromise ? (
+                    <Elements stripe={stripePromise} options={{ clientSecret }}>
+                      <StripePaymentForm
+                        order={order}
+                        clientSecret={clientSecret}
+                        onSuccess={handlePaymentSuccess}
+                      />
+                    </Elements>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-6">
+                      <LoaderIcon
+                        className="animate-spin text-primary mb-4"
+                        size={32}
+                      />
+                      <p className="text-gray-600">
+                        Preparing payment system...
+                      </p>
+                    </div>
+                  )
                 ) : (
                   <>
                     <div className="flex flex-col items-center justify-center mb-6">
@@ -432,7 +485,7 @@ const CheckoutPage = () => {
                       <p className="text-gray-600 text-center mb-6">
                         You'll pay{" "}
                         <span className="font-bold">
-                          LKR {order.totalAmount.toFixed(2)}
+                          LKR {order?.totalAmount?.toFixed(2) || "0.00"}
                         </span>{" "}
                         when you receive your order.
                       </p>
@@ -451,7 +504,7 @@ const CheckoutPage = () => {
                         color="primary"
                         variant="filled"
                         width="w-full"
-                        height="h-8"
+                        height="h-12"
                         size="lg"
                         disabled={isProcessing}
                         icon={
@@ -477,7 +530,7 @@ const CheckoutPage = () => {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal</span>
                     <span className="font-medium">
-                      LKR {order.totalAmount?.toFixed(2) || "0.00"}
+                      LKR {order?.totalAmount?.toFixed(2) || "0.00"}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -487,9 +540,20 @@ const CheckoutPage = () => {
                   <div className="border-t border-gray-200 pt-3 mt-2 flex justify-between">
                     <span className="text-gray-900 font-semibold">Total</span>
                     <span className="text-gray-900 font-bold">
-                      LKR {order.totalAmount?.toFixed(2) || "0.00"}
+                      LKR {order?.totalAmount?.toFixed(2) || "0.00"}
                     </span>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Shield size={16} className="text-green-600" />
+                  <p className="text-xs">
+                    Your payment information is encrypted and secure.
+                  </p>
                 </div>
               </div>
             </div>

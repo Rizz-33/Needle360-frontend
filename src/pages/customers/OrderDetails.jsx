@@ -13,7 +13,7 @@ import {
   Phone,
   Store,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import BankCard from "../../components/ui/BankCard";
@@ -101,6 +101,7 @@ const OrderDetails = () => {
             color="primary"
             variant="filled"
             width="w-full"
+            height="h-12"
           />
         </div>
       </div>
