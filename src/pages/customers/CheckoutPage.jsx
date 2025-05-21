@@ -22,12 +22,12 @@ import { useOrderStore } from "../../store/Order.store";
 import { useShopStore } from "../../store/Shop.store";
 import StripePaymentForm from "./StripePaymentForm";
 
-// Initialize Stripe with enhanced error handling and logging
+// Initialize Stripe with detailed debugging
 const initializeStripe = async () => {
   const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
   console.log(
-    "Attempting to load Stripe with key:",
-    key ? "Key present" : "Key missing"
+    "VITE_STRIPE_PUBLISHABLE_KEY:",
+    key ? `Key present (length: ${key.length})` : "Key missing"
   );
   if (!key) {
     console.error("Stripe publishable key is missing in environment variables");
@@ -75,7 +75,16 @@ const CheckoutPage = () => {
   const [error, setError] = useState(null);
   const [stripePromise, setStripePromise] = useState(null);
 
-  // Initialize Stripe when component mounts
+  // Debug environment variables on mount
+  useEffect(() => {
+    console.log("Environment variables:", import.meta.env);
+    console.log(
+      "VITE_STRIPE_PUBLISHABLE_KEY in useEffect:",
+      import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+    );
+  }, []);
+
+  // Initialize Stripe
   useEffect(() => {
     initializeStripe()
       .then((stripe) => {
@@ -89,7 +98,7 @@ const CheckoutPage = () => {
       });
   }, []);
 
-  // Fetch current order data
+  // Fetch order data
   useEffect(() => {
     const loadOrderData = async () => {
       if (!orderId) {
