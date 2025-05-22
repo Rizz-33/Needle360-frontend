@@ -18,6 +18,7 @@ export const useChatStore = create((set, get) => ({
   currentPage: 1,
   hasMore: true,
 
+  // Cleanup socket connection
   cleanupSocket: () => {
     const { socket } = get();
     if (socket) {
@@ -34,7 +35,12 @@ export const useChatStore = create((set, get) => ({
     }, 0);
   },
 
-  setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
+  setChatOpen: (isOpen) => {
+    if (isOpen) {
+      get().fetchConversations();
+    }
+    set({ isChatOpen: isOpen });
+  },
 
   setActiveConversation: (conversation) => {
     const { socket } = get();
@@ -54,6 +60,7 @@ export const useChatStore = create((set, get) => ({
     if (conversation) {
       socket?.emit("joinConversation", conversation._id);
       get().fetchMessages(conversation._id);
+      get().markConversationAsRead(conversation._id);
     }
   },
 
@@ -75,8 +82,7 @@ export const useChatStore = create((set, get) => ({
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`Failed to fetch conversations: ${response.status}`);
       }
 
       const data = await response.json();
@@ -91,7 +97,7 @@ export const useChatStore = create((set, get) => ({
   },
 
   sendMessage: async (content, attachments = []) => {
-    const { activeConversation, currentUserId } = get();
+    const { activeConversation, currentUserId, socket } = get();
     if (!activeConversation || (!content && attachments.length === 0)) return;
 
     const tempId = `temp-${Date.now()}`;
@@ -104,7 +110,6 @@ export const useChatStore = create((set, get) => ({
       readBy: [currentUserId],
       createdAt: new Date().toISOString(),
       isSending: true,
-      // Add a clientId to track this specific message
       clientId: tempId,
     };
 
@@ -131,34 +136,32 @@ export const useChatStore = create((set, get) => ({
           conversationId: activeConversation._id,
           content,
           attachments,
-          clientId: tempId, // Send the clientId to the server
+          clientId: tempId,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`Failed to send message: ${response.status}`);
       }
 
       const savedMessage = await response.json();
-
-      // Add the clientId to the saved message for tracking
       savedMessage.clientId = tempId;
 
-      set((state) => {
-        // Replace the temp message with the real one
-        const newMessages = state.messages.map((msg) =>
+      set((state) => ({
+        messages: state.messages.map((msg) =>
           msg._id === tempId ? savedMessage : msg
-        );
+        ),
+        conversations: state.conversations.map((conv) =>
+          conv._id === activeConversation._id
+            ? { ...conv, lastMessage: savedMessage }
+            : conv
+        ),
+      }));
 
-        return {
-          messages: newMessages,
-          conversations: state.conversations.map((conv) =>
-            conv._id === activeConversation._id
-              ? { ...conv, lastMessage: savedMessage }
-              : conv
-          ),
-        };
-      });
+      // Emit message via socket if connected
+      if (socket?.connected) {
+        socket.emit("newMessage", savedMessage);
+      }
     } catch (error) {
       console.error("Error sending message:", error);
       set((state) => ({
@@ -414,8 +417,13 @@ export const useChatStore = create((set, get) => ({
     const { currentUserId } = get();
     if (!currentUserId) return;
 
-    // Clean up existing socket if any
     get().cleanupSocket();
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("No token available for socket connection");
+      return;
+    }
 
     const socket = io(BASE_API_URL, {
       withCredentials: true,
@@ -423,12 +431,18 @@ export const useChatStore = create((set, get) => ({
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
+      auth: {
+        token: token,
+      },
+      transports: ["websocket", "polling"],
+      query: {
+        userId: currentUserId,
+      },
     });
 
     socket.on("connect", () => {
+      console.log("Socket connected");
       set({ isConnected: true });
-
-      // Rejoin active conversation if any
       const { activeConversation } = get();
       if (activeConversation) {
         socket.emit("joinConversation", activeConversation._id);
@@ -437,17 +451,34 @@ export const useChatStore = create((set, get) => ({
 
     socket.on("connect_error", (err) => {
       console.error("Socket connection error:", err);
+      set({ isConnected: false });
+      setTimeout(() => {
+        if (!socket.connected) {
+          socket.connect();
+        }
+      }, 5000);
     });
 
-    socket.on("disconnect", () => {
-      console.log("Socket disconnected");
+    socket.on("disconnect", (reason) => {
+      console.log("Socket disconnected:", reason);
       set({ isConnected: false });
+      if (reason === "io server disconnect") {
+        socket.connect();
+      }
+    });
+
+    socket.on("error", (error) => {
+      console.error("Socket error:", error);
+      set({ error: error.message });
+    });
+
+    socket.on("reconnect_failed", () => {
+      console.error("Socket reconnection failed");
+      set({ error: "Failed to reconnect to chat server" });
     });
 
     socket.on("newMessage", (message) => {
       const { activeConversation, messages, currentUserId } = get();
-
-      // Check if this is our own message (already in state)
       const isOwnMessage = message.sender._id === currentUserId;
       const messageExists = messages?.some(
         (msg) =>
@@ -455,29 +486,17 @@ export const useChatStore = create((set, get) => ({
           (msg.clientId && msg.clientId === message.clientId)
       );
 
-      // Handle different scenarios
       if (activeConversation?._id === message.conversation) {
         if (!messageExists) {
-          // Add a flag to indicate if the message should be considered read
-          // A message is considered read if:
-          // 1. It's our own message
-          // 2. The conversation is currently active and visible
           const isRead = isOwnMessage || document.visibilityState === "visible";
-
-          // If the message should be read and the user hasn't read it yet
           if (isRead && !message.readBy.includes(currentUserId)) {
             message.readBy = [...message.readBy, currentUserId];
-            // Also mark as read on the server
             if (!isOwnMessage) {
               get().markConversationAsRead(activeConversation._id);
             }
           }
-
-          set({
-            messages: [...(messages || []), message],
-          });
+          set({ messages: [...(messages || []), message] });
         } else if (isOwnMessage && messageExists) {
-          // Update the existing message with server data
           set((state) => ({
             messages: state.messages.map((msg) =>
               (msg.clientId && msg.clientId === message.clientId) ||
@@ -489,20 +508,15 @@ export const useChatStore = create((set, get) => ({
         }
       }
 
-      // Always update conversations list
       set((state) => ({
         conversations: state.conversations.map((conv) =>
           conv._id === message.conversation
-            ? {
-                ...conv,
-                lastMessage: message,
-              }
+            ? { ...conv, lastMessage: message }
             : conv
         ),
       }));
     });
 
-    // Handle read receipts
     socket.on("messagesRead", ({ conversationId, readBy, messageIds }) => {
       set((state) => ({
         messages: state.messages.map((msg) =>

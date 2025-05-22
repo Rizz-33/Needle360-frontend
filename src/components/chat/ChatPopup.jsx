@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Send, X } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "../../store/Auth.store";
 import { useChatStore } from "../../store/Chat.store";
 import Loader from "../ui/Loader";
@@ -32,7 +32,6 @@ const ChatPopup = () => {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const [loadingMore, setLoadingMore] = useState(false);
-  const refreshIntervalRef = useRef(null);
 
   useEffect(() => {
     if (user?._id) {
@@ -46,51 +45,12 @@ const ChatPopup = () => {
     }
   }, [messages, loadingMore]);
 
-  // Update the effect that handles marking messages as read
   useEffect(() => {
-    if (
-      activeConversation &&
-      messages?.length > 0 &&
-      !isLoading &&
-      isChatOpen
-    ) {
-      // Only mark messages as read if the tab is visible and the chat is open
-      if (document.visibilityState === "visible") {
-        markConversationAsRead(activeConversation._id);
-      }
+    if (activeConversation && messages?.length > 0 && isChatOpen) {
+      markConversationAsRead(activeConversation._id);
     }
-  }, [activeConversation?._id, messages?.length, isLoading, isChatOpen]);
+  }, [activeConversation?._id, messages?.length, isChatOpen]);
 
-  // Modify the auto-refresh interval
-  useEffect(() => {
-    if (isChatOpen) {
-      // Initial fetch
-      fetchConversations();
-
-      if (activeConversation) {
-        fetchMessages(activeConversation._id, false);
-      }
-
-      // Set up interval for refreshing data
-      refreshIntervalRef.current = setInterval(() => {
-        fetchConversations();
-
-        if (activeConversation) {
-          // Use the silent parameter to avoid UI flicker and preserve read status
-          fetchMessages(activeConversation._id, false, true);
-        }
-      }, 100000); // Use 10 seconds instead of 1000 seconds for more reasonable updates
-    }
-
-    // Clean up interval when component unmounts or chat closes
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-    };
-  }, [isChatOpen, activeConversation, fetchConversations, fetchMessages]);
-
-  // Enhance visibility change handler
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (
@@ -98,29 +58,38 @@ const ChatPopup = () => {
         activeConversation &&
         isChatOpen
       ) {
-        // When the user returns to the tab, mark messages as read
-        console.log("Tab became visible, marking messages as read");
+        markConversationAsRead(activeConversation._id);
+      }
+    };
+
+    const handleWindowFocus = () => {
+      if (activeConversation && isChatOpen) {
         markConversationAsRead(activeConversation._id);
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    // Also add a focus event for more reliable read status tracking
-    const handleWindowFocus = () => {
-      if (activeConversation && isChatOpen) {
-        console.log("Window focused, marking messages as read");
-        markConversationAsRead(activeConversation._id);
-      }
-    };
-
     window.addEventListener("focus", handleWindowFocus);
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.addEventListener("focus", handleWindowFocus);
+      window.removeEventListener("focus", handleWindowFocus);
     };
-  }, [activeConversation, isChatOpen, markConversationAsRead]);
+  }, [activeConversation, isChatOpen]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const { socket } = useChatStore.getState();
+      if (socket) {
+        socket.disconnect();
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
 
   const handleSendMessage = () => {
     if (newMessage.trim() || attachments.length > 0) {
@@ -137,7 +106,6 @@ const ChatPopup = () => {
     }
   };
 
-  // In ChatPopup.jsx
   const handleScroll = async () => {
     if (
       !messagesContainerRef.current ||
@@ -148,17 +116,16 @@ const ChatPopup = () => {
     )
       return;
 
-    const { scrollTop } = messagesContainerRef.current;
+    const { scrollTop, scrollHeight, clientHeight } =
+      messagesContainerRef.current;
     const isNearTop = scrollTop < 100;
 
     if (isNearTop) {
       setLoadingMore(true);
       await fetchMessages(activeConversation._id, true);
 
-      // Preserve scroll position after loading more messages
       setTimeout(() => {
         if (messagesContainerRef.current && messages.length > 0) {
-          // Keep the same message visible after loading older messages
           const firstVisibleMsg = document.getElementById(
             `msg-${messages[0]._id}`
           );
@@ -196,17 +163,18 @@ const ChatPopup = () => {
           transition={{ type: "spring", damping: 25 }}
           className="fixed bottom-4 right-4 w-full max-w-md h-[70vh] bg-white rounded-xl shadow-xl overflow-hidden flex flex-col z-50"
         >
-          {/* Rest of your component remains unchanged */}
-          {/* Header */}
           <div className="bg-secondary text-hoverAccent p-3 flex items-center justify-between">
-            {/* Header content... */}
             <div className="flex items-center">
-              <div
-                className={`w-2 h-2 rounded-full mr-2 ${
-                  isConnected ? "bg-green-500" : "bg-red-500"
-                }`}
-                title={isConnected ? "Connected" : "Disconnected"}
-              />
+              <div className="flex items-center gap-1 mr-2">
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    isConnected ? "bg-green-500" : "bg-red-500"
+                  }`}
+                />
+                <span className="text-xs">
+                  {isConnected ? "Connected" : "Disconnected"}
+                </span>
+              </div>
 
               {activeConversation ? (
                 <div className="flex items-center gap-2">
@@ -245,9 +213,7 @@ const ChatPopup = () => {
             </button>
           </div>
 
-          {/* Content */}
           <div className="flex-1 overflow-hidden flex">
-            {/* Conversations list */}
             {!activeConversation && (
               <div className="w-full overflow-y-auto">
                 {isLoading ? (
@@ -302,10 +268,8 @@ const ChatPopup = () => {
               </div>
             )}
 
-            {/* Active conversation */}
             {activeConversation && (
               <div className="w-full flex flex-col">
-                {/* Messages */}
                 <div
                   ref={messagesContainerRef}
                   onScroll={handleScroll}
@@ -330,7 +294,7 @@ const ChatPopup = () => {
                     messages.map((message) => (
                       <div
                         key={message._id}
-                        id={`msg-${message._id}`} // Add this ID
+                        id={`msg-${message._id}`}
                         className={`flex ${
                           message.sender._id === user?._id
                             ? "justify-end"
@@ -370,7 +334,6 @@ const ChatPopup = () => {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Message input */}
                 <div className="border-t p-3">
                   <div className="flex items-center gap-2">
                     <input
