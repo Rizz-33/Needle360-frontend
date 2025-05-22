@@ -1,4 +1,3 @@
-// src/pages/UserConnections.jsx
 import {
   Alert,
   Avatar,
@@ -23,7 +22,6 @@ import { useUserInteractionStore } from "../store/UserInteraction.store";
 const UserListItem = ({ user, currentUserId, onFollowToggle, isFollowing }) => {
   const navigate = useNavigate();
 
-  // Navigate to /tailor/:id for tailors (role === 4), /user/:id for others
   const profileUrl =
     user.role === 4 ? `/tailor/${user._id}` : `/user/${user._id}`;
 
@@ -59,6 +57,8 @@ const UserConnections = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
+  const [followingStatus, setFollowingStatus] = useState({});
+  const [isCheckingFollowing, setIsCheckingFollowing] = useState(false);
 
   const {
     followers,
@@ -74,46 +74,56 @@ const UserConnections = () => {
 
   const { user: currentUser } = useAuthStore();
 
-  const [followingStatus, setFollowingStatus] = useState({});
-
+  // Fetch initial data
   useEffect(() => {
-    getFollowers(userId);
-    getFollowing(userId);
-
-    const checkAllFollowingStatus = async () => {
-      const status = {};
-
-      for (const follower of followers) {
-        if (currentUser?._id && follower._id !== currentUser._id) {
-          const isFollowing = await checkIfFollowing(
-            currentUser._id,
-            follower._id
-          );
-          status[follower._id] = isFollowing;
-        }
+    const fetchData = async () => {
+      try {
+        await getFollowers(userId);
+        await getFollowing(userId);
+      } catch (error) {
+        console.error("Error fetching connections:", error);
       }
-
-      for (const followed of following) {
-        if (currentUser?._id && followed._id !== currentUser._id) {
-          status[followed._id] = true;
-        }
-      }
-
-      setFollowingStatus(status);
     };
 
-    if (currentUser?._id) {
-      checkAllFollowingStatus();
-    }
-  }, [
-    userId,
-    currentUser?._id,
-    getFollowers,
-    getFollowing,
-    checkIfFollowing,
-    followers,
-    following,
-  ]);
+    fetchData();
+  }, [userId, getFollowers, getFollowing]);
+
+  // Check following status after data is loaded
+  useEffect(() => {
+    if (!currentUser?._id || isLoading) return;
+
+    const checkFollowingStatus = async () => {
+      setIsCheckingFollowing(true);
+      const status = {};
+
+      try {
+        // Check status for followers
+        for (const follower of followers) {
+          if (follower._id !== currentUser._id) {
+            status[follower._id] = await checkIfFollowing(
+              currentUser._id,
+              follower._id
+            );
+          }
+        }
+
+        // Check status for following
+        for (const followed of following) {
+          if (followed._id !== currentUser._id) {
+            status[followed._id] = true;
+          }
+        }
+
+        setFollowingStatus(status);
+      } catch (error) {
+        console.error("Error checking following status:", error);
+      } finally {
+        setIsCheckingFollowing(false);
+      }
+    };
+
+    checkFollowingStatus();
+  }, [currentUser?._id, followers, following, isLoading, checkIfFollowing]);
 
   const handleFollowToggle = async (targetUserId, isCurrentlyFollowing) => {
     try {
@@ -138,17 +148,31 @@ const UserConnections = () => {
     setTabValue(newValue);
   };
 
+  if (isLoading || isCheckingFollowing) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Box display="flex" justifyContent="center" my={4}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
+
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>
         {userId === currentUser?._id ? "Your Connections" : "User Connections"}
       </Typography>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
 
       <Tabs value={tabValue} onChange={handleTabChange} centered>
         <Tab label={`Followers (${followers.length})`} />
@@ -156,48 +180,40 @@ const UserConnections = () => {
       </Tabs>
 
       <Box sx={{ mt: 3 }}>
-        {isLoading ? (
-          <Box display="flex" justifyContent="center" my={4}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <>
-            {tabValue === 0 && (
-              <List>
-                {followers.length === 0 ? (
-                  <Typography>No followers yet</Typography>
-                ) : (
-                  followers.map((user) => (
-                    <UserListItem
-                      key={user._id}
-                      user={user}
-                      currentUserId={currentUser?._id}
-                      onFollowToggle={handleFollowToggle}
-                      isFollowing={followingStatus[user._id]}
-                    />
-                  ))
-                )}
-              </List>
+        {tabValue === 0 && (
+          <List>
+            {followers.length === 0 ? (
+              <Typography>No followers yet</Typography>
+            ) : (
+              followers.map((user) => (
+                <UserListItem
+                  key={user._id}
+                  user={user}
+                  currentUserId={currentUser?._id}
+                  onFollowToggle={handleFollowToggle}
+                  isFollowing={followingStatus[user._id]}
+                />
+              ))
             )}
+          </List>
+        )}
 
-            {tabValue === 1 && (
-              <List>
-                {following.length === 0 ? (
-                  <Typography>Not following anyone yet</Typography>
-                ) : (
-                  following.map((user) => (
-                    <UserListItem
-                      key={user._id}
-                      user={user}
-                      currentUserId={currentUser?._id}
-                      onFollowToggle={handleFollowToggle}
-                      isFollowing={followingStatus[user._id]}
-                    />
-                  ))
-                )}
-              </List>
+        {tabValue === 1 && (
+          <List>
+            {following.length === 0 ? (
+              <Typography>Not following anyone yet</Typography>
+            ) : (
+              following.map((user) => (
+                <UserListItem
+                  key={user._id}
+                  user={user}
+                  currentUserId={currentUser?._id}
+                  onFollowToggle={handleFollowToggle}
+                  isFollowing={followingStatus[user._id]}
+                />
+              ))
             )}
-          </>
+          </List>
         )}
       </Box>
     </Container>

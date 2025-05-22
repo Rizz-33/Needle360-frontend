@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FaChevronDown,
   FaRegHeart,
@@ -224,14 +224,14 @@ const NavbarMenu = () => {
 
   const handleHeartClick = () => {
     if (isAuthenticated && user?._id) {
-      // Navigate to /tailor/:userId/connections for tailors, /user/:userId/connections for others
+      // Ensure we have the correct path based on user role
       const connectionsUrl =
         user.role === 4
           ? `/tailor/${user._id}/connections`
           : `/user/${user._id}/connections`;
       navigate(connectionsUrl);
     } else {
-      navigate("/login");
+      navigate("/login", { state: { from: location.pathname } });
     }
   };
 
