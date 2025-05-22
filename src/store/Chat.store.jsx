@@ -170,7 +170,9 @@ export const useChatStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token found");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
 
       const headers = {
         "Content-Type": "application/json",
@@ -185,8 +187,10 @@ export const useChatStore = create((set, get) => ({
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`
+        );
       }
 
       const newConversation = await response.json();
@@ -200,8 +204,13 @@ export const useChatStore = create((set, get) => ({
 
       get().fetchMessages(newConversation._id);
     } catch (error) {
-      console.error("Error starting new conversation:", error.message);
-      set({ error: error.message, isLoading: false });
+      console.error(
+        `ChatStore: Error starting new conversation - ${error.message}`
+      );
+      set({
+        error: `Failed to start conversation: ${error.message}`,
+        isLoading: false,
+      });
     }
   },
 
@@ -392,14 +401,18 @@ export const useChatStore = create((set, get) => ({
 
   initializeSocket: () => {
     const { currentUserId } = get();
-    if (!currentUserId) return;
+    if (!currentUserId) {
+      console.error("ChatStore: Cannot initialize socket without userId");
+      set({ error: "User not authenticated" });
+      return;
+    }
 
     get().cleanupSocket();
 
     const token = localStorage.getItem("token");
     if (!token) {
-      console.error("No token available for socket connection");
-      set({ error: "Authentication required for socket connection" });
+      console.error("ChatStore: No token found in localStorage");
+      set({ error: "Authentication token missing" });
       return;
     }
 
@@ -414,7 +427,7 @@ export const useChatStore = create((set, get) => ({
     });
 
     socket.on("connect", () => {
-      console.log("Socket connected");
+      console.log("ChatStore: Socket connected");
       set({ isConnected: true });
       const { activeConversation } = get();
       if (activeConversation) {
@@ -423,25 +436,20 @@ export const useChatStore = create((set, get) => ({
     });
 
     socket.on("connect_error", (err) => {
-      console.error("Socket connection error:", err.message);
+      console.error(`ChatStore: Socket connection error - ${err.message}`);
       set({
         isConnected: false,
         error: `Socket connection failed: ${err.message}`,
       });
-      setTimeout(() => {
-        if (!socket.connected) {
-          socket.connect();
-        }
-      }, 5000);
     });
 
     socket.on("error", (err) => {
-      console.error("Socket server error:", err);
+      console.error(`ChatStore: Socket server error - ${err}`);
       set({ error: `Socket error: ${err}` });
     });
 
     socket.on("disconnect", (reason) => {
-      console.log("Socket disconnected:", reason);
+      console.log(`ChatStore: Socket disconnected - ${reason}`);
       set({ isConnected: false });
       if (reason === "io server disconnect") {
         socket.connect();
