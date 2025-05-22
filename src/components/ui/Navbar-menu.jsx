@@ -10,6 +10,7 @@ import {
   FaShoppingBag,
   FaTimes,
 } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 import { predefinedServices } from "../../configs/Services.configs";
 import { useAuthStore } from "../../store/Auth.store";
 import { CustomButton } from "./Button";
@@ -219,10 +220,23 @@ const NavbarMenu = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { isAuthenticated, user } = useAuthStore();
+  const navigate = useNavigate();
+
+  const handleHeartClick = () => {
+    if (isAuthenticated && user?._id) {
+      // Navigate to /tailor/:userId/connections for tailors, /user/:userId/connections for others
+      const connectionsUrl =
+        user.role === 4
+          ? `/tailor/${user._id}/connections`
+          : `/user/${user._id}/connections`;
+      navigate(connectionsUrl);
+    } else {
+      navigate("/login");
+    }
+  };
 
   return (
     <>
-      {/* Mobile Search Bar (when activated) */}
       {searchOpen && (
         <div className="fixed top-0 left-0 right-0 bg-white p-3 z-50 shadow-md sm:hidden flex items-center">
           <div className="relative flex-grow">
@@ -242,14 +256,12 @@ const NavbarMenu = () => {
         </div>
       )}
 
-      {/* Main Navbar */}
       <nav
         onMouseLeave={() => setActive(null)}
         className={`fixed top-0 left-0 right-0 z-40 bg-white shadow-input rounded-full border border-transparent flex justify-between items-center px-4 py-3 sm:px-8 sm:py-4 w-full max-w-screen-xl mx-auto shadow-lg shadow-gray-100 ${
           searchOpen ? "hidden sm:flex" : ""
         }`}
       >
-        {/* Mobile Menu Button */}
         <button
           className="sm:hidden mr-2 text-primary"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -268,7 +280,6 @@ const NavbarMenu = () => {
           </svg>
         </button>
 
-        {/* Logo */}
         <motion.img
           src="/logo-black-full.png"
           alt="Logo"
@@ -277,12 +288,10 @@ const NavbarMenu = () => {
           onClick={() => (window.location.href = "/")}
         />
 
-        {/* Desktop Navigation */}
         <div className="hidden sm:flex items-center space-x-6 ml-6">
           <CategoryMenu />
         </div>
 
-        {/* Search Bar (Desktop) */}
         <div className="hidden sm:block flex-grow mx-6">
           <div className="relative max-w-md mx-auto">
             <motion.input
@@ -295,7 +304,6 @@ const NavbarMenu = () => {
           </div>
         </div>
 
-        {/* Icons (Desktop) */}
         <div className="hidden sm:flex items-center space-x-4">
           {isAuthenticated ? (
             <ProfileMenu />
@@ -308,7 +316,11 @@ const NavbarMenu = () => {
               Login
             </motion.a>
           )}
-          <motion.div whileHover={{ scale: 1.1 }} className="cursor-pointer">
+          <motion.div
+            whileHover={{ scale: 1.1 }}
+            className="cursor-pointer"
+            onClick={handleHeartClick}
+          >
             <FaRegHeart className="text-primary hover:text-hoverAccent" />
           </motion.div>
           <motion.div whileHover={{ scale: 1.1 }} className="cursor-pointer">
@@ -324,14 +336,15 @@ const NavbarMenu = () => {
           />
         </div>
 
-        {/* Mobile Icons */}
         <div className="flex sm:hidden items-center space-x-4 ml-auto">
           <button onClick={() => setSearchOpen(true)} className="text-primary">
             <FaSearch />
           </button>
+          <button onClick={handleHeartClick} className="text-primary">
+            <FaRegHeart />
+          </button>
         </div>
 
-        {/* Mobile Menu Overlay */}
         {mobileMenuOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 sm:hidden">
             <motion.div
@@ -352,24 +365,20 @@ const NavbarMenu = () => {
               </div>
 
               <div className="flex-grow overflow-y-auto">
-                {/* Categories Section */}
                 <CategoryMenu mobile={true} />
 
                 <div className="border-t border-gray-200 my-1"></div>
 
-                {/* Account Section */}
                 {isAuthenticated && <ProfileMenu mobile={true} />}
 
-                {/* Wishlist */}
                 <a
-                  href="#"
-                  className="flex items-center px-4 py-3 text-gray-800 hover:bg-gray-100"
+                  onClick={handleHeartClick}
+                  className="flex items-center px-4 py-3 text-gray-800 hover:bg-gray-100 cursor-pointer"
                 >
                   <FaRegHeart className="mr-3 text-primary" />
-                  <span>Wishlist</span>
+                  <span>Connections</span>
                 </a>
 
-                {/* Orders */}
                 <a
                   href="#"
                   className="flex items-center px-4 py-3 text-gray-800 hover:bg-gray-100"
@@ -380,7 +389,6 @@ const NavbarMenu = () => {
 
                 <div className="border-t border-gray-200 my-1"></div>
 
-                {/* Design Logo */}
                 <a
                   href="/design"
                   className="flex items-center justify-center px-4 py-3 text-gray-800 hover:bg-gray-100"
@@ -393,7 +401,6 @@ const NavbarMenu = () => {
                 </a>
               </div>
 
-              {/* Logout Button (fixed at bottom) */}
               {isAuthenticated && (
                 <div className="mt-auto p-4 border-t">
                   <CustomButton
@@ -416,7 +423,6 @@ const NavbarMenu = () => {
         )}
       </nav>
 
-      {/* Spacer to prevent content from being hidden under fixed navbar */}
       <div className="h-16 sm:h-20"></div>
     </>
   );

@@ -29,6 +29,7 @@ import BusinessProfileSetup from "./pages/tailorshop/BusinessProfileSetup";
 import TailorDashboard from "./pages/tailorshop/dashboard/Dashboard";
 import PendingApproval from "./pages/tailorshop/PendingApproval";
 import TailorProfilePage from "./pages/tailorshop/Profile";
+import UserConnections from "./pages/UserConnections";
 import { useAuthStore } from "./store/Auth.store";
 
 // Component to protect routes that require authentication
@@ -238,6 +239,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <CustomerProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user/:userId/connections"
+            element={
+              <ProtectedRoute>
+                <UserConnections />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tailor/:userId/connections"
+            element={
+              <ProtectedRoute>
+                <UserConnections />
               </ProtectedRoute>
             }
           />
