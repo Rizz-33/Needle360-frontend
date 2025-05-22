@@ -2,15 +2,12 @@ import axios from "axios";
 import { io } from "socket.io-client";
 import { create } from "zustand";
 
-// Get API URL from environment variables with fallback
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 const BASE_API_URL = `${API_URL}/api/order`;
 
-// Configure axios defaults
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common["Content-Type"] = "application/json";
 
-// Add axios interceptors for better error handling
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -32,16 +29,24 @@ export const useOrderStore = create((set, get) => ({
 
   initializeSocket: (userId, role) => {
     if (get().socket) {
-      // Disconnect existing socket if it exists
       get().disconnectSocket();
     }
 
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No authentication token found for Socket.IO");
+        set({ error: "Authentication required for notification service" });
+        return null;
+      }
+
       const socket = io(API_URL, {
         withCredentials: true,
+        auth: { token },
         reconnection: true,
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,
+        transports: ["websocket", "polling"],
       });
 
       socket.on("connect", () => {
@@ -92,13 +97,18 @@ export const useOrderStore = create((set, get) => ({
       });
 
       socket.on("connect_error", (err) => {
-        console.error("WebSocket connection error:", err);
+        console.error("WebSocket connection error:", err.message);
+        set({ error: `WebSocket connection failed: ${err.message}` });
+      });
+
+      socket.on("error", (err) => {
+        console.error("WebSocket server error:", err);
+        set({ error: `WebSocket error: ${err}` });
       });
 
       socket.on("disconnect", (reason) => {
         console.log(`Socket disconnected: ${reason}`);
         if (reason === "io server disconnect") {
-          // the disconnection was initiated by the server, reconnect manually
           socket.connect();
         }
       });
@@ -106,8 +116,8 @@ export const useOrderStore = create((set, get) => ({
       set({ socket });
       return socket;
     } catch (err) {
-      console.error("Socket initialization error:", err);
-      set({ error: "Failed to connect to notification service" });
+      console.error("Socket initialization error:", err.message);
+      set({ error: `Failed to initialize WebSocket: ${err.message}` });
       return null;
     }
   },
@@ -124,8 +134,6 @@ export const useOrderStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const { status, page = 1, limit = 10 } = filters;
-
-      // Build query params
       const params = new URLSearchParams();
       if (status) params.append("status", status);
       params.append("page", page);
@@ -146,10 +154,7 @@ export const useOrderStore = create((set, get) => ({
       const errorMessage =
         error.response?.data?.message || "Error fetching orders";
       console.error(errorMessage, error);
-      set({
-        error: errorMessage,
-        isLoading: false,
-      });
+      set({ error: errorMessage, isLoading: false });
       throw error;
     }
   },
@@ -158,8 +163,6 @@ export const useOrderStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const { status, page = 1, limit = 10 } = filters;
-
-      // Build query params
       const params = new URLSearchParams();
       if (status) params.append("status", status);
       params.append("page", page);
@@ -182,10 +185,7 @@ export const useOrderStore = create((set, get) => ({
       const errorMessage =
         error.response?.data?.message || "Error fetching customer orders";
       console.error(errorMessage, error);
-      set({
-        error: errorMessage,
-        isLoading: false,
-      });
+      set({ error: errorMessage, isLoading: false });
       throw error;
     }
   },
@@ -200,10 +200,7 @@ export const useOrderStore = create((set, get) => ({
       const errorMessage =
         error.response?.data?.message || "Error creating order";
       console.error(errorMessage, error);
-      set({
-        error: errorMessage,
-        isLoading: false,
-      });
+      set({ error: errorMessage, isLoading: false });
       throw error;
     }
   },
@@ -220,10 +217,7 @@ export const useOrderStore = create((set, get) => ({
       const errorMessage =
         error.response?.data?.message || "Error approving/rejecting order";
       console.error(errorMessage, error);
-      set({
-        error: errorMessage,
-        isLoading: false,
-      });
+      set({ error: errorMessage, isLoading: false });
       throw error;
     }
   },
@@ -238,10 +232,7 @@ export const useOrderStore = create((set, get) => ({
       const errorMessage =
         error.response?.data?.message || "Error updating order";
       console.error(errorMessage, error);
-      set({
-        error: errorMessage,
-        isLoading: false,
-      });
+      set({ error: errorMessage, isLoading: false });
       throw error;
     }
   },
@@ -258,10 +249,7 @@ export const useOrderStore = create((set, get) => ({
       const errorMessage =
         error.response?.data?.message || "Error updating order status";
       console.error(errorMessage, error);
-      set({
-        error: errorMessage,
-        isLoading: false,
-      });
+      set({ error: errorMessage, isLoading: false });
       throw error;
     }
   },
@@ -276,10 +264,7 @@ export const useOrderStore = create((set, get) => ({
       const errorMessage =
         error.response?.data?.message || "Error deleting order";
       console.error(errorMessage, error);
-      set({
-        error: errorMessage,
-        isLoading: false,
-      });
+      set({ error: errorMessage, isLoading: false });
       throw error;
     }
   },
@@ -287,7 +272,6 @@ export const useOrderStore = create((set, get) => ({
   createPaymentIntent: async (orderId) => {
     set({ isLoading: true, error: null, paymentProcessing: true });
     try {
-      // Add timeout to prevent hanging requests
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000);
 
@@ -317,11 +301,7 @@ export const useOrderStore = create((set, get) => ({
       }
 
       console.error(errorMessage, error);
-      set({
-        error: errorMessage,
-        isLoading: false,
-        paymentProcessing: false,
-      });
+      set({ error: errorMessage, isLoading: false, paymentProcessing: false });
       throw error;
     }
   },
@@ -333,7 +313,6 @@ export const useOrderStore = create((set, get) => ({
         orderId,
       });
 
-      // Update the order in the local state
       set((state) => ({
         orders: state.orders.map((order) =>
           order._id === orderId
@@ -348,18 +327,13 @@ export const useOrderStore = create((set, get) => ({
       const errorMessage =
         error.response?.data?.message || "Error selecting COD";
       console.error(errorMessage, error);
-      set({
-        error: errorMessage,
-        isLoading: false,
-      });
+      set({ error: errorMessage, isLoading: false });
       throw error;
     }
   },
 
   resetOrderFilters: () => {
-    set((state) => ({
-      currentPage: 1,
-    }));
+    set((state) => ({ currentPage: 1 }));
     return get().fetchOrders({ page: 1, limit: get().limit });
   },
 
