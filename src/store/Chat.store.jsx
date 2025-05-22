@@ -431,15 +431,14 @@ export const useChatStore = create((set, get) => ({
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
-      auth: {
-        token: token,
-      },
+      auth: { token },
       transports: ["websocket", "polling"],
-      query: {
-        userId: currentUserId,
-      },
+      query: { userId: currentUserId },
+      secure: process.env.NODE_ENV === "production",
+      rejectUnauthorized: false,
     });
 
+    // Connection events
     socket.on("connect", () => {
       console.log("Socket connected");
       set({ isConnected: true });
@@ -451,7 +450,9 @@ export const useChatStore = create((set, get) => ({
 
     socket.on("connect_error", (err) => {
       console.error("Socket connection error:", err);
-      set({ isConnected: false });
+      set({ isConnected: false, error: err.message });
+
+      // Try to reconnect with a delay
       setTimeout(() => {
         if (!socket.connected) {
           socket.connect();
@@ -462,21 +463,14 @@ export const useChatStore = create((set, get) => ({
     socket.on("disconnect", (reason) => {
       console.log("Socket disconnected:", reason);
       set({ isConnected: false });
+
       if (reason === "io server disconnect") {
+        // The server forcibly disconnected the socket, try to reconnect
         socket.connect();
       }
     });
 
-    socket.on("error", (error) => {
-      console.error("Socket error:", error);
-      set({ error: error.message });
-    });
-
-    socket.on("reconnect_failed", () => {
-      console.error("Socket reconnection failed");
-      set({ error: "Failed to reconnect to chat server" });
-    });
-
+    // Message events
     socket.on("newMessage", (message) => {
       const { activeConversation, messages, currentUserId } = get();
       const isOwnMessage = message.sender._id === currentUserId;
@@ -525,6 +519,11 @@ export const useChatStore = create((set, get) => ({
             : msg
         ),
       }));
+    });
+
+    socket.on("error", (error) => {
+      console.error("Socket error:", error);
+      set({ error: error.message });
     });
 
     set({ socket });
