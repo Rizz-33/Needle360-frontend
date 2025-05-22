@@ -17,8 +17,8 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAuthStore } from "../stores/useAuthStore";
-import { useUserInteractionStore } from "../stores/useUserInteractionStore";
+import { useAuthStore } from "../store/Auth.store";
+import { useUserInteractionStore } from "../store/UserInteraction.store";
 
 const UserListItem = ({ user, currentUserId, onFollowToggle, isFollowing }) => {
   const navigate = useNavigate();
