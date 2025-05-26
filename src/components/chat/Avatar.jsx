@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useCustomerStore } from "../../store/Customer.store";
 import { useShopStore } from "../../store/Shop.store";
 
@@ -12,15 +12,12 @@ const Avatar = ({ user, size = "md" }) => {
   const { customer } = useCustomerStore();
   const { tailor, fetchTailorById } = useShopStore();
 
-  // Fetch tailor data if user is a tailor (role: 4) and tailor is null
   useEffect(() => {
     if (user?.role === 4 && user?._id && !tailor) {
-      console.log("Fetching tailor data for Avatar:", user._id);
       fetchTailorById(user._id);
     }
   }, [user, tailor, fetchTailorById]);
 
-  // Prioritize tailor data if user is a tailor (role: 4), then user, then customer
   const profileImage =
     user?.role === 4
       ? tailor?.logoUrl || user?.logoUrl
@@ -31,7 +28,6 @@ const Avatar = ({ user, size = "md" }) => {
       ? tailor?.shopName || user?.shopName || user?.name
       : user?.name || customer?.name || "";
 
-  // Get first letter for the fallback avatar
   const firstLetter = displayName.charAt(0).toUpperCase() || "U";
 
   return (

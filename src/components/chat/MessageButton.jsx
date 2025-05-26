@@ -1,7 +1,5 @@
-// components/MessageButton.jsx
 import { motion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
-import React from "react";
 import { useChatStore } from "../../store/Chat.store";
 
 const MessageButton = ({ userId }) => {
