@@ -68,6 +68,8 @@ jobs:
         run: |
           docker build \
             --no-cache \
+            --build-arg VITE_API_URL="${{ secrets.VITE_API_URL }}" \
+            --build-arg VITE_STRIPE_PUBLISHABLE_KEY="${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}" \
             -t rizz336/needle360-frontend:$GITHUB_SHA \
             -t rizz336/needle360-frontend:latest \
             -f Dockerfile .
@@ -113,8 +115,6 @@ jobs:
             --restart unless-stopped \
             --network needle360-network \
             -e NODE_ENV=production \
-            -e VITE_API_URL=${{ secrets.VITE_API_URL }} \
-            -e VITE_STRIPE_PUBLISHABLE_KEY=${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }} \
             rizz336/needle360-frontend:latest
       - name: Verify deployment
         run: |
