@@ -13,6 +13,15 @@ import Loader from "../components/ui/Loader";
 import { useAuthStore } from "../store/Auth.store";
 import { useUserInteractionStore } from "../store/UserInteraction.store";
 
+// Add debug logging
+const DEBUG = import.meta.env.NODE_ENV === "development";
+
+const logDebug = (message, data) => {
+  if (DEBUG) {
+    console.log(`[UserConnections] ${message}`, data);
+  }
+};
+
 const UserConnectionCard = ({
   user,
   currentUserId,
@@ -110,11 +119,42 @@ const UserConnections = () => {
   const { user: currentUser } = useAuthStore();
 
   // Fetch initial data
+  // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
+      logDebug("Fetching data for userId:", userId);
+
+      if (!userId) {
+        console.error("No userId provided to UserConnections");
+        return;
+      }
+
       try {
-        await getFollowers(userId);
-        await getFollowing(userId);
+        logDebug("Starting to fetch followers and following...");
+
+        const [followersData, followingData] = await Promise.allSettled([
+          getFollowers(userId),
+          getFollowing(userId),
+        ]);
+
+        if (followersData.status === "rejected") {
+          console.error("Failed to fetch followers:", followersData.reason);
+        }
+
+        if (followingData.status === "rejected") {
+          console.error("Failed to fetch following:", followingData.reason);
+        }
+
+        logDebug("Fetch completed", {
+          followers:
+            followersData.status === "fulfilled"
+              ? followersData.value?.length
+              : "failed",
+          following:
+            followingData.status === "fulfilled"
+              ? followingData.value?.length
+              : "failed",
+        });
       } catch (error) {
         console.error("Error fetching connections:", error);
       }
@@ -203,6 +243,27 @@ const UserConnections = () => {
     return (
       <div className="min-h-screen w-full bg-white flex items-center justify-center">
         <Loader />
+      </div>
+    );
+  }
+
+  if (!userId) {
+    return (
+      <div className="min-h-screen w-full bg-white flex items-center justify-center">
+        <div className="text-center">
+          <h3 className="text-gray-600 font-medium">Invalid User ID</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            No user ID provided in the URL
+          </p>
+          <CustomButton
+            onClick={() => navigate("/")}
+            text="Go Home"
+            color="primary"
+            hover_color="hoverAccent"
+            variant="filled"
+            className="mt-4"
+          />
+        </div>
       </div>
     );
   }

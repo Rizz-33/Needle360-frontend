@@ -2,40 +2,62 @@
 FROM node:18-alpine as build
 WORKDIR /app
 
-# Copy package files
-COPY package.json ./
+# Copy package files first for better caching
+COPY package*.json ./
 
 # Install dependencies
 RUN npm install --legacy-peer-deps
 
-# Copy the rest of the files
+# Copy source code
 COPY . .
 
-# Set build arguments and environment variables
+# Build arguments - these must be declared before use
 ARG VITE_API_URL
 ARG VITE_STRIPE_PUBLISHABLE_KEY
+
+# Set environment variables for build
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY
 
-# Debug environment variables
-RUN echo "Build-time environment variables:"
-RUN echo "VITE_API_URL=$VITE_API_URL"
-RUN echo "VITE_STRIPE_PUBLISHABLE_KEY=${VITE_STRIPE_PUBLISHABLE_KEY:0:20}..." # Only show first 20 chars for security
+# Debug: Print environment variables (mask sensitive data)
+RUN echo "=== BUILD ENVIRONMENT DEBUG ==="
+RUN echo "VITE_API_URL: $VITE_API_URL"
+RUN echo "VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:0:20}..."
+RUN echo "NODE_ENV: $NODE_ENV"
 
-# Build the app
+# Verify .env file if it exists
+RUN if [ -f .env ]; then echo "=== .env file contents ==="; cat .env; else echo "No .env file found"; fi
+
+# Build the application
 RUN npm run build
 
-# Stage 2: Serve the app with Nginx
+# Debug: Check build output
+RUN echo "=== BUILD OUTPUT DEBUG ==="
+RUN ls -la dist/
+RUN ls -la dist/assets/ | head -10
+
+# Stage 2: Production server
 FROM nginx:alpine
 
-# Create directories for SSL certificates
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Create SSL directories
 RUN mkdir -p /etc/ssl/needle360 /etc/ssl/private
 
-# Copy Nginx configuration
+# Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy built app
+# Copy built application
 COPY --from=build /app/dist /usr/share/nginx/html
 
+# Set proper permissions
+RUN chmod -R 755 /usr/share/nginx/html
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:80/ || exit 1
+
 EXPOSE 80 443
+
 CMD ["nginx", "-g", "daemon off;"]

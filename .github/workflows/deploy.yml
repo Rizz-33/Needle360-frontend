@@ -11,68 +11,65 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "18"
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps
+
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
       - name: Validate Environment Variables
         run: |
+          echo "=== ENVIRONMENT VALIDATION ==="
           if [ -z "${{ secrets.VITE_API_URL }}" ]; then
-            echo "Error: VITE_API_URL is not set"
+            echo "❌ Error: VITE_API_URL is not set"
             exit 1
           fi
           if [ -z "${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}" ]; then
-            echo "Error: VITE_STRIPE_PUBLISHABLE_KEY is not set"
+            echo "❌ Error: VITE_STRIPE_PUBLISHABLE_KEY is not set"
             exit 1
           fi
-          echo "VITE_API_URL=${{ secrets.VITE_API_URL }}"
-          echo "VITE_STRIPE_PUBLISHABLE_KEY is set (length: ${#VITE_STRIPE_PUBLISHABLE_KEY})"
-      - name: Create .env file for Vite
+          echo "✅ VITE_API_URL: ${{ secrets.VITE_API_URL }}"
+          echo "✅ VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:0:20}..."
+
+      - name: Install dependencies and build locally (for validation)
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
         run: |
-          echo "Creating .env file in $(pwd)"
-          echo "VITE_API_URL=$VITE_API_URL" > .env
-          echo "VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY" >> .env
-          chmod 644 .env
-          cat .env
-          ls -la
-          echo "Verifying .env file contents:"
-          cat .env
-          if [ -f .env ]; then
-            echo ".env file created successfully"
-          else
-            echo "Error: .env file not created"
-            exit 1
-          fi
-      - name: Clear Vite cache
-        run: rm -rf node_modules/.vite
-      - name: Run Vite build
-        run: |
-          echo "Running Vite build"
+          echo "=== LOCAL BUILD VALIDATION ==="
+          npm install --legacy-peer-deps
           npm run build
-          ls -la dist
-          ls -la dist/assets
-          grep -r pk_test_51RH5dSPCpJjalvEJ dist/assets || echo "Warning: No Stripe key found in built assets"
-      - name: Build and Push
+          echo "✅ Local build successful"
+
+          # Check if Stripe key is in built files
+          if grep -r "pk_test_" dist/assets/ 2>/dev/null; then
+            echo "✅ Stripe key found in build output"
+          else
+            echo "❌ Warning: Stripe key not found in build output"
+          fi
+
+      - name: Build and Push Docker Image
         run: |
+          echo "=== DOCKER BUILD ==="
           docker build \
             --no-cache \
             --build-arg VITE_API_URL="${{ secrets.VITE_API_URL }}" \
             --build-arg VITE_STRIPE_PUBLISHABLE_KEY="${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}" \
+            --progress=plain \
             -t rizz336/needle360-frontend:$GITHUB_SHA \
             -t rizz336/needle360-frontend:latest \
             -f Dockerfile .
+            
+          echo "=== DOCKER PUSH ==="
           docker push rizz336/needle360-frontend:$GITHUB_SHA
           docker push rizz336/needle360-frontend:latest
 
@@ -82,31 +79,45 @@ jobs:
     steps:
       - name: Create docker network
         run: docker network create needle360-network || true
-      - name: Clean up old frontend container
+
+      - name: Clean up old containers
         run: |
+          echo "=== CLEANUP ==="
           docker stop needle360-frontend-container || true
           docker rm needle360-frontend-container || true
-      - name: Check port availability
+          docker system prune -f
+
+      - name: Check and free ports
         run: |
-          if sudo lsof -i :80; then sudo fuser -k 80/tcp || true; fi
-          if sudo lsof -i :443; then sudo fuser -k 443/tcp || true; fi
-          sleep 2
-      - name: Set up SSL directories
-        run: |
-          sudo mkdir -p /etc/ssl/needle360
-          sudo mkdir -p /etc/ssl/private
-          sudo chmod -R 755 /etc/ssl/needle360
-          sudo chmod 750 /etc/ssl/private
-          sudo chown -R $USER:$(id -gn) /etc/ssl/needle360 || true
+          echo "=== PORT CHECK ==="
+          if sudo lsof -i :80; then 
+            echo "Port 80 in use, killing processes..."
+            sudo fuser -k 80/tcp || true
+          fi
+          if sudo lsof -i :443; then 
+            echo "Port 443 in use, killing processes..."
+            sudo fuser -k 443/tcp || true
+          fi
+          sleep 3
+
       - name: Verify SSL certificates
         run: |
+          echo "=== SSL VERIFICATION ==="
           if ! sudo test -f "/home/ubuntu/needle360/ssl/fullchain.crt"; then
-            echo "SSL certificate not found"
-            sudo ls -la /home/ubuntu/needle360/ssl/ || true
+            echo "❌ SSL certificate not found at /home/ubuntu/needle360/ssl/fullchain.crt"
+            sudo find /home/ubuntu -name "*.crt" -o -name "*.pem" 2>/dev/null || true
             exit 1
           fi
+          if ! sudo test -f "/home/ubuntu/needle360/ssl/private.key"; then
+            echo "❌ SSL private key not found at /home/ubuntu/needle360/ssl/private.key"
+            sudo find /home/ubuntu -name "*.key" 2>/dev/null || true
+            exit 1
+          fi
+          echo "✅ SSL certificates found"
+
       - name: Deploy frontend container
         run: |
+          echo "=== DEPLOYMENT ==="
           docker run -d \
             -p 80:80 \
             -p 443:443 \
@@ -115,18 +126,43 @@ jobs:
             --restart unless-stopped \
             --network needle360-network \
             -e NODE_ENV=production \
+            --health-cmd="curl -f http://localhost:80/ || exit 1" \
+            --health-interval=30s \
+            --health-timeout=3s \
+            --health-retries=3 \
             rizz336/needle360-frontend:latest
+
+      - name: Wait for container to be healthy
+        run: |
+          echo "=== HEALTH CHECK ==="
+          for i in {1..20}; do
+            if [ "$(docker inspect --format='{{.State.Health.Status}}' needle360-frontend-container)" = "healthy" ]; then
+              echo "✅ Container is healthy"
+              break
+            fi
+            echo "⏳ Waiting for container health check... ($i/20)"
+            sleep 10
+          done
+
       - name: Verify deployment
         run: |
-          echo "Waiting for frontend to be ready..."
-          for i in {1..10}; do
-            if curl -k -I https://needle360.online >/dev/null 2>&1; then
-              echo "Frontend is ready"
-              exit 0
-            fi
-            echo "Attempt $i: Frontend not ready yet"
-            sleep 5
-          done
-          echo "Frontend did not become ready"
-          docker logs needle360-frontend-container
-          exit 1
+          echo "=== DEPLOYMENT VERIFICATION ==="
+          echo "Container status:"
+          docker ps | grep needle360-frontend-container
+
+          echo "Container logs (last 20 lines):"
+          docker logs --tail 20 needle360-frontend-container
+
+          echo "Testing HTTP redirect:"
+          curl -I http://needle360.online || echo "HTTP test failed"
+
+          echo "Testing HTTPS:"
+          curl -k -I https://needle360.online || echo "HTTPS test failed"
+
+          # Check if the frontend is serving the correct content
+          if curl -k -s https://needle360.online | grep -q "<!doctype html>"; then
+            echo "✅ Frontend is serving HTML content"
+          else
+            echo "❌ Frontend is not serving expected content"
+            exit 1
+          fi
