@@ -154,15 +154,17 @@ jobs:
           docker logs --tail 20 needle360-frontend-container
 
           echo "Testing HTTP redirect:"
-          curl -I http://needle360.online || echo "HTTP test failed"
+          curl -v -I http://needle360.online || echo "HTTP test failed"
 
           echo "Testing HTTPS:"
-          curl -k -I https://needle360.online || echo "HTTPS test failed"
+          curl -v -k -I https://needle360.online || echo "HTTPS test failed"
 
-          # Check if the frontend is serving the correct content
-          if curl -k -s https://needle360.online | grep -q "<!doctype html>"; then
-            echo "✅ Frontend is serving HTML content"
-          else
-            echo "❌ Frontend is not serving expected content"
+          # More robust content check
+          if ! curl -k -s https://needle360.online | grep -q -E "<!doctype html>|<html"; then
+            echo "❌ Frontend is not serving HTML content"
+            echo "Actual response:"
+            curl -k -s https://needle360.online | head -n 5
             exit 1
+          else
+            echo "✅ Frontend is serving HTML content"
           fi
