@@ -1,14 +1,28 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
+import { viteStaticCopy } from "vite-plugin-static-copy"; // ✅ Import properly
 
 export default defineConfig(({ mode }) => {
-  // Load env file based on `mode` in the current working directory
   const env = loadEnv(mode, process.cwd(), "");
 
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      viteStaticCopy({
+        // ✅ Move this into plugins array
+        targets: [
+          {
+            src: "public/site.webmanifest",
+            dest: "./",
+          },
+          {
+            src: "public/favicon/*",
+            dest: "./favicon",
+          },
+        ],
+      }),
+    ],
     define: {
-      // Safely stringify environment variables
       "import.meta.env.VITE_API_URL": JSON.stringify(
         env.VITE_API_URL || "http://localhost:4000"
       ),
@@ -25,6 +39,7 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/api/, ""),
         },
       },
+      assetsInclude: ["**/*.webmanifest"],
     },
     build: {
       outDir: "dist",
