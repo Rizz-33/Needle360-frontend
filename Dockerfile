@@ -59,6 +59,16 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy built application
 COPY --from=build /app/dist /usr/share/nginx/html
 
+RUN echo "=== Verifying manifest file ===" && \
+    ls -la /usr/share/nginx/html/ && \
+    if [ -f /usr/share/nginx/html/site.webmanifest ]; then \
+        echo "Manifest exists:" && \
+        cat /usr/share/nginx/html/site.webmanifest; \
+    else \
+        echo "ERROR: Manifest file missing!"; \
+        exit 1; \
+    fi
+
 # Verify manifest file exists in final image
 RUN echo "=== FINAL VERIFICATION ==="
 RUN ls -la /usr/share/nginx/html/ | grep -E "\.(webmanifest|json)$" || echo "No manifest files in final image"
