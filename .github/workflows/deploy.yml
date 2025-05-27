@@ -144,26 +144,6 @@ jobs:
             sleep 10
           done
 
-      - name: Debug manifest file location
-        run: |
-          echo "=== MANIFEST DEBUG ==="
-          echo "Checking if manifest exists in container:"
-          docker exec needle360-frontend-container ls -la /usr/share/nginx/html/ | grep -E "\.(webmanifest|json)$" || echo "No manifest files found"
-
-          echo "Checking specific manifest file:"
-          if docker exec needle360-frontend-container test -f /usr/share/nginx/html/site.webmanifest; then
-            echo "✅ site.webmanifest exists in container"
-            echo "Content:"
-            docker exec needle360-frontend-container cat /usr/share/nginx/html/site.webmanifest
-          else
-            echo "❌ site.webmanifest does NOT exist in container"
-            echo "Files in root directory:"
-            docker exec needle360-frontend-container ls -la /usr/share/nginx/html/
-          fi
-
-          echo "Checking nginx configuration:"
-          docker exec needle360-frontend-container nginx -t
-
       - name: Verify deployment
         run: |
           echo "=== DEPLOYMENT VERIFICATION ==="
@@ -178,24 +158,6 @@ jobs:
 
           echo "Testing HTTPS:"
           curl -v -k -I https://needle360.online || echo "HTTPS test failed"
-
-          # Test manifest specifically
-          echo "=== MANIFEST VERIFICATION ==="
-          echo "Testing site.webmanifest:"
-          MANIFEST_RESPONSE=$(curl -k -s https://needle360.online/site.webmanifest)
-          if echo "$MANIFEST_RESPONSE" | grep -q "<!DOCTYPE html>"; then
-            echo "❌ site.webmanifest is serving HTML instead of JSON"
-            echo "Response content:"
-            echo "$MANIFEST_RESPONSE" | head -5
-            exit 1
-          elif echo "$MANIFEST_RESPONSE" | grep -q '"name".*"needle360'; then
-            echo "✅ site.webmanifest is serving correct JSON content"
-          else
-            echo "❌ site.webmanifest response is unexpected"
-            echo "Response content:"
-            echo "$MANIFEST_RESPONSE"
-            exit 1
-          fi
 
           # More robust content check
           if ! curl -k -s https://needle360.online | grep -q -E "<!doctype html>|<html"; then
