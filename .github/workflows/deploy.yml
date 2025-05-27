@@ -159,6 +159,24 @@ jobs:
           echo "Testing HTTPS:"
           curl -v -k -I https://needle360.online || echo "HTTPS test failed"
 
+          # Test manifest specifically
+          echo "=== MANIFEST VERIFICATION ==="
+          echo "Testing site.webmanifest:"
+          MANIFEST_RESPONSE=$(curl -k -s https://needle360.online/site.webmanifest)
+          if echo "$MANIFEST_RESPONSE" | grep -q "<!DOCTYPE html>"; then
+            echo "❌ site.webmanifest is serving HTML instead of JSON"
+            echo "Response content:"
+            echo "$MANIFEST_RESPONSE" | head -5
+            exit 1
+          elif echo "$MANIFEST_RESPONSE" | grep -q '"name".*"needle360'; then
+            echo "✅ site.webmanifest is serving correct JSON content"
+          else
+            echo "❌ site.webmanifest response is unexpected"
+            echo "Response content:"
+            echo "$MANIFEST_RESPONSE"
+            exit 1
+          fi
+
           # More robust content check
           if ! curl -k -s https://needle360.online | grep -q -E "<!doctype html>|<html"; then
             echo "❌ Frontend is not serving HTML content"

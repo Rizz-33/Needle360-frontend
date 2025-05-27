@@ -28,13 +28,21 @@ RUN echo "NODE_ENV: $NODE_ENV"
 # Verify .env file if it exists
 RUN if [ -f .env ]; then echo "=== .env file contents ==="; cat .env; else echo "No .env file found"; fi
 
+# Verify source files before build
+RUN echo "=== SOURCE FILES DEBUG ==="
+RUN ls -la public/ | grep -E "\.(webmanifest|json|ico|png)$" || echo "No manifest/icon files found in public/"
+RUN if [ -f public/site.webmanifest ]; then echo "=== site.webmanifest content ==="; cat public/site.webmanifest; fi
+
 # Build the application
 RUN npm run build
 
-# Debug: Check build output
+# Debug: Check build output and verify manifest
 RUN echo "=== BUILD OUTPUT DEBUG ==="
 RUN ls -la dist/
 RUN ls -la dist/assets/ | head -10
+RUN echo "=== MANIFEST VERIFICATION ==="
+RUN ls -la dist/ | grep -E "\.(webmanifest|json)$" || echo "No manifest files found in dist/"
+RUN if [ -f dist/site.webmanifest ]; then echo "=== Built site.webmanifest content ==="; cat dist/site.webmanifest; else echo "❌ site.webmanifest NOT found in build output"; fi
 
 # Stage 2: Production server
 FROM nginx:alpine
@@ -50,6 +58,11 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built application
 COPY --from=build /app/dist /usr/share/nginx/html
+
+# Verify manifest file exists in final image
+RUN echo "=== FINAL VERIFICATION ==="
+RUN ls -la /usr/share/nginx/html/ | grep -E "\.(webmanifest|json)$" || echo "No manifest files in final image"
+RUN if [ -f /usr/share/nginx/html/site.webmanifest ]; then echo "✅ site.webmanifest found in final image"; cat /usr/share/nginx/html/site.webmanifest; else echo "❌ site.webmanifest NOT found in final image"; fi
 
 # Set proper permissions
 RUN chmod -R 755 /usr/share/nginx/html
