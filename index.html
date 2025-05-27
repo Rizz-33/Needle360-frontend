@@ -1,31 +1,57 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
   <head>
+    <script type="module">
+      import RefreshRuntime from "/@react-refresh";
+      RefreshRuntime.injectIntoGlobalHook(window);
+      window.$RefreshReg$ = () => {};
+      window.$RefreshSig$ = () => (type) => type;
+      window.__vite_plugin_react_preamble_installed__ = true;
+    </script>
+
+    <script type="module" src="/@vite/client"></script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+    <!-- Primary Meta Tags -->
     <title>needle360° | Design, Explore, and Order Tailored Just for You</title>
     <meta
       name="description"
-      content="Get the perfect fit with our tailor-made clothing platform..."
+      content="Get the perfect fit with our tailor-made clothing platform. Choose from professional tailors, upload your designs, and bring your fashion ideas to life effortlessly."
     />
-    <meta name="keywords" content="custom clothing, tailoring..." />
+    <meta
+      name="keywords"
+      content="custom clothing, tailoring, fashion design, bespoke outfits, needle360"
+    />
     <meta name="author" content="needle360°" />
 
     <!-- Favicon -->
-    <link rel="icon" href="/favicon/favicon.svg" type="image/svg+xml" />
+    <link
+      rel="icon"
+      type="image/png"
+      href="/favicon/favicon-96x96.png"
+      sizes="96x96"
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon/favicon.ico" />
     <link
       rel="apple-touch-icon"
-      href="/favicon/apple-touch-icon.png"
       sizes="180x180"
+      href="/favicon/apple-touch-icon.png"
     />
-    <link rel="icon" href="/favicon/favicon-32x32.png" sizes="32x32" />
-    <link rel="icon" href="/favicon/favicon-16x16.png" sizes="16x16" />
+    <meta name="apple-mobile-web-app-title" content="needle360°" />
     <link rel="manifest" href="/site.webmanifest" />
 
-    <!-- Open Graph -->
-    <meta property="og:title" content="needle360° | Design, Explore..." />
-    <meta property="og:description" content="Get the perfect fit..." />
+    <!-- Open Graph Meta Tags -->
+    <meta
+      property="og:title"
+      content="needle360° | Design, Explore, and Order Tailored Just for You"
+    />
+    <meta
+      property="og:description"
+      content="Get the perfect fit with our tailor-made clothing platform. Choose from professional tailors, upload your designs, and bring your fashion ideas to life effortlessly."
+    />
     <meta
       property="og:image"
       content="https://www.needle360.online/social-preview.jpg"
@@ -34,10 +60,16 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="needle360°" />
 
-    <!-- Twitter -->
+    <!-- Twitter Meta Tags -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="needle360° | Design, Explore..." />
-    <meta name="twitter:description" content="Get the perfect fit..." />
+    <meta
+      name="twitter:title"
+      content="needle360° | Design, Explore, and Order Tailored Just for You"
+    />
+    <meta
+      name="twitter:description"
+      content="Get the perfect fit with our tailor-made clothing platform. Choose from professional tailors, upload your designs, and bring your fashion ideas to life effortlessly."
+    />
     <meta
       name="twitter:image"
       content="https://www.needle360.online/social-preview.jpg"
@@ -49,22 +81,12 @@
       rel="stylesheet"
     />
 
-    <!-- Canonical -->
+    <!-- Canonical URL -->
     <link rel="canonical" href="https://www.needle360.online" />
-
-    <!-- Scripts (swap for dev/production dynamically) -->
-    <!-- Production -->
-    <link rel="stylesheet" href="/assets/index.css" />
-    <script type="module" src="/assets/index.js"></script>
-
-    <!-- Dev (comment out in production) -->
-    <!--
-    <script type="module" src="/@vite/client"></script>
-    <script type="module" src="/src/main.jsx"></script>
-    -->
   </head>
 
-  <body class="h-full">
+  <body>
     <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
