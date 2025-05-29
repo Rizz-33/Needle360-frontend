@@ -1,17 +1,8 @@
 # Stage 1: Build the React app
-FROM node:18-alpine as build
+FROM node:20-alpine as build
 WORKDIR /app
 
-# Copy package files first for better caching
-COPY package*.json ./
-
-# Install dependencies
-RUN npm install --legacy-peer-deps
-
-# Copy source code
-COPY . .
-
-# Build arguments - these must be declared before use
+# Build arguments
 ARG VITE_API_URL
 ARG VITE_STRIPE_PUBLISHABLE_KEY
 ARG BUILD_VERSION
@@ -21,12 +12,15 @@ ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY
 ENV NODE_ENV=production
 
-# Copy files
+# Copy package files first for better caching
 COPY package*.json ./
-COPY . .
 
-# Install dependencies
+# Install dependencies including Vite
 RUN npm install --legacy-peer-deps
+RUN npm install vite --save-dev
+
+# Copy source code
+COPY . .
 
 # Build application
 RUN npm run build
@@ -40,7 +34,7 @@ FROM nginx:alpine
 # Install curl for health checks
 RUN apk add --no-cache curl
 
-# Create SSL directory
+# Create SSL directory (matches volume mount path)
 RUN mkdir -p /etc/ssl/needle360
 
 # Copy nginx config

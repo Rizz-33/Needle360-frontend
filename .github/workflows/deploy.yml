@@ -89,6 +89,12 @@ jobs:
       - name: Deploy container
         run: |
           echo "=== DEPLOYMENT ==="
+          # Verify SSL certs exist at correct path
+          if [ ! -f "/home/ubuntu/needle360/ssl/fullchain.crt" ]; then
+            echo "❌ SSL certificate not found at /home/ubuntu/needle360/ssl/fullchain.crt"
+            exit 1
+          fi
+
           docker run -d \
             -p 80:80 \
             -p 443:443 \
