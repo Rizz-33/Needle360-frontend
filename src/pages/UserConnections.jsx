@@ -119,7 +119,6 @@ const UserConnections = () => {
   const { user: currentUser } = useAuthStore();
 
   // Fetch initial data
-  // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
       logDebug("Fetching data for userId:", userId);
