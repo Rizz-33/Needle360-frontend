@@ -1,3 +1,4 @@
+
 # Stage 1: Build the React app
 FROM node:18-alpine as build
 WORKDIR /app
@@ -14,25 +15,27 @@ COPY . .
 # Build arguments - these must be declared before use
 ARG VITE_API_URL
 ARG VITE_STRIPE_PUBLISHABLE_KEY
-ARG BUILD_VERSION
 
-# Set environment variables
+# Set environment variables for build
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY
-ENV NODE_ENV=production
 
-# Copy files
-COPY package*.json ./
-COPY . .
+# Debug: Print environment variables (mask sensitive data)
+RUN echo "=== BUILD ENVIRONMENT DEBUG ==="
+RUN echo "VITE_API_URL: $VITE_API_URL"
+RUN echo "VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:0:20}..."
+RUN echo "NODE_ENV: $NODE_ENV"
 
-# Install dependencies
-RUN npm install --legacy-peer-deps
+# Verify .env file if it exists
+RUN if [ -f .env ]; then echo "=== .env file contents ==="; cat .env; else echo "No .env file found"; fi
 
-# Build application
+# Build the application
 RUN npm run build
 
-# Create version file
-RUN echo "$BUILD_VERSION" > /app/dist/version.txt
+# Debug: Check build output
+RUN echo "=== BUILD OUTPUT DEBUG ==="
+RUN ls -la dist/
+RUN ls -la dist/assets/ | head -10
 
 # Stage 2: Production server
 FROM nginx:alpine
@@ -40,22 +43,21 @@ FROM nginx:alpine
 # Install curl for health checks
 RUN apk add --no-cache curl
 
-# Create SSL directory
-RUN mkdir -p /etc/ssl/needle360
+# Create SSL directories
+RUN mkdir -p /etc/ssl/needle360 /etc/ssl/private
 
-# Copy nginx config
+# Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy built app
+# Copy built application
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Set permissions
-RUN chown -R nginx:nginx /usr/share/nginx/html && \
-    chmod -R 755 /usr/share/nginx/html
+# Set proper permissions
+RUN chmod -R 755 /usr/share/nginx/html
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost/version || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:80/ || exit 1
 
 EXPOSE 80 443
 
