@@ -118,15 +118,16 @@ jobs:
       - name: Deploy frontend container
         run: |
           echo "=== DEPLOYMENT ==="
+          docker pull rizz336/needle360-frontend:latest
           docker run -d \
             -p 80:80 \
             -p 443:443 \
-            -v /home/ubuntu/needle360/ssl:/home/ubuntu/needle360/ssl:ro \
+            -v /home/ubuntu/needle360/ssl:/etc/ssl/needle360:ro \
             --name needle360-frontend-container \
             --restart unless-stopped \
             --network needle360-network \
             -e NODE_ENV=production \
-            --health-cmd="curl -f http://localhost:80/ || exit 1" \
+            --health-cmd="curl -f http://localhost/health || exit 1" \
             --health-interval=30s \
             --health-timeout=3s \
             --health-retries=3 \
