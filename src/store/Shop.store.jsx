@@ -29,7 +29,6 @@ export const useShopStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await axios.get(`${BASE_API_URL}/tailors`);
-      console.log("API Response:", response.data);
 
       const tailorData = response.data
         .map((tailor) => ({

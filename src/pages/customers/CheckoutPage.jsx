@@ -25,8 +25,7 @@ import StripePaymentForm from "./StripePaymentForm";
 // Initialize Stripe with detailed debugging
 const initializeStripe = async () => {
   const key =
-    import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ||
-    "pk_test_51RH5dSPCpJjalvEJpbV7YEKl7iFhFPvvNRsExsvz2PtwHXiwe8RgflUllJ6YlBEkKVipeST0SkYVGvodI45b2I3c00BJpV89El";
+    import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   console.log(
     "VITE_STRIPE_PUBLISHABLE_KEY at build time:",
     key ? `Key present (length: ${key.length})` : "Key missing"

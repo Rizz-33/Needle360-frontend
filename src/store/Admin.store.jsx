@@ -45,8 +45,6 @@ export const useAdminStore = create((set, get) => ({
         }
       );
 
-      console.log("API Response (Approve Tailor):", response.data);
-
       // Update the state or perform any necessary actions
       const currentState = get();
       const updatedUnapprovedTailors = currentState.unapprovedTailors.filter(
@@ -81,8 +79,6 @@ export const useAdminStore = create((set, get) => ({
           Authorization: `Bearer ${token}`,
         },
       });
-
-      console.log("API Response (Unapproved Tailors):", response.data);
 
       const unapprovedTailors = response.data.map((tailor) => ({
         id: tailor._id,
@@ -127,8 +123,6 @@ export const useAdminStore = create((set, get) => ({
           },
         }
       );
-
-      console.log("API Response (Unapproved Tailor):", response.data);
 
       // Update the state with the fetched unapproved tailor
       set({ unapprovedTailor: response.data });

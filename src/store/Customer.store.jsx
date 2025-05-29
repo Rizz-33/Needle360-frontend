@@ -29,7 +29,6 @@ export const useCustomerStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await axios.get(`${BASE_API_URL}/customers`);
-      console.log("API Response:", response.data);
 
       const customerData = response.data
         .map((customer) => ({
