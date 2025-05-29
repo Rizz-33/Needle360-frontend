@@ -40,22 +40,10 @@ jobs:
           echo "✅ VITE_API_URL: ${{ secrets.VITE_API_URL }}"
           echo "✅ VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:0:20}..."
 
-      - name: Install dependencies and build locally (for validation)
-        env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
-          VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
+      - name: Generate build version
         run: |
-          echo "=== LOCAL BUILD VALIDATION ==="
-          npm install --legacy-peer-deps
-          npm run build
-          echo "✅ Local build successful"
-
-          # Check if Stripe key is in built files
-          if grep -r "pk_test_" dist/assets/ 2>/dev/null; then
-            echo "✅ Stripe key found in build output"
-          else
-            echo "❌ Warning: Stripe key not found in build output"
-          fi
+          echo "GITHUB_SHA=$GITHUB_SHA" >> $GITHUB_ENV
+          echo "$GITHUB_SHA" > version.txt
 
       - name: Build and Push Docker Image
         run: |
@@ -64,6 +52,7 @@ jobs:
             --no-cache \
             --build-arg VITE_API_URL="${{ secrets.VITE_API_URL }}" \
             --build-arg VITE_STRIPE_PUBLISHABLE_KEY="${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}" \
+            --build-arg BUILD_VERSION=$GITHUB_SHA \
             --progress=plain \
             -t rizz336/needle360-frontend:$GITHUB_SHA \
             -t rizz336/needle360-frontend:latest \
@@ -77,48 +66,29 @@ jobs:
     needs: build
     runs-on: self-hosted
     steps:
-      - name: Create docker network
-        run: docker network create needle360-network || true
-
-      - name: Clean up old containers
+      - name: Clean up environment
         run: |
           echo "=== CLEANUP ==="
           docker stop needle360-frontend-container || true
           docker rm needle360-frontend-container || true
-          docker system prune -f
+          docker system prune -af
+          docker volume prune -f
 
-      - name: Check and free ports
+      - name: Verify ports
         run: |
           echo "=== PORT CHECK ==="
-          if sudo lsof -i :80; then 
-            echo "Port 80 in use, killing processes..."
-            sudo fuser -k 80/tcp || true
-          fi
-          if sudo lsof -i :443; then 
-            echo "Port 443 in use, killing processes..."
-            sudo fuser -k 443/tcp || true
-          fi
+          sudo lsof -i :80 -t | xargs -r sudo kill -9
+          sudo lsof -i :443 -t | xargs -r sudo kill -9
           sleep 3
 
-      - name: Verify SSL certificates
+      - name: Pull latest image
         run: |
-          echo "=== SSL VERIFICATION ==="
-          if ! sudo test -f "/home/ubuntu/needle360/ssl/fullchain.crt"; then
-            echo "❌ SSL certificate not found at /home/ubuntu/needle360/ssl/fullchain.crt"
-            sudo find /home/ubuntu -name "*.crt" -o -name "*.pem" 2>/dev/null || true
-            exit 1
-          fi
-          if ! sudo test -f "/home/ubuntu/needle360/ssl/private.key"; then
-            echo "❌ SSL private key not found at /home/ubuntu/needle360/ssl/private.key"
-            sudo find /home/ubuntu -name "*.key" 2>/dev/null || true
-            exit 1
-          fi
-          echo "✅ SSL certificates found"
+          echo "=== PULL IMAGE ==="
+          docker pull rizz336/needle360-frontend:latest
 
-      - name: Deploy frontend container
+      - name: Deploy container
         run: |
           echo "=== DEPLOYMENT ==="
-          docker pull rizz336/needle360-frontend:latest
           docker run -d \
             -p 80:80 \
             -p 443:443 \
@@ -127,45 +97,31 @@ jobs:
             --restart unless-stopped \
             --network needle360-network \
             -e NODE_ENV=production \
-            --health-cmd="curl -f http://localhost/health || exit 1" \
+            --health-cmd="curl -f http://localhost/version || exit 1" \
             --health-interval=30s \
-            --health-timeout=3s \
-            --health-retries=3 \
+            --health-timeout=5s \
+            --health-retries=5 \
+            --health-start-period=10s \
             rizz336/needle360-frontend:latest
-
-      - name: Wait for container to be healthy
-        run: |
-          echo "=== HEALTH CHECK ==="
-          for i in {1..20}; do
-            if [ "$(docker inspect --format='{{.State.Health.Status}}' needle360-frontend-container)" = "healthy" ]; then
-              echo "✅ Container is healthy"
-              break
-            fi
-            echo "⏳ Waiting for container health check... ($i/20)"
-            sleep 10
-          done
 
       - name: Verify deployment
         run: |
-          echo "=== DEPLOYMENT VERIFICATION ==="
+          echo "=== VERIFICATION ==="
+          sleep 10
           echo "Container status:"
-          docker ps | grep needle360-frontend-container
+          docker ps -a | grep needle360-frontend-container
 
-          echo "Container logs (last 20 lines):"
-          docker logs --tail 20 needle360-frontend-container
+          echo "Health status:"
+          docker inspect --format='{{json .State.Health}}' needle360-frontend-container
 
-          echo "Testing HTTP redirect:"
-          curl -v -I http://needle360.online || echo "HTTP test failed"
+          echo "Version check:"
+          CONTAINER_VERSION=$(docker exec needle360-frontend-container cat /usr/share/nginx/html/version.txt)
+          echo "Container version: $CONTAINER_VERSION"
+          echo "Expected version: $GITHUB_SHA"
 
-          echo "Testing HTTPS:"
-          curl -v -k -I https://needle360.online || echo "HTTPS test failed"
-
-          # More robust content check
-          if ! curl -k -s https://needle360.online | grep -q -E "<!doctype html>|<html"; then
-            echo "❌ Frontend is not serving HTML content"
-            echo "Actual response:"
-            curl -k -s https://needle360.online | head -n 5
+          if [ "$CONTAINER_VERSION" != "$GITHUB_SHA" ]; then
+            echo "❌ Version mismatch detected"
             exit 1
-          else
-            echo "✅ Frontend is serving HTML content"
           fi
+
+          echo "✅ Deployment verified"
