@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       // Explicitly define __DEFINES__ if required
-      __DEFINES__: JSON.stringify({
+      __DEFINES__: JSON.stringify({ 
         MODE: mode,
         // Add other global defines here
       }),
