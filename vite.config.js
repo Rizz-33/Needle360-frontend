@@ -26,11 +26,10 @@ export default defineConfig(({ mode }) => {
       __APP_ENV__: JSON.stringify(mode),
       "process.env.NODE_ENV": JSON.stringify(mode),
 
-      // Define both variants to handle different reference patterns
+      // Define valid identifier patterns only
       "globalThis.__DEFINES__": JSON.stringify(defineObject),
-      "globalThis.**DEFINES**": JSON.stringify(defineObject),
-      "**DEFINES**": JSON.stringify(defineObject),
       __DEFINES__: JSON.stringify(defineObject),
+      "window.__DEFINES__": JSON.stringify(defineObject),
 
       // Explicitly define all VITE_* variables
       ...Object.keys(viteEnv).reduce((acc, key) => {
