@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => {
 
       // Define valid identifier patterns only
       "globalThis.__DEFINES__": JSON.stringify(defineObject),
-      __DEFINES__: JSON.stringify(defineObject),
+      "__DEFINES__": JSON.stringify(defineObject),
       "window.__DEFINES__": JSON.stringify(defineObject),
 
       // Explicitly define all VITE_* variables
