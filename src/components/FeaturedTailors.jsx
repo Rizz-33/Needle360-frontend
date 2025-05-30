@@ -11,10 +11,6 @@ const FeaturedTailorsCarousel = () => {
     fetchTailors();
   }, [fetchTailors]);
 
-  useEffect(() => {
-    console.log(tailors);
-  }, [tailors]);
-
   const settings = {
     dots: true,
     infinite: true,
