@@ -12,18 +12,25 @@ export default defineConfig(({ mode }) => {
     return acc;
   }, {});
 
+  const defineObject = {
+    ...viteEnv,
+    MODE: mode,
+    PROD: mode === "production",
+    DEV: mode === "development",
+  };
+
   return {
     plugins: [react()],
     define: {
       // Global defines required by Vite and dependencies
       __APP_ENV__: JSON.stringify(mode),
       "process.env.NODE_ENV": JSON.stringify(mode),
-      "globalThis.__DEFINES__": JSON.stringify({
-        ...viteEnv,
-        MODE: mode,
-        PROD: mode === "production",
-        DEV: mode === "development",
-      }),
+
+      // Define both variants to handle different reference patterns
+      "globalThis.__DEFINES__": JSON.stringify(defineObject),
+      "globalThis.**DEFINES**": JSON.stringify(defineObject),
+      "**DEFINES**": JSON.stringify(defineObject),
+      __DEFINES__: JSON.stringify(defineObject),
 
       // Explicitly define all VITE_* variables
       ...Object.keys(viteEnv).reduce((acc, key) => {
