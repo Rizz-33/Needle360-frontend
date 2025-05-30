@@ -73,13 +73,6 @@ jobs:
           docker push rizz336/needle360-frontend:$GITHUB_SHA
           docker push rizz336/needle360-frontend:latest
 
-      - name: Verify Environment Variables
-        run: |
-          echo "VITE_API_URL=${{ secrets.VITE_API_URL }}" >> .env
-          echo "VITE_STRIPE_PUBLISHABLE_KEY=${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}" >> .env
-          echo "NODE_ENV=production" >> .env
-          cat .env
-
   deploy:
     needs: build
     runs-on: self-hosted
