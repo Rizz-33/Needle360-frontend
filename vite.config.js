@@ -7,6 +7,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    optimizeDeps: {
+      exclude: ["tailwind.config.js"],
+    },
     define: {
       // Safely stringify environment variables
       "import.meta.env.VITE_API_URL": JSON.stringify(
