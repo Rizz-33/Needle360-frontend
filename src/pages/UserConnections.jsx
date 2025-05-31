@@ -13,9 +13,6 @@ import Loader from "../components/ui/Loader";
 import { useAuthStore } from "../store/Auth.store";
 import { useUserInteractionStore } from "../store/UserInteraction.store";
 
-// Add debug logging
-const DEBUG = import.meta.env.NODE_ENV === "development";
-
 const logDebug = (message, data) => {
   if (DEBUG) {
     console.log(`[UserConnections] ${message}`, data);
