@@ -7,6 +7,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    css: {
+      postcss: "./postcss.config.js",
+    },
     optimizeDeps: {
       exclude: ["tailwind.config.js"],
     },
