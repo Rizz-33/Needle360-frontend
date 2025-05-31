@@ -13,9 +13,6 @@ import Loader from "../components/ui/Loader";
 import { useAuthStore } from "../store/Auth.store";
 import { useUserInteractionStore } from "../store/UserInteraction.store";
 
-// Add debug logging
-const DEBUG = import.meta.env.NODE_ENV === "development";
-
 const logDebug = (message, data) => {
   if (DEBUG) {
     console.log(`[UserConnections] ${message}`, data);
@@ -279,7 +276,6 @@ const UserConnections = () => {
           <p className="text-xs text-gray-400 mt-2">User ID: {userId}</p>
           <CustomButton
             onClick={() => {
-              // Reset the store state and try again
               const { resetState, getFollowers, getFollowing } =
                 useUserInteractionStore.getState();
               resetState();
