@@ -279,7 +279,6 @@ const UserConnections = () => {
           <p className="text-xs text-gray-400 mt-2">User ID: {userId}</p>
           <CustomButton
             onClick={() => {
-              // Reset the store state and try again
               const { resetState, getFollowers, getFollowing } =
                 useUserInteractionStore.getState();
               resetState();
