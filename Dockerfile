@@ -5,24 +5,28 @@ WORKDIR /app
 # Copy package files
 COPY package.json ./
 
-# Install dependencies
+# Install dependencies (using npm install instead of ci)
 RUN npm install --legacy-peer-deps
 
 # Copy the rest of the files
 COPY . .
 
-# Set build arguments - these are for Dockerfile context, not directly for Vite
 ARG VITE_API_URL
-ARG VITE_STRIPE_PUBLISHABLE_KEY
+ENV VITE_API_URL=$VITE_API_URL
 
-# Build the app - The environment variables will be passed by the workflow
+# Build the app
 RUN npm run build
 
 # Stage 2: Serve the app with Nginx
 FROM nginx:alpine
 
-# ... (rest of your Nginx configuration)
+# Create directories for SSL certificates
+RUN mkdir -p /etc/ssl/needle360 /etc/ssl/private
 
+# Copy Nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy built app
 COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 80 443
