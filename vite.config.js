@@ -6,12 +6,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    define: {
-      "import.meta.env.MODE": JSON.stringify(mode),
-      "import.meta.env.VITE_API_URL": JSON.stringify(
-        env.VITE_API_URL || "http://localhost:4000"
-      ),
-    },
+    // No custom defines - let Vite handle everything automatically
     server: {
       host: "0.0.0.0",
       port: 5173,
