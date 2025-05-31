@@ -196,18 +196,6 @@ const UserConnections = () => {
     checkFollowingStatus();
   }, [currentUser?._id, followers, following, isLoading, checkIfFollowing]);
 
-  useEffect(() => {
-    // Debug logging
-    console.log("UserConnections Debug:", {
-      userId,
-      currentUser: currentUser?._id,
-      followers: followers.length,
-      following: following.length,
-      isLoading,
-      error,
-    });
-  }, [userId, currentUser, followers, following, isLoading, error]);
-
   const handleFollowToggle = async (targetUserId, isCurrentlyFollowing) => {
     try {
       if (!currentUser?._id) {
@@ -257,7 +245,8 @@ const UserConnections = () => {
             color="primary"
             hover_color="hoverAccent"
             variant="filled"
-            className="mt-4"
+            height="h-10"
+            width="w-40"
           />
         </div>
       </div>
@@ -286,7 +275,8 @@ const UserConnections = () => {
             color="primary"
             hover_color="hoverAccent"
             variant="outlined"
-            className="mt-3"
+            height="h-10"
+            width="w-40"
           />
         </div>
       </div>
@@ -414,7 +404,8 @@ const UserConnections = () => {
                     color="primary"
                     hover_color="hoverAccent"
                     variant="filled"
-                    className="mt-4"
+                    height="h-10"
+                    width="w-40"
                   />
                 </div>
               ) : (
