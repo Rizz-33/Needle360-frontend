@@ -7,12 +7,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      // Explicitly define __DEFINES__ if required
-      __DEFINES__: JSON.stringify({
-        MODE: mode,
-        // Add other global defines here
-      }),
-      // Safely stringify environment variables
+      "import.meta.env.MODE": JSON.stringify(mode),
       "import.meta.env.VITE_API_URL": JSON.stringify(
         env.VITE_API_URL || "http://localhost:4000"
       ),
