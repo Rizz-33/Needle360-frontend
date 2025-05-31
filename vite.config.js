@@ -6,7 +6,17 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    // No custom defines - let Vite handle everything automatically
+    define: {
+      // Define __DEFINES__ as a global variable
+      "global.__DEFINES__": JSON.stringify({
+        MODE: mode,
+        // Add other global defines here
+      }),
+      // Define environment variables under import.meta.env
+      "import.meta.env.VITE_API_URL": JSON.stringify(
+        env.VITE_API_URL || "http://localhost:4000"
+      ),
+    },
     server: {
       host: "0.0.0.0",
       port: 5173,
