@@ -13,12 +13,6 @@ import Loader from "../components/ui/Loader";
 import { useAuthStore } from "../store/Auth.store";
 import { useUserInteractionStore } from "../store/UserInteraction.store";
 
-const logDebug = (message, data) => {
-  if (DEBUG) {
-    console.log(`[UserConnections] ${message}`, data);
-  }
-};
-
 const UserConnectionCard = ({
   user,
   currentUserId,
@@ -118,16 +112,12 @@ const UserConnections = () => {
   // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
-      logDebug("Fetching data for userId:", userId);
-
       if (!userId) {
         console.error("No userId provided to UserConnections");
         return;
       }
 
       try {
-        logDebug("Starting to fetch followers and following...");
-
         const [followersData, followingData] = await Promise.allSettled([
           getFollowers(userId),
           getFollowing(userId),
@@ -141,16 +131,6 @@ const UserConnections = () => {
           console.error("Failed to fetch following:", followingData.reason);
         }
 
-        logDebug("Fetch completed", {
-          followers:
-            followersData.status === "fulfilled"
-              ? followersData.value?.length
-              : "failed",
-          following:
-            followingData.status === "fulfilled"
-              ? followingData.value?.length
-              : "failed",
-        });
       } catch (error) {
         console.error("Error fetching connections:", error);
       }
