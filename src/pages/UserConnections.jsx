@@ -13,12 +13,6 @@ import Loader from "../components/ui/Loader";
 import { useAuthStore } from "../store/Auth.store";
 import { useUserInteractionStore } from "../store/UserInteraction.store";
 
-const logDebug = (message, data) => {
-  if (DEBUG) {
-    console.log(`[UserConnections] ${message}`, data);
-  }
-};
-
 const UserConnectionCard = ({
   user,
   currentUserId,
@@ -118,16 +112,12 @@ const UserConnections = () => {
   // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
-      logDebug("Fetching data for userId:", userId);
-
       if (!userId) {
         console.error("No userId provided to UserConnections");
         return;
       }
 
       try {
-        logDebug("Starting to fetch followers and following...");
-
         const [followersData, followingData] = await Promise.allSettled([
           getFollowers(userId),
           getFollowing(userId),
@@ -141,16 +131,6 @@ const UserConnections = () => {
           console.error("Failed to fetch following:", followingData.reason);
         }
 
-        logDebug("Fetch completed", {
-          followers:
-            followersData.status === "fulfilled"
-              ? followersData.value?.length
-              : "failed",
-          following:
-            followingData.status === "fulfilled"
-              ? followingData.value?.length
-              : "failed",
-        });
       } catch (error) {
         console.error("Error fetching connections:", error);
       }
@@ -195,18 +175,6 @@ const UserConnections = () => {
 
     checkFollowingStatus();
   }, [currentUser?._id, followers, following, isLoading, checkIfFollowing]);
-
-  useEffect(() => {
-    // Debug logging
-    console.log("UserConnections Debug:", {
-      userId,
-      currentUser: currentUser?._id,
-      followers: followers.length,
-      following: following.length,
-      isLoading,
-      error,
-    });
-  }, [userId, currentUser, followers, following, isLoading, error]);
 
   const handleFollowToggle = async (targetUserId, isCurrentlyFollowing) => {
     try {
@@ -257,7 +225,8 @@ const UserConnections = () => {
             color="primary"
             hover_color="hoverAccent"
             variant="filled"
-            className="mt-4"
+            height="h-10"
+            width="w-40"
           />
         </div>
       </div>
@@ -286,7 +255,8 @@ const UserConnections = () => {
             color="primary"
             hover_color="hoverAccent"
             variant="outlined"
-            className="mt-3"
+            height="h-10"
+            width="w-40"
           />
         </div>
       </div>
@@ -414,7 +384,8 @@ const UserConnections = () => {
                     color="primary"
                     hover_color="hoverAccent"
                     variant="filled"
-                    className="mt-4"
+                    height="h-10"
+                    width="w-40"
                   />
                 </div>
               ) : (
