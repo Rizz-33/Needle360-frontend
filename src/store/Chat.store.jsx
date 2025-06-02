@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { disconnectSocket, getSocket } from "../lib/socket";
 
-const BASE_API_URL = import.meta.env.VITE_API_URL || "http://localhost:5173";
+const BASE_API_URL = import.meta.env.VITE_API_URL || "https://needle360.online";
 
 export const useChatStore = create((set, get) => ({
   // State
@@ -17,6 +17,7 @@ export const useChatStore = create((set, get) => ({
   currentPage: 1,
   hasMore: true,
   socketError: null,
+  socketRetryCount: 0,
 
   // Actions
   cleanupSocket: () => {
@@ -29,7 +30,7 @@ export const useChatStore = create((set, get) => ({
       socket.off("messagesRead");
     }
     disconnectSocket();
-    set({ isConnected: false, socketError: null });
+    set({ isConnected: false, socketError: null, socketRetryCount: 0 });
   },
 
   setCurrentUserId: (userId) => {
@@ -38,7 +39,7 @@ export const useChatStore = create((set, get) => ({
   },
 
   initializeSocket: () => {
-    const { currentUserId } = get();
+    const { currentUserId, socketRetryCount } = get();
     if (!currentUserId) {
       set({ error: "User ID not available" });
       return;
@@ -62,12 +63,16 @@ export const useChatStore = create((set, get) => ({
     // Connection events
     socket.on("connect", () => {
       console.log("ChatStore: Socket connected");
-      set({ isConnected: true, socketError: null });
+      set({
+        isConnected: true,
+        socketError: null,
+        socketRetryCount: 0,
+      });
 
       // Join user's personal room
       socket.emit("joinRoom", {
         userId: currentUserId,
-        role: "user", // Replace with actual role from your auth system
+        role: "user",
       });
 
       // Rejoin active conversation if exists
@@ -79,14 +84,25 @@ export const useChatStore = create((set, get) => ({
 
     socket.on("connect_error", (err) => {
       console.error("Socket connection error:", err.message);
+      const newRetryCount = socketRetryCount + 1;
+
       set({
         isConnected: false,
         socketError: `Connection failed: ${err.message}`,
+        socketRetryCount: newRetryCount,
       });
+
+      // Attempt reconnection with exponential backoff
+      if (newRetryCount <= 5) {
+        const delay = Math.min(1000 * Math.pow(2, newRetryCount), 30000);
+        setTimeout(() => {
+          console.log(`Attempting reconnect (${newRetryCount}/5)`);
+          get().initializeSocket();
+        }, delay);
+      }
 
       if (err.message.includes("Authentication error")) {
         console.error("Authentication failed - invalid or missing token");
-        // Handle token refresh or redirect to login
       }
     });
 
@@ -192,7 +208,11 @@ export const useChatStore = create((set, get) => ({
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch conversations: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message ||
+            `Failed to fetch conversations: ${response.status}`
+        );
       }
 
       const data = await response.json();
@@ -203,6 +223,10 @@ export const useChatStore = create((set, get) => ({
     } catch (error) {
       console.error("Error fetching conversations:", error.message);
       set({ error: error.message, isLoading: false });
+
+      if (error.message.includes("Failed to fetch")) {
+        get().initializeSocket();
+      }
     }
   },
 
@@ -288,7 +312,6 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  // Add this new method to mark messages as read via socket
   socketMarkMessagesAsRead: (conversationId, messageIds) => {
     const socket = getSocket();
     if (socket?.connected) {
@@ -321,21 +344,35 @@ export const useChatStore = create((set, get) => ({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        if (response.status === 500) {
+          // Retry once if server error
+          console.log("Retrying conversation creation...");
+          const retryResponse = await fetch(
+            `${BASE_API_URL}/api/conversations`,
+            {
+              method: "POST",
+              credentials: "include",
+              headers,
+              body: JSON.stringify({ participantId }),
+            }
+          );
+
+          if (!retryResponse.ok) {
+            throw new Error(
+              errorData.message || `HTTP error! status: ${retryResponse.status}`
+            );
+          }
+
+          const newConversation = await retryResponse.json();
+          return handleNewConversationSuccess(newConversation);
+        }
         throw new Error(
           errorData.message || `HTTP error! status: ${response.status}`
         );
       }
 
       const newConversation = await response.json();
-
-      set((state) => ({
-        conversations: [newConversation, ...state.conversations],
-        activeConversation: newConversation,
-        isChatOpen: true,
-        isLoading: false,
-      }));
-
-      get().fetchMessages(newConversation._id);
+      return handleNewConversationSuccess(newConversation);
     } catch (error) {
       console.error(
         `ChatStore: Error starting new conversation - ${error.message}`
@@ -344,6 +381,19 @@ export const useChatStore = create((set, get) => ({
         error: `Failed to start conversation: ${error.message}`,
         isLoading: false,
       });
+      return null;
+    }
+
+    function handleNewConversationSuccess(newConversation) {
+      set((state) => ({
+        conversations: [newConversation, ...state.conversations],
+        activeConversation: newConversation,
+        isChatOpen: true,
+        isLoading: false,
+      }));
+
+      get().fetchMessages(newConversation._id);
+      return newConversation;
     }
   },
 
