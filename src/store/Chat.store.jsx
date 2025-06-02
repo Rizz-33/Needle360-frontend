@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import getSocket from "../lib/socket";
+import { roleTypeNumbers } from "../configs/User.config";
 
 const BASE_API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
@@ -59,10 +60,9 @@ export const useChatStore = create((set, get) => ({
       console.log("ChatStore: Socket connected");
       set({ isConnected: true });
 
-      // Join user's room with role (replace 'user' with actual role from your auth system)
       socket.emit("joinRoom", {
         userId: currentUserId,
-        role: "user",
+        role: roleTypeNumbers.customer || roleTypeNumbers.tailor,
       });
 
       // Rejoin active conversation if exists
