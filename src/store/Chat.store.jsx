@@ -1,9 +1,10 @@
-import { io } from "socket.io-client";
 import { create } from "zustand";
+import getSocket from "../lib/socket";
 
 const BASE_API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 export const useChatStore = create((set, get) => ({
+  // State
   conversations: [],
   activeConversation: null,
   messages: [],
@@ -12,17 +13,20 @@ export const useChatStore = create((set, get) => ({
   isChatOpen: false,
   unreadCount: 0,
   currentUserId: null,
-  socket: null,
   isConnected: false,
   currentPage: 1,
   hasMore: true,
 
+  // Actions
   cleanupSocket: () => {
-    const { socket } = get();
-    if (socket) {
-      socket.disconnect();
-      set({ socket: null, isConnected: false });
-    }
+    const socket = getSocket();
+    socket.off("connect");
+    socket.off("connect_error");
+    socket.off("error");
+    socket.off("disconnect");
+    socket.off("newMessage");
+    socket.off("messagesRead");
+    set({ isConnected: false });
   },
 
   setCurrentUserId: (userId) => {
@@ -30,6 +34,125 @@ export const useChatStore = create((set, get) => ({
     setTimeout(() => {
       get().initializeSocket();
     }, 0);
+  },
+
+  initializeSocket: () => {
+    const { currentUserId } = get();
+    if (!currentUserId) {
+      console.error("ChatStore: Cannot initialize socket without userId");
+      set({ error: "User not authenticated" });
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("ChatStore: No token found in localStorage");
+      set({ error: "Authentication token missing" });
+      return;
+    }
+
+    get().cleanupSocket();
+    const socket = getSocket();
+
+    // Socket connection events
+    socket.on("connect", () => {
+      console.log("ChatStore: Socket connected");
+      set({ isConnected: true });
+
+      // Join user's room with role (replace 'user' with actual role from your auth system)
+      socket.emit("joinRoom", {
+        userId: currentUserId,
+        role: "user",
+      });
+
+      // Rejoin active conversation if exists
+      const { activeConversation } = get();
+      if (activeConversation) {
+        socket.emit("joinConversation", activeConversation._id);
+      }
+    });
+
+    socket.on("connect_error", (err) => {
+      console.error(`ChatStore: Socket connection error - ${err.message}`);
+      set({
+        isConnected: false,
+        error: `Socket connection failed: ${err.message}`,
+      });
+
+      // Handle specific authentication errors
+      if (err.message.includes("Authentication error")) {
+        console.error("Authentication failed - invalid or missing token");
+        // You might want to trigger a token refresh or logout here
+      }
+    });
+
+    socket.on("error", (err) => {
+      console.error(`ChatStore: Socket server error - ${err}`);
+      set({ error: `Socket error: ${err}` });
+    });
+
+    socket.on("disconnect", (reason) => {
+      console.log(`ChatStore: Socket disconnected - ${reason}`);
+      set({ isConnected: false });
+    });
+
+    // Message events
+    socket.on("newMessage", (message) => {
+      const { activeConversation, messages, currentUserId } = get();
+      const isOwnMessage = message.sender._id === currentUserId;
+      const messageExists = messages?.some(
+        (msg) =>
+          msg._id === message._id ||
+          (msg.clientId && msg.clientId === message.clientId)
+      );
+
+      if (activeConversation?._id === message.conversation) {
+        if (!messageExists) {
+          const isRead = isOwnMessage || document.visibilityState === "visible";
+          if (isRead && !message.readBy.includes(currentUserId)) {
+            message.readBy = [...message.readBy, currentUserId];
+            if (!isOwnMessage) {
+              get().markConversationAsRead(activeConversation._id);
+            }
+          }
+          set({ messages: [...(messages || []), message] });
+        } else if (isOwnMessage && messageExists) {
+          set((state) => ({
+            messages: state.messages.map((msg) =>
+              (msg.clientId && msg.clientId === message.clientId) ||
+              msg._id === message._id
+                ? { ...message, clientId: msg.clientId }
+                : msg
+            ),
+          }));
+        }
+      }
+
+      set((state) => ({
+        conversations: state.conversations.map((conv) =>
+          conv._id === message.conversation
+            ? { ...conv, lastMessage: message }
+            : conv
+        ),
+      }));
+    });
+
+    socket.on("messagesRead", ({ conversationId, readBy, messageIds }) => {
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          messageIds.includes(msg._id) && !msg.readBy.includes(readBy)
+            ? { ...msg, readBy: [...msg.readBy, readBy] }
+            : msg
+        ),
+      }));
+    });
+
+    // Connect if not already connected
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    set({ isConnected: socket.connected });
   },
 
   setChatOpen: (isOpen) => {
@@ -397,115 +520,5 @@ export const useChatStore = create((set, get) => ({
       console.error("Error fetching messages:", error.message);
       set({ error: error.message, isLoading: !silent && false });
     }
-  },
-
-  initializeSocket: () => {
-    const { currentUserId } = get();
-    if (!currentUserId) {
-      console.error("ChatStore: Cannot initialize socket without userId");
-      set({ error: "User not authenticated" });
-      return;
-    }
-
-    get().cleanupSocket();
-
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("ChatStore: No token found in localStorage");
-      set({ error: "Authentication token missing" });
-      return;
-    }
-
-    const socket = io(BASE_API_URL, {
-      withCredentials: true,
-      auth: { token },
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      transports: ["websocket", "polling"],
-      query: { userId: currentUserId },
-    });
-
-    socket.on("connect", () => {
-      console.log("ChatStore: Socket connected");
-      set({ isConnected: true });
-      const { activeConversation } = get();
-      if (activeConversation) {
-        socket.emit("joinConversation", activeConversation._id);
-      }
-    });
-
-    socket.on("connect_error", (err) => {
-      console.error(`ChatStore: Socket connection error - ${err.message}`);
-      set({
-        isConnected: false,
-        error: `Socket connection failed: ${err.message}`,
-      });
-    });
-
-    socket.on("error", (err) => {
-      console.error(`ChatStore: Socket server error - ${err}`);
-      set({ error: `Socket error: ${err}` });
-    });
-
-    socket.on("disconnect", (reason) => {
-      console.log(`ChatStore: Socket disconnected - ${reason}`);
-      set({ isConnected: false });
-      if (reason === "io server disconnect") {
-        socket.connect();
-      }
-    });
-
-    socket.on("newMessage", (message) => {
-      const { activeConversation, messages, currentUserId } = get();
-      const isOwnMessage = message.sender._id === currentUserId;
-      const messageExists = messages?.some(
-        (msg) =>
-          msg._id === message._id ||
-          (msg.clientId && msg.clientId === message.clientId)
-      );
-
-      if (activeConversation?._id === message.conversation) {
-        if (!messageExists) {
-          const isRead = isOwnMessage || document.visibilityState === "visible";
-          if (isRead && !message.readBy.includes(currentUserId)) {
-            message.readBy = [...message.readBy, currentUserId];
-            if (!isOwnMessage) {
-              get().markConversationAsRead(activeConversation._id);
-            }
-          }
-          set({ messages: [...(messages || []), message] });
-        } else if (isOwnMessage && messageExists) {
-          set((state) => ({
-            messages: state.messages.map((msg) =>
-              (msg.clientId && msg.clientId === message.clientId) ||
-              msg._id === message._id
-                ? { ...message, clientId: msg.clientId }
-                : msg
-            ),
-          }));
-        }
-      }
-
-      set((state) => ({
-        conversations: state.conversations.map((conv) =>
-          conv._id === message.conversation
-            ? { ...conv, lastMessage: message }
-            : conv
-        ),
-      }));
-    });
-
-    socket.on("messagesRead", ({ conversationId, readBy, messageIds }) => {
-      set((state) => ({
-        messages: state.messages.map((msg) =>
-          messageIds.includes(msg._id) && !msg.readBy.includes(readBy)
-            ? { ...msg, readBy: [...msg.readBy, readBy] }
-            : msg
-        ),
-      }));
-    });
-
-    set({ socket });
   },
 }));
