@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { disconnectSocket, getSocket } from "../lib/socket";
 
-const BASE_API_URL = import.meta.env.VITE_API_URL || "https://needle360.online";
+const BASE_API_URL = import.meta.env.VITE_API_URL || "http://localhost:5173";
 
 export const useChatStore = create((set, get) => ({
   // State
