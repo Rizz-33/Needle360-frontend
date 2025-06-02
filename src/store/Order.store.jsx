@@ -1,5 +1,4 @@
 import axios from "axios";
-import { io } from "socket.io-client";
 import { create } from "zustand";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
@@ -49,12 +48,9 @@ export const useOrderStore = create((set, get) => ({
         transports: ["websocket", "polling"],
       });
 
-      socket.on("connect", () => {
-        console.log("Connected to WebSocket server");
-        socket.emit("joinRoom", {
-          userId,
-          role: role === 4 ? "tailor" : "customer",
-        });
+      socket.emit("joinRoom", {
+        userId,
+        role: role === 4 ? "tailor" : "customer",
       });
 
       socket.on("orderCreated", (order) => {

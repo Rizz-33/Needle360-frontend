@@ -126,10 +126,8 @@ jobs:
             --restart unless-stopped \
             --network needle360-network \
             -e NODE_ENV=production \
-            --health-cmd="curl -f http://localhost:80/ || exit 1" \
-            --health-interval=30s \
-            --health-timeout=3s \
-            --health-retries=3 \
+            -e VITE_API_URL=https://needle360.online/api \
+            -e VITE_WS_URL=wss://needle360.online \
             rizz336/needle360-frontend:latest
 
       - name: Wait for container to be healthy
