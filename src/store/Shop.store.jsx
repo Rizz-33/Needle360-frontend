@@ -96,7 +96,6 @@ export const useShopStore = create((set, get) => ({
         `${BASE_API_URL}/tailors/${id}`,
         updateData
       );
-      console.log("Update Response:", response.data);
 
       // Update the current tailor if it's the one being edited
       if (get().tailor && get().tailor._id === id) {

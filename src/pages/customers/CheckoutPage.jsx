@@ -24,16 +24,7 @@ import StripePaymentForm from "./StripePaymentForm";
 
 // Initialize Stripe with detailed debugging
 const initializeStripe = async () => {
-  const key =
-    import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-  console.log(
-    "VITE_STRIPE_PUBLISHABLE_KEY at build time:",
-    key ? `Key present (length: ${key.length})` : "Key missing"
-  );
-  console.log(
-    "VITE_API_URL at build time:",
-    import.meta.env.VITE_API_URL || "Missing"
-  );
+  const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
   if (!key) {
     console.error("Stripe publishable key is missing in environment variables");
     throw new Error(
@@ -79,15 +70,6 @@ const CheckoutPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [stripePromise, setStripePromise] = useState(null);
-
-  // Debug environment variables on mount
-  useEffect(() => {
-    console.log("Environment variables:", import.meta.env);
-    console.log(
-      "VITE_STRIPE_PUBLISHABLE_KEY in useEffect:",
-      import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-    );
-  }, []);
 
   // Initialize Stripe
   useEffect(() => {

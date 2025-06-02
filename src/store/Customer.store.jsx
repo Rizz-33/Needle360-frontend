@@ -96,7 +96,6 @@ export const useCustomerStore = create((set, get) => ({
         `${BASE_API_URL}/customers/${id}`,
         updateData
       );
-      console.log("Update Response:", response.data);
 
       // Update the current customer if it's the one being edited
       if (get().customer && get().customer._id === id) {

@@ -26,7 +26,6 @@ const AdminLogin = () => {
   };
 
   const handleSubmit = async (formValues) => {
-    console.log("Admin login form submitted with values:", formValues);
     try {
       const result = await login(
         formValues.email,
