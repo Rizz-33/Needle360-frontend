@@ -1,33 +1,75 @@
 import { io } from "socket.io-client";
 
-const BASE_API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const BASE_API_URL = import.meta.env.VITE_API_URL || "https://needle360.online";
 
-let socket;
+let socketInstance = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
 
-const getSocket = () => {
-  if (!socket) {
-    const token = localStorage.getItem("token");
+const initializeSocket = () => {
+  if (socketInstance && socketInstance.connected) return socketInstance;
 
-    socket = io(BASE_API_URL, {
-      withCredentials: true,
-      secure: true,
-      transports: ["websocket", "polling"],
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      auth: token ? { token } : null,
-    });
-
-    // Handle authentication errors
-    socket.on("connect_error", (err) => {
-      if (err.message === "Authentication error") {
-        console.error("Authentication failed - invalid or missing token");
-        // Handle token refresh or redirect to login here if needed
-      }
-    });
+  const token = localStorage.getItem("token");
+  if (!token) {
+    console.error("No authentication token available");
+    return null;
   }
-  return socket;
+
+  socketInstance = io(BASE_API_URL, {
+    path: "/socket.io",
+    transports: ["websocket", "polling"],
+    reconnection: true,
+    reconnectionAttempts: MAX_RECONNECT_ATTEMPTS,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    autoConnect: true,
+    secure: true,
+    withCredentials: true,
+    auth: {
+      token: token
+    }
+  });
+
+  // Connection events
+  socketInstance.on("connect", () => {
+    console.log("Socket connected");
+    reconnectAttempts = 0;
+  });
+
+  socketInstance.on("connect_error", (err) => {
+    console.error("Socket connection error:", err.message);
+    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
+      setTimeout(() => {
+        reconnectAttempts++;
+        socketInstance.connect();
+      }, delay);
+    }
+  });
+
+  socketInstance.on("disconnect", (reason) => {
+    console.log("Socket disconnected:", reason);
+    if (reason === "io server disconnect") {
+      // The disconnection was initiated by the server, need to manually reconnect
+      socketInstance.connect();
+    }
+  });
+
+  return socketInstance;
 };
 
-export default getSocket;
+const getSocket = () => {
+  if (!socketInstance) {
+    return initializeSocket();
+  }
+  return socketInstance;
+};
+
+const disconnectSocket = () => {
+  if (socketInstance) {
+    socketInstance.disconnect();
+    socketInstance = null;
+  }
+};
+
+export { getSocket, disconnectSocket, initializeSocket };

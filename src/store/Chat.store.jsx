@@ -1,8 +1,7 @@
 import { create } from "zustand";
-import getSocket from "../lib/socket";
-import { roleTypeNumbers } from "../configs/User.config";
+import { disconnectSocket, getSocket } from "../lib/socket";
 
-const BASE_API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const BASE_API_URL = import.meta.env.VITE_API_URL || "https://needle360.online";
 
 export const useChatStore = create((set, get) => ({
   // State
@@ -17,52 +16,58 @@ export const useChatStore = create((set, get) => ({
   isConnected: false,
   currentPage: 1,
   hasMore: true,
+  socketError: null,
 
   // Actions
   cleanupSocket: () => {
     const socket = getSocket();
-    socket.off("connect");
-    socket.off("connect_error");
-    socket.off("error");
-    socket.off("disconnect");
-    socket.off("newMessage");
-    socket.off("messagesRead");
-    set({ isConnected: false });
+    if (socket) {
+      socket.off("connect");
+      socket.off("connect_error");
+      socket.off("disconnect");
+      socket.off("newMessage");
+      socket.off("messagesRead");
+    }
+    disconnectSocket();
+    set({ isConnected: false, socketError: null });
   },
 
   setCurrentUserId: (userId) => {
     set({ currentUserId: userId });
-    setTimeout(() => {
-      get().initializeSocket();
-    }, 0);
+    get().initializeSocket();
   },
 
   initializeSocket: () => {
     const { currentUserId } = get();
     if (!currentUserId) {
-      console.error("ChatStore: Cannot initialize socket without userId");
-      set({ error: "User not authenticated" });
+      set({ error: "User ID not available" });
       return;
     }
 
     const token = localStorage.getItem("token");
     if (!token) {
-      console.error("ChatStore: No token found in localStorage");
       set({ error: "Authentication token missing" });
       return;
     }
 
+    // Clean up any existing connection
     get().cleanupSocket();
-    const socket = getSocket();
 
-    // Socket connection events
+    const socket = getSocket();
+    if (!socket) {
+      set({ error: "Failed to initialize socket connection" });
+      return;
+    }
+
+    // Connection events
     socket.on("connect", () => {
       console.log("ChatStore: Socket connected");
-      set({ isConnected: true });
+      set({ isConnected: true, socketError: null });
 
+      // Join user's personal room
       socket.emit("joinRoom", {
         userId: currentUserId,
-        role: roleTypeNumbers.customer || roleTypeNumbers.tailor,
+        role: "user", // Replace with actual role from your auth system
       });
 
       // Rejoin active conversation if exists
@@ -73,26 +78,20 @@ export const useChatStore = create((set, get) => ({
     });
 
     socket.on("connect_error", (err) => {
-      console.error(`ChatStore: Socket connection error - ${err.message}`);
+      console.error("Socket connection error:", err.message);
       set({
         isConnected: false,
-        error: `Socket connection failed: ${err.message}`,
+        socketError: `Connection failed: ${err.message}`,
       });
 
-      // Handle specific authentication errors
       if (err.message.includes("Authentication error")) {
         console.error("Authentication failed - invalid or missing token");
-        // You might want to trigger a token refresh or logout here
+        // Handle token refresh or redirect to login
       }
     });
 
-    socket.on("error", (err) => {
-      console.error(`ChatStore: Socket server error - ${err}`);
-      set({ error: `Socket error: ${err}` });
-    });
-
     socket.on("disconnect", (reason) => {
-      console.log(`ChatStore: Socket disconnected - ${reason}`);
+      console.log("Socket disconnected:", reason);
       set({ isConnected: false });
     });
 
@@ -101,9 +100,7 @@ export const useChatStore = create((set, get) => ({
       const { activeConversation, messages, currentUserId } = get();
       const isOwnMessage = message.sender._id === currentUserId;
       const messageExists = messages?.some(
-        (msg) =>
-          msg._id === message._id ||
-          (msg.clientId && msg.clientId === message.clientId)
+        (msg) => msg._id === message._id || msg.clientId === message.clientId
       );
 
       if (activeConversation?._id === message.conversation) {
@@ -119,8 +116,7 @@ export const useChatStore = create((set, get) => ({
         } else if (isOwnMessage && messageExists) {
           set((state) => ({
             messages: state.messages.map((msg) =>
-              (msg.clientId && msg.clientId === message.clientId) ||
-              msg._id === message._id
+              msg.clientId === message.clientId || msg._id === message._id
                 ? { ...message, clientId: msg.clientId }
                 : msg
             ),
@@ -146,11 +142,6 @@ export const useChatStore = create((set, get) => ({
         ),
       }));
     });
-
-    // Connect if not already connected
-    if (!socket.connected) {
-      socket.connect();
-    }
 
     set({ isConnected: socket.connected });
   },
@@ -216,7 +207,7 @@ export const useChatStore = create((set, get) => ({
   },
 
   sendMessage: async (content, attachments = []) => {
-    const { activeConversation, currentUserId, socket } = get();
+    const { activeConversation, currentUserId } = get();
     if (!activeConversation || (!content && attachments.length === 0)) return;
 
     const tempId = `temp-${Date.now()}`;
@@ -232,6 +223,7 @@ export const useChatStore = create((set, get) => ({
       clientId: tempId,
     };
 
+    // Optimistic update
     set((state) => ({
       messages: [...(state.messages || []), newMessage],
       conversations: state.conversations.map((conv) =>
@@ -260,12 +252,16 @@ export const useChatStore = create((set, get) => ({
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to send message: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || `Failed to send message: ${response.status}`
+        );
       }
 
       const savedMessage = await response.json();
       savedMessage.clientId = tempId;
 
+      // Update with server response
       set((state) => ({
         messages: state.messages.map((msg) =>
           msg._id === tempId ? savedMessage : msg
@@ -277,15 +273,29 @@ export const useChatStore = create((set, get) => ({
         ),
       }));
 
+      // Emit socket event if connected
+      const socket = getSocket();
       if (socket?.connected) {
         socket.emit("newMessage", savedMessage);
       }
     } catch (error) {
       console.error("Error sending message:", error.message);
+      // Rollback optimistic update
       set((state) => ({
         messages: state.messages.filter((msg) => msg._id !== tempId) ?? [],
         error: error.message,
       }));
+    }
+  },
+
+  // Add this new method to mark messages as read via socket
+  socketMarkMessagesAsRead: (conversationId, messageIds) => {
+    const socket = getSocket();
+    if (socket?.connected) {
+      socket.emit("markMessagesAsRead", {
+        conversationId,
+        messageIds,
+      });
     }
   },
 
