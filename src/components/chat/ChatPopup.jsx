@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Send, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuthStore } from "../../store/Auth.store";
 import { useChatStore } from "../../store/Chat.store";
 import Loader from "../ui/Loader";
@@ -25,6 +25,7 @@ const ChatPopup = () => {
     setCurrentUserId,
     hasMore,
     markConversationAsRead,
+    cleanupSocket,
   } = useChatStore();
 
   const [newMessage, setNewMessage] = useState("");
@@ -37,7 +38,10 @@ const ChatPopup = () => {
     if (user?._id) {
       setCurrentUserId(user._id);
     }
-  }, [user, setCurrentUserId]);
+    return () => {
+      cleanupSocket();
+    };
+  }, [user?._id, setCurrentUserId, cleanupSocket]);
 
   useEffect(() => {
     if (messagesEndRef.current && !loadingMore) {
@@ -49,7 +53,12 @@ const ChatPopup = () => {
     if (activeConversation && messages?.length > 0 && isChatOpen) {
       markConversationAsRead(activeConversation._id);
     }
-  }, [activeConversation?._id, messages?.length, isChatOpen]);
+  }, [
+    activeConversation?._id,
+    messages?.length,
+    isChatOpen,
+    markConversationAsRead,
+  ]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -75,29 +84,15 @@ const ChatPopup = () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleWindowFocus);
     };
-  }, [activeConversation, isChatOpen]);
+  }, [activeConversation, isChatOpen, markConversationAsRead]);
 
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      const { socket } = useChatStore.getState();
-      if (socket) {
-        socket.disconnect();
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, []);
-
-  const handleSendMessage = () => {
+  const handleSendMessage = useCallback(() => {
     if (newMessage.trim() || attachments.length > 0) {
       sendMessage(newMessage, attachments);
       setNewMessage("");
       setAttachments([]);
     }
-  };
+  }, [newMessage, attachments, sendMessage]);
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -116,25 +111,13 @@ const ChatPopup = () => {
     )
       return;
 
-    const { scrollTop, scrollHeight, clientHeight } =
-      messagesContainerRef.current;
+    const { scrollTop } = messagesContainerRef.current;
     const isNearTop = scrollTop < 100;
 
     if (isNearTop) {
       setLoadingMore(true);
       await fetchMessages(activeConversation._id, true);
-
-      setTimeout(() => {
-        if (messagesContainerRef.current && messages.length > 0) {
-          const firstVisibleMsg = document.getElementById(
-            `msg-${messages[0]._id}`
-          );
-          if (firstVisibleMsg) {
-            firstVisibleMsg.scrollIntoView();
-          }
-        }
-        setLoadingMore(false);
-      }, 100);
+      setLoadingMore(false);
     }
   };
 
