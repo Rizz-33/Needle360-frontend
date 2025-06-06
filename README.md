@@ -129,19 +129,9 @@ Create a `.env` file in the root directory with the following variables:
 
 ```
 # API Configuration
-API_URL=http://localhost:4000
-
-# MongoDB
-MONGODB_URI=your_mongodb_connection_string
-
-# Authentication
-JWT_SECRET=your_jwt_secret
-
-# External Services
-STRIPE_API_KEY=your_stripe_key
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
+API_URL="http://13.61.16.74:4000/"
+VITE_API_URL=http://localhost:4000
+VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
 ```
 
 ## Contributing
