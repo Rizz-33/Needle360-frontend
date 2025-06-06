@@ -32,16 +32,23 @@ import TailorProfilePage from "./pages/tailorshop/Profile";
 import UserConnections from "./pages/UserConnections";
 import { useAuthStore } from "./store/Auth.store";
 
-// Component to protect routes that require authentication
+const publicRoutes = ["/", "/about", "/services", "/contact"];
+
 const ProtectedRoute = ({ children }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const { isAuthenticated, isApproved, user, checkAuth, checkApproval } =
     useAuthStore();
   const location = useLocation();
 
+  const isPublicRoute = publicRoutes.includes(location.pathname);
+
   const verifyAuth = useCallback(async () => {
+    if (isPublicRoute) {
+      setIsInitialized(true);
+      return;
+    }
+
     if (isAuthenticated && user) {
-      // Skip checkAuth if already authenticated
       if (user.role !== 9 && !isApproved) {
         await checkApproval();
       }
@@ -59,7 +66,14 @@ const ProtectedRoute = ({ children }) => {
     } finally {
       setIsInitialized(true);
     }
-  }, [checkAuth, checkApproval, isAuthenticated, user, isApproved]);
+  }, [
+    checkAuth,
+    checkApproval,
+    isAuthenticated,
+    user,
+    isApproved,
+    isPublicRoute,
+  ]);
 
   useEffect(() => {
     verifyAuth();
@@ -69,7 +83,6 @@ const ProtectedRoute = ({ children }) => {
     return <Loader />;
   }
 
-  // Handle token in URL for Google auth callback
   const queryParams = new URLSearchParams(location.search);
   const token = queryParams.get("token");
   const userParam = queryParams.get("user");
@@ -84,6 +97,10 @@ const ProtectedRoute = ({ children }) => {
     } catch (e) {
       console.error("Error parsing user data:", e);
     }
+  }
+
+  if (isPublicRoute) {
+    return children;
   }
 
   if (!isAuthenticated) {
@@ -103,7 +120,6 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Component to protect admin routes
 const AdminProtectedRoute = ({ children }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const { isAuthenticated, user, checkAuth } = useAuthStore();
@@ -142,7 +158,6 @@ const AdminProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Component to redirect authenticated users away from auth pages
 const RedirectAuthenticatedUser = ({ children }) => {
   const { isAuthenticated, user } = useAuthStore();
   const location = useLocation();
@@ -167,14 +182,13 @@ function App() {
       <ChatPopup />
       <SidebarProvider>
         <Routes>
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Home />
-              </ProtectedRoute>
-            }
-          />
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/services" element={<OurServices />} />
+          <Route path="/contact" element={<Contact />} />
+
+          {/* Auth Routes */}
           <Route
             path="/signup"
             element={
@@ -201,6 +215,8 @@ function App() {
               </RedirectAuthenticatedUser>
             }
           />
+
+          {/* Protected Routes */}
           <Route
             path="/design"
             element={
@@ -209,15 +225,54 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/services" element={<OurServices />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/design-tool" element={<FashionDesignTool />} />
-          <Route path="/pending-approval" element={<PendingApproval />} />
-          <Route path="/profile-setup" element={<BusinessProfileSetup />} />
-          <Route path="/edit-profile" element={<CustomerProfileSetup />} />
-          <Route path="/checkout/:orderId" element={<OrderDetails />} />
-          <Route path="/checkout/payment/:orderId" element={<CheckoutPage />} />
+          <Route
+            path="/design-tool"
+            element={
+              <ProtectedRoute>
+                <FashionDesignTool />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/pending-approval"
+            element={
+              <ProtectedRoute>
+                <PendingApproval />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile-setup"
+            element={
+              <ProtectedRoute>
+                <BusinessProfileSetup />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/edit-profile"
+            element={
+              <ProtectedRoute>
+                <CustomerProfileSetup />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/checkout/:orderId"
+            element={
+              <ProtectedRoute>
+                <OrderDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/checkout/payment/:orderId"
+            element={
+              <ProtectedRoute>
+                <CheckoutPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/tailor-dashboard"
             element={
@@ -258,6 +313,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Admin Routes */}
           <Route
             path="/dashboard"
             element={
