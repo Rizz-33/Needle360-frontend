@@ -9,7 +9,8 @@ on:
       - main
 
 jobs:
-  build:
+  # Test build job - runs on both PR and main push
+  test-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -21,12 +22,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "18"
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Validate Environment Variables
         run: |
@@ -59,9 +54,38 @@ jobs:
             echo "❌ Warning: Stripe key not found in build output"
           fi
 
+      - name: Test Docker Build (without push)
+        run: |
+          echo "=== DOCKER BUILD TEST ==="
+          docker build \
+            --no-cache \
+            --build-arg VITE_API_URL="${{ secrets.VITE_API_URL }}" \
+            --build-arg VITE_STRIPE_PUBLISHABLE_KEY="${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}" \
+            --progress=plain \
+            -t rizz336/needle360-frontend:test \
+            -f Dockerfile .
+          echo "✅ Docker build test successful"
+
+  # Build and push job - only runs on main branch push
+  build:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: test-build
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
       - name: Build and Push Docker Image
         run: |
-          echo "=== DOCKER BUILD ==="
+          echo "=== DOCKER BUILD AND PUSH ==="
           docker build \
             --no-cache \
             --build-arg VITE_API_URL="${{ secrets.VITE_API_URL }}" \
@@ -75,9 +99,11 @@ jobs:
           docker push rizz336/needle360-frontend:$GITHUB_SHA
           docker push rizz336/needle360-frontend:latest
 
+  # Deploy job - only runs on main branch push after successful build
   deploy:
     needs: build
     runs-on: self-hosted
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - name: Create docker network
         run: docker network create needle360-network || true
