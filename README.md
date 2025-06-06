@@ -149,10 +149,7 @@ We welcome contributions from the community! Follow these steps to contribute:
 - ✅ Basic UI & Authentication
 - ✅ Tailor Shop Onboarding
 - ✅ Order & Payment Integration
-- ⏳ AI-based Custom Design Suggestions (Upcoming)
-- ⏳ Mobile App Version (Upcoming)
 - ⏳ Enhanced Analytics Dashboard (Upcoming)
-- ⏳ Multi-language Support (Upcoming)
 
 ## License
 
@@ -163,7 +160,7 @@ This project is licensed under the [MIT License](LICENSE).
 For any queries, feel free to reach out:
 
 - **GitHub**: [@Rizz-33](https://github.com/Rizz-33)
-- **Email**: TBD
+- **Email**: aarruwanthie@gmail.com
 
 ---
 
