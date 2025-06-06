@@ -12,6 +12,9 @@
 
 This project aims to revolutionize the tailor industry by providing a one-stop digital solution for custom apparel shopping and order management.
 
+- frontend : [https://github.com/Rizz-33/Needle360-frontend](https://github.com/Rizz-33/Needle360-frontend)
+- backend : [https://github.com/Rizz-33/Needle360-backend](https://github.com/Rizz-33/Needle360-backend)
+
 ## Features
 
 ### For Customers
