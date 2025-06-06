@@ -1042,12 +1042,14 @@ const CustomerProfilePage = () => {
                 </motion.button>
               ) : (
                 <>
-                  <button
-                    onClick={() => setIsOrderFormOpen(true)}
-                    className="px-3 py-1.5 rounded-full text-xs font-medium bg-green-600 text-white hover:bg-green-700 transition-colors shadow-md"
-                  >
-                    Place Order
-                  </button>
+                  {customer.roleType === 4 && (
+                    <button
+                      onClick={() => setIsOrderFormOpen(true)}
+                      className="px-3 py-1.5 rounded-full text-xs font-medium bg-green-600 text-white hover:bg-green-700 transition-colors shadow-md"
+                    >
+                      Place Order
+                    </button>
+                  )}
                   <button
                     onClick={handleFollow}
                     className={`px-3 py-1.5 rounded-full text-xs font-medium ${
