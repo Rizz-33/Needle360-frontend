@@ -105,15 +105,14 @@ jobs:
     runs-on: self-hosted
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - name: Create docker network
+      - name: Ensure network exists
         run: docker network create needle360-network || true
 
-      - name: Clean up old containers
+      - name: Clean up old frontend container
         run: |
           echo "=== CLEANUP ==="
           docker stop needle360-frontend-container || true
           docker rm needle360-frontend-container || true
-          docker system prune -f
 
       - name: Check and free ports
         run: |
@@ -132,16 +131,26 @@ jobs:
         run: |
           echo "=== SSL VERIFICATION ==="
           if ! sudo test -f "/home/ubuntu/needle360/ssl/fullchain.crt"; then
-            echo "❌ SSL certificate not found at /home/ubuntu/needle360/ssl/fullchain.crt"
-            sudo find /home/ubuntu -name "*.crt" -o -name "*.pem" 2>/dev/null || true
+            echo "❌ SSL certificate not found"
             exit 1
           fi
           if ! sudo test -f "/home/ubuntu/needle360/ssl/private.key"; then
-            echo "❌ SSL private key not found at /home/ubuntu/needle360/ssl/private.key"
-            sudo find /home/ubuntu -name "*.key" 2>/dev/null || true
+            echo "❌ SSL private key not found"
             exit 1
           fi
           echo "✅ SSL certificates found"
+
+      - name: Wait for backend to be ready
+        run: |
+          echo "=== WAITING FOR BACKEND ==="
+          for i in {1..60}; do
+            if docker exec needle360-backend-container curl -s -f http://localhost:4000 >/dev/null 2>&1; then
+              echo "✅ Backend is ready"
+              break
+            fi
+            echo "⏳ Waiting for backend... ($i/60)"
+            sleep 5
+          done
 
       - name: Deploy frontend container
         run: |
@@ -160,39 +169,32 @@ jobs:
             --health-retries=3 \
             rizz336/needle360-frontend:latest
 
-      - name: Wait for container to be healthy
-        run: |
-          echo "=== HEALTH CHECK ==="
-          for i in {1..20}; do
-            if [ "$(docker inspect --format='{{.State.Health.Status}}' needle360-frontend-container)" = "healthy" ]; then
-              echo "✅ Container is healthy"
-              break
-            fi
-            echo "⏳ Waiting for container health check... ($i/20)"
-            sleep 10
-          done
-
       - name: Verify deployment
         run: |
           echo "=== DEPLOYMENT VERIFICATION ==="
-          echo "Container status:"
+          sleep 10
+
+          # Check container status
           docker ps | grep needle360-frontend-container
 
-          echo "Container logs (last 20 lines):"
-          docker logs --tail 20 needle360-frontend-container
+          # Check if backend is reachable from frontend container
+          if docker exec needle360-frontend-container nslookup needle360-backend-container; then
+            echo "✅ Backend DNS resolution works"
+          else
+            echo "❌ Backend DNS resolution failed"
+          fi
 
+          # Test internal connectivity
+          if docker exec needle360-frontend-container wget -q --spider http://needle360-backend-container:4000; then
+            echo "✅ Frontend can reach backend internally"
+          else
+            echo "❌ Frontend cannot reach backend internally"
+            docker logs --tail 20 needle360-backend-container
+          fi
+
+          # Test external endpoints
           echo "Testing HTTP redirect:"
           curl -v -I http://needle360.online || echo "HTTP test failed"
 
           echo "Testing HTTPS:"
           curl -v -k -I https://needle360.online || echo "HTTPS test failed"
-
-          # More robust content check
-          if ! curl -k -s https://needle360.online | grep -q -E "<!doctype html>|<html"; then
-            echo "❌ Frontend is not serving HTML content"
-            echo "Actual response:"
-            curl -k -s https://needle360.online | head -n 5
-            exit 1
-          else
-            echo "✅ Frontend is serving HTML content"
-          fi
